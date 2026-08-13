@@ -477,6 +477,304 @@ const FinanDashboard = (() => {
     });
   }
 
+    // Renderizar Proyecciones F.I.R.E. y Fondo de Emergencia
+    renderFinancialProjections(state, activeJars, income, suggestedSavings, customSettings);
+
+    // Renderizar Calendario Financiero Mensual & Asistencia
+    renderMonthlyCalendar(state);
+  }
+
+  // --- Módulo Calendario Financiero Mensual ---
+  let calCurrentDate = new Date();
+  let calSelectedDay = null;
+
+  function renderMonthlyCalendar(state) {
+    const { formatMoney } = FinanStore;
+
+    const monthTitleEl = document.getElementById('cal-month-title');
+    const daysGridEl = document.getElementById('cal-days-grid');
+    const eventsBoxEl = document.getElementById('cal-selected-day-events');
+    const btnPrev = document.getElementById('btn-cal-prev');
+    const btnNext = document.getElementById('btn-cal-next');
+
+    if (!daysGridEl) return;
+
+    const year = calCurrentDate.getFullYear();
+    const month = calCurrentDate.getMonth(); // 0-indexed
+
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+
+    if (monthTitleEl) {
+      monthTitleEl.textContent = `${monthNames[month]} ${year}`;
+    }
+
+    // Configurar listeners de navegación (solo una vez o idempotente)
+    if (btnPrev && !btnPrev.dataset.bound) {
+      btnPrev.dataset.bound = 'true';
+      btnPrev.addEventListener('click', () => {
+        calCurrentDate.setMonth(calCurrentDate.getMonth() - 1);
+        calSelectedDay = null;
+        renderMonthlyCalendar(FinanStore.getState());
+      });
+    }
+
+    if (btnNext && !btnNext.dataset.bound) {
+      btnNext.dataset.bound = 'true';
+      btnNext.addEventListener('click', () => {
+        calCurrentDate.setMonth(calCurrentDate.getMonth() + 1);
+        calSelectedDay = null;
+        renderMonthlyCalendar(FinanStore.getState());
+      });
+    }
+
+    // Días del mes
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Dom, 1 = Lun...
+    const adjustedFirstDay = (firstDayIndex === 0 ? 6 : firstDayIndex - 1); // 0 = Lun, 6 = Dom
+    const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const today = new Date();
+    const isCurrentRealMonth = (today.getFullYear() === year && today.getMonth() === month);
+    const realTodayDate = today.getDate();
+
+    // Mapeo de eventos por día del mes
+    const eventsByDay = {};
+    for (let d = 1; d <= totalDaysInMonth; d++) {
+      eventsByDay[d] = [];
+    }
+
+    // 1. Ingreso Mensual (Día 1 y fin de mes si hay ingreso)
+    const income = Number(state.monthlyIncome) || 0;
+    if (income > 0) {
+      eventsByDay[1].push({
+        type: 'income',
+        icon: '💰',
+        title: 'Inicio de Mes Financiero',
+        desc: `Ingreso presupuestado: ${formatMoney(income)}`,
+        badgeClass: 'pill-success'
+      });
+      const endDay = totalDaysInMonth >= 30 ? 30 : totalDaysInMonth;
+      eventsByDay[endDay].push({
+        type: 'income',
+        icon: '💵',
+        title: 'Depósito / Fin de Mes Estimado',
+        desc: `Cierre de ciclo de ingresos: ${formatMoney(income)}`,
+        badgeClass: 'pill-success'
+      });
+    }
+
+    // 2. Vencimientos y Cierres de Tarjetas
+    const currentMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+    (state.cards || []).forEach(card => {
+      const dueDay = Math.min(totalDaysInMonth, Math.max(1, Number(card.paymentDueDay) || 5));
+      const isPaid = card.lastPaidMonth === currentMonthKey;
+      
+      eventsByDay[dueDay].push({
+        type: 'card_due',
+        icon: '💳',
+        title: `Vencimiento ${card.alias}`,
+        desc: isPaid ? '¡Tarjeta pagada para este mes! ✓' : `Pago pendiente: ${formatMoney(card.used)}`,
+        isPaid,
+        cardId: card.id,
+        badgeClass: isPaid ? 'pill-success' : 'pill-danger'
+      });
+
+      if (card.billingDay) {
+        const billingDay = Math.min(totalDaysInMonth, Math.max(1, Number(card.billingDay) || 15));
+        if (billingDay !== dueDay) {
+          eventsByDay[billingDay].push({
+            type: 'card_billing',
+            icon: '📑',
+            title: `Cierre Facturación ${card.alias}`,
+            desc: `Corte de compras del periodo`,
+            badgeClass: 'pill-info'
+          });
+        }
+      }
+    });
+
+    // 3. Cuotas Activas
+    (state.installments || []).forEach(inst => {
+      const instDay = 10; // Día estándar de cuotas en el mes
+      const total = inst.totalInstallments || inst.remainingMonths || 1;
+      const current = inst.currentInstallment || 1;
+
+      eventsByDay[instDay].push({
+        type: 'installment',
+        icon: '🛍️',
+        title: `Cuota ${inst.name}`,
+        desc: `Cuota ${current}/${total} · ${formatMoney(inst.monthlyAmount)}`,
+        badgeClass: 'pill-warning'
+      });
+    });
+
+    // Generar cuadrícula de celdas
+    let gridHtml = '';
+
+    // Días del mes anterior (padding inicial)
+    for (let i = adjustedFirstDay - 1; i >= 0; i--) {
+      const prevD = prevMonthDays - i;
+      gridHtml += `<div class="cal-day-cell other-month"><span class="cal-day-num">${prevD}</span></div>`;
+    }
+
+    // Días del mes actual
+    for (let day = 1; day <= totalDaysInMonth; day++) {
+      const isToday = isCurrentRealMonth && day === realTodayDate;
+      const isSelected = calSelectedDay === day;
+      const dayEvents = eventsByDay[day] || [];
+      
+      const hasDue = dayEvents.some(e => e.type === 'card_due' && !e.isPaid);
+      const hasPaid = dayEvents.some(e => e.type === 'card_due' && e.isPaid);
+      const hasIncome = dayEvents.some(e => e.type === 'income');
+      const hasInstallment = dayEvents.some(e => e.type === 'installment');
+
+      let cellClass = 'cal-day-cell current-month';
+      if (isToday) cellClass += ' is-today';
+      if (isSelected) cellClass += ' is-selected';
+      if (hasDue) cellClass += ' has-due-alert';
+      else if (hasPaid) cellClass += ' has-paid-alert';
+
+      let dotsHtml = '';
+      if (dayEvents.length > 0) {
+        dotsHtml += '<div class="cal-day-dots">';
+        if (hasDue) dotsHtml += '<span class="cal-dot cal-dot-rose" title="Vencimiento pendiente"></span>';
+        if (hasPaid) dotsHtml += '<span class="cal-dot cal-dot-emerald" title="Pagado"></span>';
+        if (hasIncome) dotsHtml += '<span class="cal-dot cal-dot-emerald" title="Ingreso"></span>';
+        if (hasInstallment) dotsHtml += '<span class="cal-dot cal-dot-amber" title="Cuota"></span>';
+        dotsHtml += '</div>';
+      }
+
+      gridHtml += `
+        <div class="${cellClass}" data-cal-day="${day}">
+          <span class="cal-day-num">${day}</span>
+          ${dotsHtml}
+        </div>
+      `;
+    }
+
+    // Días del mes siguiente (padding final para completar filas de 7)
+    const totalCells = adjustedFirstDay + totalDaysInMonth;
+    const remainingCells = (7 - (totalCells % 7)) % 7;
+    for (let nextD = 1; nextD <= remainingCells; nextD++) {
+      gridHtml += `<div class="cal-day-cell other-month"><span class="cal-day-num">${nextD}</span></div>`;
+    }
+
+    daysGridEl.innerHTML = gridHtml;
+
+    // Conectar clic en días
+    daysGridEl.querySelectorAll('[data-cal-day]').forEach(cell => {
+      cell.addEventListener('click', () => {
+        const clickedDay = Number(cell.getAttribute('data-cal-day'));
+        if (calSelectedDay === clickedDay) {
+          calSelectedDay = null; // deseleccionar para ver todo el mes
+        } else {
+          calSelectedDay = clickedDay;
+        }
+        renderMonthlyCalendar(state);
+      });
+    });
+
+    // Renderizar Detalle de Eventos
+    renderCalendarEventsList(eventsBoxEl, eventsByDay, totalDaysInMonth, calSelectedDay, monthNames[month], state);
+  }
+
+  function renderCalendarEventsList(container, eventsByDay, totalDays, selectedDay, monthName, state) {
+    const { formatMoney } = FinanStore;
+    if (!container) return;
+
+    if (selectedDay) {
+      // Mostrar solo los eventos del día seleccionado
+      const events = eventsByDay[selectedDay] || [];
+      if (events.length === 0) {
+        container.innerHTML = `
+          <div class="cal-events-header">
+            <strong>📅 Día ${selectedDay} de ${monthName}</strong>
+            <button class="btn-xs btn-outline" id="btn-cal-show-all">Ver todo el mes</button>
+          </div>
+          <p class="text-subtle" style="font-size: 0.78rem; margin-top: 0.3rem;">No tienes vencimientos ni compromisos registrados en este día.</p>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="cal-events-header">
+            <strong>📅 Compromisos del Día ${selectedDay} de ${monthName}:</strong>
+            <button class="btn-xs btn-outline" id="btn-cal-show-all">Ver todo el mes</button>
+          </div>
+          <div class="cal-events-stack">
+            ${events.map(ev => `
+              <div class="cal-event-row">
+                <div class="cal-event-left">
+                  <span class="cal-ev-icon">${ev.icon}</span>
+                  <div>
+                    <strong>${escapeHtml(ev.title)}</strong>
+                    <p class="text-subtle" style="font-size: 0.75rem;">${escapeHtml(ev.desc)}</p>
+                  </div>
+                </div>
+                <span class="pill-badge ${ev.badgeClass}">${ev.isPaid ? 'Pagado' : 'Programado'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      document.getElementById('btn-cal-show-all')?.addEventListener('click', () => {
+        calSelectedDay = null;
+        renderMonthlyCalendar(state);
+      });
+      return;
+    }
+
+    // Si no hay día seleccionado, mostrar Resumen Mensual Consolidado
+    const allEvents = [];
+    for (let d = 1; d <= totalDays; d++) {
+      (eventsByDay[d] || []).forEach(ev => {
+        allEvents.push({ day: d, ...ev });
+      });
+    }
+
+    const totalDueMonth = (state.cards || []).filter(c => c.type === 'credito').reduce((acc, c) => acc + (Number(c.used) || 0), 0);
+    const totalInstMonth = (state.installments || []).reduce((acc, i) => acc + (Number(i.monthlyAmount) || 0), 0);
+
+    if (allEvents.length === 0) {
+      container.innerHTML = `
+        <div class="cal-events-header">
+          <strong>📅 Resumen de ${monthName}</strong>
+          <span class="pill-badge pill-info">Sin vencimientos</span>
+        </div>
+        <p class="text-subtle" style="font-size: 0.78rem; margin-top: 0.35rem;">Agrega tus tarjetas y compras en cuotas para ver tus alertas y fechas de pago en este calendario.</p>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="cal-events-header">
+        <div>
+          <strong>📋 Fechas Clave y Vencimientos de ${monthName}:</strong>
+          <p class="text-subtle" style="font-size: 0.75rem;">Total mensual en tarjetas y cuotas: <strong class="text-amber">${formatMoney(totalDueMonth + totalInstMonth)}</strong></p>
+        </div>
+        <span class="pill-badge pill-info">${allEvents.length} eventos</span>
+      </div>
+      <div class="cal-events-stack">
+        ${allEvents.slice(0, 5).map(ev => `
+          <div class="cal-event-row">
+            <div class="cal-event-left">
+              <span class="cal-ev-day-badge">Día ${ev.day}</span>
+              <span class="cal-ev-icon">${ev.icon}</span>
+              <div>
+                <strong>${escapeHtml(ev.title)}</strong>
+                <p class="text-subtle" style="font-size: 0.74rem;">${escapeHtml(ev.desc)}</p>
+              </div>
+            </div>
+            <span class="pill-badge ${ev.badgeClass}">${ev.isPaid ? 'Pagado' : 'Agendado'}</span>
+          </div>
+        `).join('')}
+      </div>
+      <small class="text-subtle" style="display:block; text-align: center; margin-top: 0.4rem; font-size: 0.72rem;">💡 Haz clic en cualquier día del calendario para ver el detalle específico.</small>
+    `;
+  }
+
   function renderFinancialProjections(state, jars, income, monthlySavings, customSettings) {
     const { formatMoney } = FinanStore;
 
