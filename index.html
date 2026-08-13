@@ -1117,27 +1117,39 @@
     <div class="modal-overlay" id="modal-installment" style="display: none;">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 id="modal-installment-title">Añadir Compromiso en Cuotas / Deuda</h3>
+          <h3 id="modal-installment-title">Registrar Compra en Cuotas</h3>
           <button class="btn-modal-close" data-close="modal-installment">&times;</button>
         </div>
         <form id="form-installment" class="modal-body">
           <div class="form-field">
-            <label for="input-installment-name">Concepto de la Deuda / Compra</label>
-            <input type="text" id="input-installment-name" placeholder="Ej: Smartphone Cuotas, Préstamo, Curso" required>
+            <label for="input-installment-name">Producto o Concepto de la Compra</label>
+            <input type="text" id="input-installment-name" placeholder="Ej: PlayStation 3, Smartphone, Laptop" required>
+          </div>
+
+          <div class="form-field">
+            <label for="input-installment-amount">Valor de la Cuota Mensual ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-installment-amount" min="0" step="any" placeholder="Ej: 35000" required>
+            </div>
           </div>
 
           <div class="input-grid">
             <div class="form-field">
-              <label for="input-installment-amount">Valor Cuota Mensual ($)</label>
-              <div class="input-with-icon">
-                <span class="input-icon">$</span>
-                <input type="number" id="input-installment-amount" min="0" step="any" placeholder="Ej: 45000" required>
-              </div>
+              <label for="input-installment-total">Total de Cuotas Pactadas</label>
+              <input type="number" id="input-installment-total" min="1" max="120" step="1" value="3" required>
             </div>
             <div class="form-field">
-              <label for="input-installment-months">Meses / Cuotas Restantes</label>
-              <input type="number" id="input-installment-months" min="1" max="120" step="1" value="6" required>
+              <label for="input-installment-current">¿En qué Cuota vas?</label>
+              <input type="number" id="input-installment-current" min="1" max="120" step="1" value="2" required>
             </div>
+          </div>
+
+          <div class="form-field">
+            <label for="input-installment-card">Tarjeta Utilizada (Opcional)</label>
+            <select id="input-installment-card" class="custom-select">
+              <option value="">Sin tarjeta vinculada</option>
+            </select>
           </div>
 
           <div class="modal-footer">

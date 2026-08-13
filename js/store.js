@@ -590,13 +590,20 @@ const FinanStore = (() => {
   }
 
   function addInstallment(inst) {
+    const total = Math.max(1, Number(inst.totalInstallments) || Number(inst.remainingMonths) || 1);
+    const current = Math.max(1, Math.min(total, Number(inst.currentInstallment) || 1));
+    const remaining = Math.max(1, Number(inst.remainingMonths) !== undefined && !isNaN(Number(inst.remainingMonths)) ? Number(inst.remainingMonths) : (total - current + 1));
+
     state.installments.push({
       id: 'inst_' + Date.now(),
       name: inst.name.trim() || 'Compra en Cuotas',
       monthlyAmount: Number(inst.monthlyAmount) || 0,
-      remainingMonths: Number(inst.remainingMonths) || 1,
+      totalInstallments: total,
+      currentInstallment: current,
+      remainingMonths: remaining,
       cardId: inst.cardId || null
     });
+
     if (inst.cardId) {
       const card = state.cards.find(c => c.id === inst.cardId);
       if (card && inst.totalPurchase) {
@@ -604,6 +611,23 @@ const FinanStore = (() => {
       }
     }
     saveState();
+  }
+
+  function advanceInstallment(id) {
+    const inst = state.installments.find(i => i.id === id);
+    if (!inst) return;
+
+    if (inst.remainingMonths > 1) {
+      inst.remainingMonths -= 1;
+      if (inst.currentInstallment) {
+        inst.currentInstallment = Math.min(inst.totalInstallments || inst.remainingMonths, inst.currentInstallment + 1);
+      }
+      saveState();
+    } else {
+      // Completada la última cuota: eliminar deudas activas
+      state.installments = state.installments.filter(i => i.id !== id);
+      saveState();
+    }
   }
 
   function deleteInstallment(id) {
@@ -654,6 +678,7 @@ const FinanStore = (() => {
     markCardAsPaid,
     unmarkCardAsPaid,
     addInstallment,
+    advanceInstallment,
     deleteInstallment,
     resetAllData,
     loadSampleData

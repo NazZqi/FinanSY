@@ -488,23 +488,49 @@ const FinanJarra = (() => {
       return;
     }
 
-    container.innerHTML = installments.map(inst => `
-      <div class="expense-item-row installment-row">
-        <div class="expense-item-info">
-          <span>💳</span>
-          <div>
-            <span>${escapeHtml(inst.name)}</span>
-            <small class="text-subtle" style="display:block; font-size: 0.72rem;">${inst.remainingMonths ? `${inst.remainingMonths} meses restantes` : 'Cuota mensual'}</small>
+    container.innerHTML = installments.map(inst => {
+      const total = inst.totalInstallments || inst.remainingMonths || 1;
+      const current = inst.currentInstallment || Math.max(1, total - (inst.remainingMonths || 1) + 1);
+      const remaining = inst.remainingMonths !== undefined ? inst.remainingMonths : (total - current + 1);
+      const progressPercent = Math.min(100, Math.round((current / total) * 100));
+
+      return `
+        <div class="expense-item-row installment-row" style="flex-direction: column; align-items: stretch; gap: 0.4rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="expense-item-info">
+              <span>💳</span>
+              <div>
+                <strong style="font-size: 0.85rem; color: var(--text-main);">${escapeHtml(inst.name)}</strong>
+                <span class="pill-badge pill-info" style="font-size: 0.7rem; padding: 0.1rem 0.45rem; margin-left: 0.35rem;">Cuota ${current} de ${total}</span>
+              </div>
+            </div>
+            <div class="expense-item-right">
+              <span class="expense-item-price text-amber">${formatMoney(inst.monthlyAmount)} / mes</span>
+              <button class="btn-xs btn-outline" data-advance-installment-id="${inst.id}" title="Marcar esta cuota mensual como pagada y avanzar a la siguiente">
+                ✓ Pagar cuota
+              </button>
+              <button class="btn-del-expense" data-installment-id="${inst.id}" title="Eliminar / Finalizar deuda">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div class="progress-bar-bg" style="height: 5px; flex: 1;">
+              <div class="progress-bar-fill fill-amber" style="width: ${progressPercent}%;"></div>
+            </div>
+            <small class="text-subtle" style="font-size: 0.7rem; white-space: nowrap;">${remaining === 1 ? '¡Última cuota restante!' : `${remaining} cuotas restantes`}</small>
           </div>
         </div>
-        <div class="expense-item-right">
-          <span class="expense-item-price text-amber">${formatMoney(inst.monthlyAmount)}</span>
-          <button class="btn-del-expense" data-installment-id="${inst.id}" title="Eliminar / Finalizar deuda">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+
+    container.querySelectorAll('[data-advance-installment-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-advance-installment-id');
+        FinanStore.advanceInstallment(id);
+        FinanApp.showToast('¡Cuota mensual registrada como pagada!', 'success');
+      });
+    });
 
     container.querySelectorAll('[data-installment-id]').forEach(btn => {
       btn.addEventListener('click', () => {

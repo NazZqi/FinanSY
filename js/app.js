@@ -175,6 +175,7 @@ const FinanApp = (() => {
 
     document.getElementById('btn-add-installment-modal')?.addEventListener('click', () => {
       document.getElementById('form-installment')?.reset();
+      populateCardDropdown('input-installment-card');
       openModal('modal-installment');
     });
 
@@ -239,6 +240,16 @@ const FinanApp = (() => {
     select.innerHTML = jars.map(j => {
       return `<option value="${j.id}" ${j.id === activeJarId ? 'selected' : ''}>${j.emoji || '🏺'} ${j.name} (Saldo: ${FinanStore.formatMoney(j.balance)})</option>`;
     }).join('');
+  }
+
+  function populateCardDropdown(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const cards = FinanStore.getState().cards || [];
+    let html = `<option value="">Sin tarjeta vinculada</option>`;
+    html += cards.map(c => `<option value="${c.id}">💳 ${c.alias} (Cupo disp: ${FinanStore.formatMoney(Math.max(0, c.limit - c.used))})</option>`).join('');
+    select.innerHTML = html;
   }
 
   function openCustomJarModal() {
@@ -596,11 +607,21 @@ const FinanApp = (() => {
       e.preventDefault();
       const name = document.getElementById('input-installment-name').value;
       const monthlyAmount = Number(document.getElementById('input-installment-amount').value) || 0;
-      const remainingMonths = Number(document.getElementById('input-installment-months').value) || 1;
+      const totalInstallments = Number(document.getElementById('input-installment-total').value) || 1;
+      const currentInstallment = Number(document.getElementById('input-installment-current').value) || 1;
+      const cardId = document.getElementById('input-installment-card')?.value || null;
+      const remainingMonths = Math.max(1, totalInstallments - currentInstallment + 1);
 
-      FinanStore.addInstallment({ name, monthlyAmount, remainingMonths });
+      FinanStore.addInstallment({ 
+        name, 
+        monthlyAmount, 
+        totalInstallments, 
+        currentInstallment, 
+        remainingMonths, 
+        cardId 
+      });
       closeModal('modal-installment');
-      showToast(`Compromiso de cuota "${name}" por ${FinanStore.formatMoney(monthlyAmount)}/mes registrado`, 'success');
+      showToast(`Compra "${name}" registrada en cuota ${currentInstallment} de ${totalInstallments}`, 'success');
     });
 
     // Form Crear Jarra Personalizada
