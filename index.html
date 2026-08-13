@@ -1268,6 +1268,7 @@
             <span class="step-dot" data-step-dot="2"></span>
             <span class="step-dot" data-step-dot="3"></span>
             <span class="step-dot" data-step-dot="4"></span>
+            <span class="step-dot" data-step-dot="5"></span>
           </div>
           <button class="btn-modal-close" data-close="modal-onboarding">&times;</button>
         </div>
@@ -1316,7 +1317,7 @@
                 <span class="feat-icon">📊</span>
                 <div>
                   <strong>Distribución de tu presupuesto</strong>
-                  <p>Monitorea cuánto destinas a gastos fijos, cuotas y ahorro mensual recomendado (20%).</p>
+                  <p>Monitorea cuánto destinas a gastos fijos, cuotas y ahorro mensual recomendado.</p>
                 </div>
               </div>
             </div>
@@ -1346,11 +1347,74 @@
             </div>
           </div>
 
-          <!-- Slide 4: Configuración Inicial Rápida -->
+          <!-- Slide 4: Explicación y Selección de Esquemas Financieros -->
           <div class="onboarding-slide" data-onboarding-step="4">
+            <div class="slide-badge-hero">🧭 Estrategia & Esquemas</div>
+            <h2>Elige tu Esquema Financiero</h2>
+            <p class="slide-subtitle">¿Cómo deseas organizar tu presupuesto y metas de ahorro? Podrás cambiarlo cuando quieras.</p>
+            
+            <div class="onboarding-schemes-deck">
+              <!-- Opción 1: Libertad Financiera -->
+              <label class="onboarding-scheme-card active" data-scheme-card="libertad_financiera">
+                <input type="radio" name="onboarding-scheme" value="libertad_financiera" checked>
+                <div class="scheme-card-body">
+                  <div class="scheme-card-header-row">
+                    <span class="scheme-title">🌟 Libertad Financiera (F.I.R.E.)</span>
+                    <span class="scheme-badge-pill">Meta Patrimonial</span>
+                  </div>
+                  <p class="scheme-summary">Enfoque para generar rentas pasivas, acumular 200 sueldos y lograr independencia.</p>
+                  <div class="scheme-bullet-pills">
+                    <span class="scheme-mini-pill">🚀 Invertido: Sueldo × 200</span>
+                    <span class="scheme-mini-pill">🛡️ Emergencia: Sueldo × 4</span>
+                    <span class="scheme-mini-pill">💎 Ahorro: 10%/mes</span>
+                    <span class="scheme-mini-pill">✨ Gustos: 20%</span>
+                    <span class="scheme-mini-pill">🏠 Fijos: 70% máx</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Opción 2: Esquema Común -->
+              <label class="onboarding-scheme-card" data-scheme-card="comun">
+                <input type="radio" name="onboarding-scheme" value="comun">
+                <div class="scheme-card-body">
+                  <div class="scheme-card-header-row">
+                    <span class="scheme-title">🔷 Esquema Común (50 / 30 / 20)</span>
+                    <span class="scheme-badge-pill">Equilibrio Clásico</span>
+                  </div>
+                  <p class="scheme-summary">Estructura tradicional para mantener gastos bajo control y ahorro constante del 20%.</p>
+                  <div class="scheme-bullet-pills">
+                    <span class="scheme-mini-pill">🏠 Fijos: 50%</span>
+                    <span class="scheme-mini-pill">🏖️ Gustos: 30%</span>
+                    <span class="scheme-mini-pill">🪙 Ahorro e Inversión: 20%</span>
+                    <span class="scheme-mini-pill">🛡️ Emergencia: 3 meses</span>
+                  </div>
+                </div>
+              </label>
+
+              <!-- Opción 3: Personalizado -->
+              <label class="onboarding-scheme-card" data-scheme-card="personalizado">
+                <input type="radio" name="onboarding-scheme" value="personalizado">
+                <div class="scheme-card-body">
+                  <div class="scheme-card-header-row">
+                    <span class="scheme-title">⚙️ Esquema Personalizado</span>
+                    <span class="scheme-badge-pill">100% Flexible</span>
+                  </div>
+                  <p class="scheme-summary">Define tus propios porcentajes y crea libremente las jarras que tú decidas.</p>
+                  <div class="scheme-bullet-pills">
+                    <span class="scheme-mini-pill">🎯 Porcentajes configurables</span>
+                    <span class="scheme-mini-pill">🏺 Jarras libres ilimitadas</span>
+                    <span class="scheme-mini-pill">🛡️ Fondo configurable</span>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Slide 5: Configuración Inicial de Ingresos y Calibración -->
+          <div class="onboarding-slide" data-onboarding-step="5">
             <div class="slide-badge-hero">🚀 ¡Comencemos!</div>
-            <h2>Configura tus Ingresos</h2>
-            <p class="slide-subtitle">Ingresa tu ingreso mensual neto aproximado para calibrar tus capacidades de compra y ahorro.</p>
+            <h2>Configura tus Ingresos y Calibra tu Plan</h2>
+            <p class="slide-subtitle">Ingresa tu ingreso mensual neto aproximado para calcular automáticamente las metas de tu esquema.</p>
             
             <div class="onboarding-quick-form">
               <label for="onboarding-income-input">Ingreso Mensual Estimado ($ CLP):</label>
@@ -1358,7 +1422,32 @@
                 <span class="input-icon">$</span>
                 <input type="number" id="onboarding-income-input" min="0" step="10000" placeholder="Ej: 1000000" value="1000000">
               </div>
-              <small class="text-muted">Podrás modificar este valor en cualquier momento.</small>
+
+              <!-- Vista Previa Dinámica de Metas según el Esquema Elegido -->
+              <div class="onboarding-preview-container" id="onboarding-scheme-preview-box">
+                <!-- Se llena dinámicamente con las fórmulas calculadas en base al ingreso -->
+              </div>
+
+              <!-- Campos opcionales si eligió Personalizado -->
+              <div id="onboarding-custom-fields" style="display: none; margin-top: 0.75rem;">
+                <label style="font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">Ajusta tus Porcentajes Personalizados:</label>
+                <div class="input-grid" style="grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                  <div class="form-field">
+                    <label for="onboarding-custom-fixed" style="font-size: 0.75rem;">% Fijos</label>
+                    <input type="number" id="onboarding-custom-fixed" min="0" max="100" value="50" style="padding: 0.4rem;">
+                  </div>
+                  <div class="form-field">
+                    <label for="onboarding-custom-free" style="font-size: 0.75rem;">% Libres</label>
+                    <input type="number" id="onboarding-custom-free" min="0" max="100" value="30" style="padding: 0.4rem;">
+                  </div>
+                  <div class="form-field">
+                    <label for="onboarding-custom-savings" style="font-size: 0.75rem;">% Ahorro</label>
+                    <input type="number" id="onboarding-custom-savings" min="0" max="100" value="20" style="padding: 0.4rem;">
+                  </div>
+                </div>
+              </div>
+
+              <small class="text-muted">Podrás modificar tu sueldo o tu esquema en cualquier momento desde el menú principal.</small>
             </div>
           </div>
 

@@ -7,7 +7,7 @@
 const FinanApp = (() => {
   let deferredInstallPrompt = null;
   let currentOnboardingStep = 1;
-  const TOTAL_ONBOARDING_STEPS = 4;
+  const TOTAL_ONBOARDING_STEPS = 5;
 
   function init() {
     setupTabNavigation();
@@ -295,6 +295,23 @@ const FinanApp = (() => {
       });
     }
 
+    // Manejar selección de tarjetas de esquema en el paso 4
+    document.querySelectorAll('.onboarding-scheme-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.onboarding-scheme-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        updateOnboardingPreview();
+      });
+    });
+
+    // Escuchar cambios en el input de sueldo y en los porcentajes customizados
+    document.getElementById('onboarding-income-input')?.addEventListener('input', updateOnboardingPreview);
+    document.getElementById('onboarding-custom-fixed')?.addEventListener('input', updateOnboardingPreview);
+    document.getElementById('onboarding-custom-free')?.addEventListener('input', updateOnboardingPreview);
+    document.getElementById('onboarding-custom-savings')?.addEventListener('input', updateOnboardingPreview);
+
     if (btnFinish) {
       btnFinish.addEventListener('click', () => {
         const incomeInput = document.getElementById('onboarding-income-input');
@@ -302,15 +319,131 @@ const FinanApp = (() => {
         if (initialIncome > 0) {
           FinanStore.updateIncome(initialIncome);
         }
+
+        const selectedSchemeRadio = document.querySelector('input[name="onboarding-scheme"]:checked');
+        const selectedScheme = selectedSchemeRadio ? selectedSchemeRadio.value : 'libertad_financiera';
+
+        if (selectedScheme === 'personalizado') {
+          const fixedPercent = Number(document.getElementById('onboarding-custom-fixed')?.value) || 50;
+          const freePercent = Number(document.getElementById('onboarding-custom-free')?.value) || 30;
+          const savingsPercent = Number(document.getElementById('onboarding-custom-savings')?.value) || 20;
+          FinanStore.updateCustomSchemeSettings({ fixedPercent, freePercent, savingsPercent });
+        }
+
+        FinanStore.setActiveScheme(selectedScheme);
         FinanStore.setOnboardingCompleted(true);
         closeModal('modal-onboarding');
-        showToast('¡Bienvenido a FinanSY! Tu espacio está listo para ingresar tus datos.', 'success');
+
+        let schemeName = 'Libertad Financiera';
+        if (selectedScheme === 'comun') schemeName = 'Esquema Común (50/30/20)';
+        if (selectedScheme === 'personalizado') schemeName = 'Esquema Personalizado';
+
+        showToast(`¡Configuración lista! Has iniciado con el esquema "${schemeName}".`, 'success');
       });
+    }
+  }
+
+  function updateOnboardingPreview() {
+    const incomeInput = document.getElementById('onboarding-income-input');
+    const income = Number(incomeInput?.value) || 0;
+    const selectedSchemeRadio = document.querySelector('input[name="onboarding-scheme"]:checked');
+    const scheme = selectedSchemeRadio ? selectedSchemeRadio.value : 'libertad_financiera';
+    const previewContainer = document.getElementById('onboarding-scheme-preview-box');
+    const customFields = document.getElementById('onboarding-custom-fields');
+
+    if (customFields) {
+      customFields.style.display = scheme === 'personalizado' ? 'block' : 'none';
+    }
+
+    if (!previewContainer) return;
+
+    const { formatMoney } = FinanStore;
+
+    if (scheme === 'libertad_financiera') {
+      previewContainer.innerHTML = `
+        <div class="onboarding-preview-header">
+          <span>🌟 Metas Calculadas: Libertad Financiera</span>
+          <span>Sueldo: ${formatMoney(income)}</span>
+        </div>
+        <div class="onboarding-preview-grid">
+          <div class="preview-stat-item">
+            <span>🚀 Inversión (Sueldo × 200)</span>
+            <strong>${formatMoney(income * 200)}</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🛡️ Emergencia (Sueldo × 4)</span>
+            <strong>${formatMoney(income * 4)}</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>💎 Ahorro Mensual (10%)</span>
+            <strong>${formatMoney(income * 0.10)} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🏠 Gastos Fijos Máximos (70%)</span>
+            <strong style="color: #F43F5E;">Tope: ${formatMoney(income * 0.70)}</strong>
+          </div>
+        </div>
+      `;
+    } else if (scheme === 'comun') {
+      previewContainer.innerHTML = `
+        <div class="onboarding-preview-header">
+          <span>🔷 Distribución: Regla 50 / 30 / 20</span>
+          <span>Sueldo: ${formatMoney(income)}</span>
+        </div>
+        <div class="onboarding-preview-grid">
+          <div class="preview-stat-item">
+            <span>🏠 Gastos Fijos (50%)</span>
+            <strong>${formatMoney(income * 0.50)} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🏖️ Gustos / Variables (30%)</span>
+            <strong>${formatMoney(income * 0.30)} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🪙 Ahorro e Inversión (20%)</span>
+            <strong>${formatMoney(income * 0.20)} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🛡️ Fondo Emergencia (3 meses)</span>
+            <strong>${formatMoney(income * 1.50)}</strong>
+          </div>
+        </div>
+      `;
+    } else {
+      const fixedP = Number(document.getElementById('onboarding-custom-fixed')?.value) || 50;
+      const freeP = Number(document.getElementById('onboarding-custom-free')?.value) || 30;
+      const savP = Number(document.getElementById('onboarding-custom-savings')?.value) || 20;
+
+      previewContainer.innerHTML = `
+        <div class="onboarding-preview-header">
+          <span>⚙️ Tu Plan Personalizado</span>
+          <span>Sueldo: ${formatMoney(income)}</span>
+        </div>
+        <div class="onboarding-preview-grid">
+          <div class="preview-stat-item">
+            <span>🏠 Gastos Fijos (${fixedP}%)</span>
+            <strong>${formatMoney(income * (fixedP / 100))} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>✨ Margen Libre (${freeP}%)</span>
+            <strong>${formatMoney(income * (freeP / 100))} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>💰 Ahorro Mensual (${savP}%)</span>
+            <strong>${formatMoney(income * (savP / 100))} / mes</strong>
+          </div>
+          <div class="preview-stat-item">
+            <span>🛡️ Fondo Emergencia (6 meses)</span>
+            <strong>${formatMoney(income * 6)}</strong>
+          </div>
+        </div>
+      `;
     }
   }
 
   function openOnboarding() {
     goToOnboardingStep(1);
+    updateOnboardingPreview();
     openModal('modal-onboarding');
   }
 
@@ -339,6 +472,7 @@ const FinanApp = (() => {
       if (stepNumber === TOTAL_ONBOARDING_STEPS) {
         btnNext.style.display = 'none';
         btnFinish.style.display = 'inline-flex';
+        updateOnboardingPreview();
       } else {
         btnNext.style.display = 'inline-flex';
         btnFinish.style.display = 'none';
