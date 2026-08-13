@@ -1270,7 +1270,7 @@
             <span class="step-dot" data-step-dot="4"></span>
             <span class="step-dot" data-step-dot="5"></span>
           </div>
-          <button class="btn-modal-close" data-close="modal-onboarding">&times;</button>
+          <button type="button" class="btn-onboarding-skip" id="btn-onboarding-skip-top" title="Omitir tutorial">Omitir</button>
         </div>
 
         <div class="onboarding-slides-container">
@@ -1454,7 +1454,10 @@
         </div>
 
         <div class="onboarding-footer">
-          <button type="button" class="btn-ghost" id="btn-onboarding-prev" style="visibility: hidden;">Anterior</button>
+          <div class="onboarding-footer-left">
+            <button type="button" class="btn-ghost" id="btn-onboarding-prev" style="visibility: hidden;">Anterior</button>
+            <button type="button" class="btn-link-skip" id="btn-onboarding-skip-bottom">Omitir tutorial</button>
+          </div>
           <div class="onboarding-nav-actions">
             <button type="button" class="btn-primary" id="btn-onboarding-next">Siguiente</button>
             <button type="button" class="btn-primary" id="btn-onboarding-finish" style="display: none;">¡Comenzar ahora!</button>

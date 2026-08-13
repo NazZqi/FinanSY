@@ -141,19 +141,21 @@ const FinanApp = (() => {
       });
     });
 
-    // Close on overlay backdrop click
+    // Close on overlay backdrop click (ignorar en onboarding para evitar salidas accidentales)
     document.querySelectorAll('.modal-overlay').forEach(modal => {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
+          if (modal.id === 'modal-onboarding') return;
           closeModal(modal.id);
         }
       });
     });
 
-    // Close on Escape key
+    // Close on Escape key (ignorar en onboarding)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(m => {
+          if (m.id === 'modal-onboarding') return;
           if (m.style.display !== 'none') closeModal(m.id);
         });
       }
@@ -311,6 +313,16 @@ const FinanApp = (() => {
     document.getElementById('onboarding-custom-fixed')?.addEventListener('input', updateOnboardingPreview);
     document.getElementById('onboarding-custom-free')?.addEventListener('input', updateOnboardingPreview);
     document.getElementById('onboarding-custom-savings')?.addEventListener('input', updateOnboardingPreview);
+
+    // Omitir Tutorial
+    const handleSkipTutorial = () => {
+      FinanStore.setOnboardingCompleted(true);
+      closeModal('modal-onboarding');
+      showToast('Tutorial omitido. Puedes volver a abrirlo en cualquier momento desde el botón "Tutorial" del encabezado.', 'info');
+    };
+
+    document.getElementById('btn-onboarding-skip-top')?.addEventListener('click', handleSkipTutorial);
+    document.getElementById('btn-onboarding-skip-bottom')?.addEventListener('click', handleSkipTutorial);
 
     if (btnFinish) {
       btnFinish.addEventListener('click', () => {
