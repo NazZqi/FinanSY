@@ -103,6 +103,7 @@ const FinanStore = (() => {
   const defaultState = {
     hasCompletedOnboarding: false,
     monthlyIncome: 0,
+    monthlySavingsFromIncome: 0, // Dinero ahorrado este mes descontado activamente del sueldo disponible
     savingsBalance: 0,
     savingsTarget: 1000000,
     savingsRulePercent: 20,
@@ -130,6 +131,19 @@ const FinanStore = (() => {
       if (saved) {
         const parsed = JSON.parse(saved);
         const merged = { ...defaultState, ...parsed };
+
+        if (merged.monthlySavingsFromIncome === undefined) {
+          merged.monthlySavingsFromIncome = 0;
+        }
+
+        // Sanitizar metas para que NUNCA superen lo propuesto
+        if (Array.isArray(merged.goals)) {
+          merged.goals = merged.goals.map(g => {
+            const tgt = Math.max(1, Number(g.target) || 100000);
+            const cur = Math.max(0, Math.min(tgt, Number(g.current) || 0));
+            return { ...g, target: tgt, current: cur };
+          });
+        }
 
         // Depurar jarras eliminadas de versiones anteriores
         const legacyJarIds = ['jar_libertad_emergencia', 'jar_libertad_invertido', 'jar_comun_emergencia', 'jar_custom_emergencia'];
@@ -284,7 +298,7 @@ const FinanStore = (() => {
     return jar;
   }
 
-  function depositToJar(jarId, amount) {
+  function depositToJar(jarId, amount, deductFromSalary = true) {
     const num = Math.max(0, Number(amount) || 0);
     if (num <= 0) return;
 
@@ -299,6 +313,9 @@ const FinanStore = (() => {
     }
 
     if (targetJar) {
+      if (deductFromSalary) {
+        state.monthlySavingsFromIncome = (Number(state.monthlySavingsFromIncome) || 0) + num;
+      }
       saveState();
     }
   }
@@ -318,8 +335,16 @@ const FinanStore = (() => {
     }
 
     if (targetJar) {
+      if (state.monthlySavingsFromIncome && state.monthlySavingsFromIncome > 0) {
+        state.monthlySavingsFromIncome = Math.max(0, state.monthlySavingsFromIncome - num);
+      }
       saveState();
     }
+  }
+
+  function resetMonthlySavingsFromIncome() {
+    state.monthlySavingsFromIncome = 0;
+    saveState();
   }
 
   function updateJar(jarId, updates) {
@@ -431,10 +456,10 @@ const FinanStore = (() => {
     saveState();
   }
 
-  function depositSavings(amount) {
+  function depositSavings(amount, deductFromSalary = true) {
     const jar = getActiveJar();
     if (jar) {
-      depositToJar(jar.id, amount);
+      depositToJar(jar.id, amount, deductFromSalary);
     }
   }
 
@@ -635,6 +660,7 @@ const FinanStore = (() => {
     calculateJarTarget,
     depositToJar,
     withdrawFromJar,
+    resetMonthlySavingsFromIncome,
     updateJar,
     addCustomJar,
     deleteCustomJar,

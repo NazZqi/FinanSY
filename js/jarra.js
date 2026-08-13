@@ -92,7 +92,8 @@ const FinanJarra = (() => {
       suggestedSavings = Math.round(income * (rulePercent / 100));
     }
 
-    const monthlyCapacity = Math.max(0, income - totalFixed - totalInstallments);
+    const monthlySaved = Number(state.monthlySavingsFromIncome) || 0;
+    const monthlyCapacity = Math.max(0, income - totalFixed - totalInstallments - monthlySaved);
     const freeDiscretionary = Math.max(0, monthlyCapacity - suggestedSavings);
 
     // Footer de la jarra

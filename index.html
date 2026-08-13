@@ -957,11 +957,12 @@
           <div class="input-grid">
             <div class="form-field">
               <label for="input-goal-target">Monto Objetivo ($)</label>
-              <input type="number" id="input-goal-target" min="0" step="any" placeholder="Ej: 1500000" required>
+              <input type="number" id="input-goal-target" min="1" step="any" placeholder="Ej: 1500000" required>
             </div>
             <div class="form-field">
               <label for="input-goal-current">Monto Inicial Ahorrado ($)</label>
               <input type="number" id="input-goal-current" min="0" step="any" value="0">
+              <small class="text-subtle" style="font-size: 0.73rem; margin-top: 0.2rem; display: block;">* No puede superar el objetivo propuesto.</small>
             </div>
           </div>
           <div class="form-field">
@@ -1085,7 +1086,10 @@
     <div class="modal-overlay" id="modal-deposit" style="display: none;">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>Abonar Fondos a tu Jarra</h3>
+          <div>
+            <h3>Abonar Fondos a tu Jarra</h3>
+            <p class="text-subtle" style="font-size: 0.8rem;">Elige si este abono descuenta de tu disponible mensual o es capital extra.</p>
+          </div>
           <button class="btn-modal-close" data-close="modal-deposit">&times;</button>
         </div>
         <form id="form-deposit" class="modal-body">
@@ -1095,13 +1099,43 @@
               <!-- Se llena dinámicamente con las jarras del esquema activo -->
             </select>
           </div>
+
           <div class="form-field">
-            <label for="input-deposit-amount">Monto a depositar ($ CLP)</label>
+            <label for="input-deposit-amount">Monto a Depositar ($ CLP)</label>
             <div class="input-with-icon">
               <span class="input-icon">$</span>
-              <input type="number" id="input-deposit-amount" min="0" step="any" placeholder="Ej: 50000" required>
+              <input type="number" id="input-deposit-amount" min="1" step="any" placeholder="Ej: 50000" required>
             </div>
           </div>
+
+          <!-- Selector de Origen de Abono: Descontar del Sueldo vs Sin Descontar -->
+          <div class="form-field">
+            <label>Origen del Dinero a Abonar:</label>
+            <div class="deposit-source-deck">
+              <label class="deposit-source-card active" data-deposit-source-type="yes">
+                <input type="radio" name="deposit-deduct-salary" value="yes" checked>
+                <div class="deposit-source-content">
+                  <div class="deposit-source-header">
+                    <span class="deposit-source-title">💼 Descontar de mi Sueldo de este Mes</span>
+                    <span class="pill-badge pill-info">Flujo Mensual</span>
+                  </div>
+                  <p class="deposit-source-desc">Resta de tu dinero disponible del mes actual para control estricto de tu presupuesto.</p>
+                </div>
+              </label>
+
+              <label class="deposit-source-card" data-deposit-source-type="no">
+                <input type="radio" name="deposit-deduct-salary" value="no">
+                <div class="deposit-source-content">
+                  <div class="deposit-source-header">
+                    <span class="deposit-source-title">✨ Aporte Externo / Sin Descontar del Sueldo</span>
+                    <span class="pill-badge pill-success">Capital Extra</span>
+                  </div>
+                  <p class="deposit-source-desc">Aguinaldo, ahorro previo o ingreso extra. Se suma a tu jarra sin reducir tu disponible mensual.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
           <div class="modal-footer">
             <button type="button" class="btn-ghost" data-close="modal-deposit">Cancelar</button>
             <button type="submit" class="btn-primary">¡Abonar Dinero!</button>

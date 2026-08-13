@@ -3238,4 +3238,65 @@ input:focus,
   font-weight: 700;
 }
 
+/* ==========================================================================
+   DEPOSIT SOURCE SELECTOR (DESCONTAR DEL SUELDO VS APORTE EXTERNO)
+   ========================================================================== */
+.deposit-source-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.4rem;
+}
+
+.deposit-source-card {
+  display: block;
+  position: relative;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.deposit-source-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.deposit-source-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.deposit-source-card.active {
+  background: rgba(16, 185, 129, 0.07);
+  border-color: #10B981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.12);
+}
+
+.deposit-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.deposit-source-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.deposit-source-desc {
+  font-size: 0.77rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin: 0;
+}
+
+
 

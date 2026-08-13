@@ -63,9 +63,9 @@ const FinanGoals = (() => {
 
           <div class="goal-actions">
             ${!isCompleted ? `
-              <button class="btn-xs btn-outline" data-deposit-goal="${goal.id}" data-amount="20000" title="Abonar $20.000">+ $20k</button>
-              <button class="btn-xs btn-outline" data-deposit-goal="${goal.id}" data-amount="50000" title="Abonar $50.000">+ $50k</button>
-              ${remaining <= 100000 ? `<button class="btn-xs btn-primary" data-deposit-goal="${goal.id}" data-amount="${remaining}" title="Completar el 100% de la meta">⚡ Completar</button>` : ''}
+              ${remaining >= 20000 ? `<button class="btn-xs btn-outline" data-deposit-goal="${goal.id}" data-amount="20000" title="Abonar $20.000">+ $20k</button>` : ''}
+              ${remaining >= 50000 ? `<button class="btn-xs btn-outline" data-deposit-goal="${goal.id}" data-amount="50000" title="Abonar $50.000">+ $50k</button>` : ''}
+              <button class="btn-xs btn-primary" data-deposit-goal="${goal.id}" data-amount="${remaining}" title="Completar el 100% de la meta">⚡ Completar (${formatMoney(remaining)})</button>
               <button class="btn-xs btn-ghost" data-custom-deposit-goal="${goal.id}" title="Ingresar monto personalizado">✏️ Otro</button>
             ` : `
               <span class="badge-completed-meta">🏆 Objetivo 100% Alcanzado</span>
@@ -90,7 +90,7 @@ const FinanGoals = (() => {
         const depositAmount = Math.min(remaining, amount);
         
         if (depositAmount <= 0) {
-          FinanApp.showToast('¡Esta meta ya está completada!', 'info');
+          FinanApp.showToast('¡Esta meta ya alcanzó el 100% de su objetivo propuesto!', 'info');
           return;
         }
 
@@ -99,7 +99,7 @@ const FinanGoals = (() => {
       });
     });
 
-    // Abono personalizado
+    // Abono personalizado con límite estricto al target
     gridContainer.querySelectorAll('[data-custom-deposit-goal]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-custom-deposit-goal');
@@ -107,13 +107,22 @@ const FinanGoals = (() => {
         if (!goal) return;
 
         const remaining = Math.max(0, goal.target - goal.current);
-        const valStr = prompt(`Ingresa el monto a abonar a "${goal.name}" (Faltan ${formatMoney(remaining)}):`, remaining > 0 ? remaining : '');
+        if (remaining <= 0) {
+          FinanApp.showToast('Esta meta ya está 100% completada.', 'info');
+          return;
+        }
+
+        const valStr = prompt(`Ingresa el monto a abonar a "${goal.name}" (Máximo permitido: ${formatMoney(remaining)}):`, remaining);
         if (valStr !== null && valStr.trim() !== '') {
           const rawNum = Number(valStr.replace(/[^0-9]/g, '')) || 0;
           if (rawNum > 0) {
             const finalDeposit = Math.min(remaining, rawNum);
             FinanStore.updateGoalAmount(id, finalDeposit);
-            FinanApp.showToast(`¡Abonaste ${formatMoney(finalDeposit)} a "${goal.name}"!`, 'success');
+            if (rawNum > remaining) {
+              FinanApp.showToast(`Abono ajustado a ${formatMoney(finalDeposit)} para no superar el 100% de la meta.`, 'success');
+            } else {
+              FinanApp.showToast(`¡Abonaste ${formatMoney(finalDeposit)} a "${goal.name}"!`, 'success');
+            }
           }
         }
       });

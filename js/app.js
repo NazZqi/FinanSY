@@ -47,7 +47,8 @@ const FinanApp = (() => {
     const totalFixed = state.fixedExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
     const totalInst = state.installments.reduce((acc, i) => acc + (i.monthlyAmount || 0), 0);
     const totalCommitted = totalFixed + totalInst;
-    const available = Math.max(0, income - totalCommitted);
+    const monthlySaved = Number(state.monthlySavingsFromIncome) || 0;
+    const available = Math.max(0, income - totalCommitted - monthlySaved);
     const commitRate = income > 0 ? Math.min(100, Math.round((totalCommitted / income) * 100)) : 0;
     const totalSavings = FinanStore.getTotalSavings();
 
@@ -63,7 +64,13 @@ const FinanApp = (() => {
     if (availEl) availEl.textContent = formatMoney(available);
     if (savEl) savEl.textContent = formatMoney(totalSavings);
     if (commitRateEl) commitRateEl.textContent = `${commitRate}% del ingreso comprometido`;
-    if (freeRateEl) freeRateEl.textContent = `${100 - commitRate}% libre para metas/ahorro`;
+    if (freeRateEl) {
+      if (monthlySaved > 0) {
+        freeRateEl.textContent = `Libre restante (-${formatMoney(monthlySaved)} ahorrado)`;
+      } else {
+        freeRateEl.textContent = `${100 - commitRate}% libre para metas/ahorro`;
+      }
+    }
 
     // 2. Renderizar Vistas
     FinanDashboard.render(state);
@@ -529,18 +536,48 @@ const FinanApp = (() => {
       showToast(`Gasto fijo "${name}" registrado`, 'success');
     });
 
-    // Form Meta
+    // Form Meta & Validación en tiempo real (Las metas no pueden superar el objetivo)
+    const goalTargetInput = document.getElementById('input-goal-target');
+    const goalCurrentInput = document.getElementById('input-goal-current');
+
+    const clampGoalCurrent = () => {
+      const tgt = Number(goalTargetInput?.value) || 0;
+      const cur = Number(goalCurrentInput?.value) || 0;
+      if (tgt > 0 && cur > tgt && goalCurrentInput) {
+        goalCurrentInput.value = tgt;
+      }
+    };
+
+    if (goalTargetInput) goalTargetInput.addEventListener('input', clampGoalCurrent);
+    if (goalCurrentInput) goalCurrentInput.addEventListener('input', clampGoalCurrent);
+
     document.getElementById('form-goal')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const name = document.getElementById('input-goal-name').value;
-      const target = Number(document.getElementById('input-goal-target').value) || 0;
-      const current = Number(document.getElementById('input-goal-current').value) || 0;
+      const target = Math.max(1, Number(document.getElementById('input-goal-target').value) || 100000);
+      let current = Math.max(0, Number(document.getElementById('input-goal-current').value) || 0);
+
+      if (current > target) {
+        current = target;
+        showToast(`Monto inicial ajustado a ${FinanStore.formatMoney(target)} (no puede superar el objetivo propuesto).`, 'info');
+      }
+
       const emojiInput = document.querySelector('input[name="goal-emoji"]:checked');
       const emoji = emojiInput ? emojiInput.value : '🎯';
 
       FinanStore.addGoal({ name, target, current, emoji });
       closeModal('modal-goal');
       showToast(`Meta "${name}" creada con éxito`, 'success');
+    });
+
+    // Selector interactivo de origen del abono a jarras
+    document.querySelectorAll('.deposit-source-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        document.querySelectorAll('.deposit-source-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+      });
     });
 
     // Selector interactivo de tipo de tarjeta (Oculta campos de cupo e intereses para débito)
@@ -592,16 +629,20 @@ const FinanApp = (() => {
       showToast(isDebit ? `Tarjeta de Débito "${alias}" agregada con éxito` : `Tarjeta "${alias}" agregada con vencimiento día ${paymentDueDay}`, 'success');
     });
 
-    // Form Abonar a Jarra
+    // Form Abonar a Jarra con opción de descontar del sueldo o aporte externo
     document.getElementById('form-deposit')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const jarSelect = document.getElementById('select-deposit-jar');
       const jarId = jarSelect ? jarSelect.value : FinanStore.getState().activeJarId;
       const amount = Number(document.getElementById('input-deposit-amount').value) || 0;
-      
-      FinanStore.depositToJar(jarId, amount);
+      const deductRadio = document.querySelector('input[name="deposit-deduct-salary"]:checked');
+      const deductFromSalary = deductRadio ? deductRadio.value === 'yes' : true;
+
+      FinanStore.depositToJar(jarId, amount, deductFromSalary);
       closeModal('modal-deposit');
-      showToast(`¡Abonaste ${FinanStore.formatMoney(amount)} a tu jarra seleccionada!`, 'success');
+      
+      const modeText = deductFromSalary ? '(descontado de tu disponible este mes)' : '(aporte externo / sin descontar del sueldo)';
+      showToast(`¡Abonaste ${FinanStore.formatMoney(amount)} a tu jarra ${modeText}!`, 'success');
     });
 
     // Form Retirar de Jarra

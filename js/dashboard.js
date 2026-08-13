@@ -37,7 +37,8 @@ const FinanDashboard = (() => {
       suggestedSavings = Math.round(income * (rulePercent / 100));
     }
 
-    const available = Math.max(0, income - totalCommitted);
+    const monthlySaved = Number(state.monthlySavingsFromIncome) || 0;
+    const available = Math.max(0, income - totalCommitted - monthlySaved);
     const freeDiscretionary = Math.max(0, available - suggestedSavings);
 
     // Patrimonio total (Jarras + Metas)
