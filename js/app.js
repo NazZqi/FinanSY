@@ -133,7 +133,7 @@ const FinanApp = (() => {
 
   /* ---------------- MODALS MANAGEMENT ---------------- */
   function setupModals() {
-    // Close button events
+    // Cerrar únicamente al presionar botones explícitos ([data-close], Cancelar, Cerrar o ×)
     document.querySelectorAll('[data-close]').forEach(btn => {
       btn.addEventListener('click', () => {
         const modalId = btn.getAttribute('data-close');
@@ -141,25 +141,8 @@ const FinanApp = (() => {
       });
     });
 
-    // Close on overlay backdrop click (ignorar en onboarding para evitar salidas accidentales)
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          if (modal.id === 'modal-onboarding') return;
-          closeModal(modal.id);
-        }
-      });
-    });
-
-    // Close on Escape key (ignorar en onboarding)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay').forEach(m => {
-          if (m.id === 'modal-onboarding') return;
-          if (m.style.display !== 'none') closeModal(m.id);
-        });
-      }
-    });
+    // Desactivado el cierre por clic exterior en el backdrop para todas las ventanas emergentes
+    // (previene pérdidas accidentales de datos al escribir en formularios)
 
     // Specific triggers
     document.getElementById('btn-edit-income')?.addEventListener('click', () => {
