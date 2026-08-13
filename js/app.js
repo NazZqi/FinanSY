@@ -19,8 +19,9 @@ const FinanApp = (() => {
     setupPaymentAlerts();
     setupOnboarding();
 
-    // Inicializar calculadora y demo sandbox
+    // Inicializar calculadora, scanner y demo sandbox
     FinanCalculator.init();
+    FinanReceiptScanner.init();
     FinanDemo.init();
 
     // Suscribirse a cambios en el Store para actualizar toda la UI
@@ -103,32 +104,49 @@ const FinanApp = (() => {
     }
   }
 
-  /* ---------------- DASHBOARD EVENTS ---------------- */
+  /* ---------------- DASHBOARD & SCHEME EVENTS ---------------- */
   function setupDashboardEvents() {
-    const btnLibertad = document.getElementById('btn-scheme-tab-libertad');
-    const btnComun = document.getElementById('btn-scheme-tab-comun');
-    const btnPersonalizado = document.getElementById('btn-scheme-tab-personalizado');
+    document.getElementById('btn-open-scheme-modal-dash')?.addEventListener('click', () => {
+      openChangeSchemeModal();
+    });
 
-    if (btnLibertad) {
-      btnLibertad.addEventListener('click', () => {
-        FinanStore.setActiveScheme('libertad_financiera');
-        showToast('Dashboard actualizado a Esquema Libertad Financiera', 'success');
-      });
-    }
+    document.getElementById('btn-open-scheme-modal-jar')?.addEventListener('click', () => {
+      openChangeSchemeModal();
+    });
 
-    if (btnComun) {
-      btnComun.addEventListener('click', () => {
-        FinanStore.setActiveScheme('comun');
-        showToast('Dashboard actualizado a Esquema Común (50/30/20)', 'info');
+    // Deliberate Scheme Selection Modal Setup
+    document.querySelectorAll('[data-change-scheme]').forEach(card => {
+      card.addEventListener('click', () => {
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        document.querySelectorAll('.scheme-option-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
       });
-    }
+    });
 
-    if (btnPersonalizado) {
-      btnPersonalizado.addEventListener('click', () => {
-        FinanStore.setActiveScheme('personalizado');
-        showToast('Dashboard actualizado a Esquema Personalizado', 'success');
-      });
-    }
+    document.getElementById('btn-confirm-apply-scheme')?.addEventListener('click', () => {
+      const selectedRadio = document.querySelector('input[name="select-active-scheme"]:checked');
+      const scheme = selectedRadio ? selectedRadio.value : 'libertad_financiera';
+      FinanStore.setActiveScheme(scheme);
+      closeModal('modal-change-scheme');
+
+      let name = 'Libertad Financiera';
+      if (scheme === 'comun') name = 'Esquema Común (50/30/20)';
+      else if (scheme === 'personalizado') name = 'Personalizado';
+
+      showToast(`Esquema financiero aplicado: ${name}`, 'success');
+    });
+  }
+
+  function openChangeSchemeModal() {
+    const currentScheme = FinanStore.getState().activeScheme || 'libertad_financiera';
+    document.querySelectorAll('.scheme-option-card').forEach(card => {
+      const radio = card.querySelector('input[type="radio"]');
+      const matches = radio && radio.value === currentScheme;
+      if (radio) radio.checked = matches;
+      card.classList.toggle('active', matches);
+    });
+    openModal('modal-change-scheme');
   }
 
   /* ---------------- MODALS MANAGEMENT ---------------- */
@@ -139,6 +157,11 @@ const FinanApp = (() => {
         const modalId = btn.getAttribute('data-close');
         closeModal(modalId);
       });
+    });
+
+    // Escanear Boleta en Encabezado
+    document.getElementById('btn-header-scan-receipt')?.addEventListener('click', () => {
+      FinanReceiptScanner.openScanner('expense');
     });
 
     // Desactivado el cierre por clic exterior en el backdrop para todas las ventanas emergentes
@@ -520,18 +543,39 @@ const FinanApp = (() => {
       showToast(`Meta "${name}" creada con éxito`, 'success');
     });
 
+    // Selector interactivo de tipo de tarjeta (Oculta campos de cupo e intereses para débito)
+    const cardTypeSelect = document.getElementById('input-card-type');
+    const toggleCardFields = () => {
+      const isDebit = cardTypeSelect?.value === 'debito';
+      const creditWrap = document.getElementById('credit-card-fields-wrap');
+      const debitNote = document.getElementById('debit-card-info-note');
+      const limitInput = document.getElementById('input-card-limit');
+      const dueDayInput = document.getElementById('input-card-due-day');
+
+      if (creditWrap) creditWrap.style.display = isDebit ? 'none' : 'block';
+      if (debitNote) debitNote.style.display = isDebit ? 'block' : 'none';
+      if (limitInput) limitInput.required = !isDebit;
+      if (dueDayInput) dueDayInput.required = !isDebit;
+    };
+
+    if (cardTypeSelect) {
+      cardTypeSelect.addEventListener('change', toggleCardFields);
+    }
+
     // Form Tarjeta
     document.getElementById('form-card')?.addEventListener('submit', (e) => {
       e.preventDefault();
       const alias = document.getElementById('input-card-alias').value;
       const type = document.getElementById('input-card-type').value;
       const color = document.getElementById('input-card-color').value;
-      const limit = Number(document.getElementById('input-card-limit').value) || 0;
-      const used = Number(document.getElementById('input-card-used').value) || 0;
-      const interestRate = Number(document.getElementById('input-card-interest').value) || 0;
-      const billingDay = Number(document.getElementById('input-card-billingDay')?.value || document.getElementById('input-card-billing-day')?.value) || 15;
-      const paymentDueDay = Number(document.getElementById('input-card-due-day').value) || 5;
-      const reminderDaysBefore = Number(document.getElementById('input-card-reminder-days').value) || 3;
+      const isDebit = type === 'debito';
+
+      const limit = isDebit ? 0 : (Number(document.getElementById('input-card-limit').value) || 0);
+      const used = isDebit ? 0 : (Number(document.getElementById('input-card-used').value) || 0);
+      const interestRate = isDebit ? 0 : (Number(document.getElementById('input-card-interest').value) || 0);
+      const billingDay = isDebit ? null : (Number(document.getElementById('input-card-billingDay')?.value || document.getElementById('input-card-billing-day')?.value) || 15);
+      const paymentDueDay = isDebit ? null : (Number(document.getElementById('input-card-due-day').value) || 5);
+      const reminderDaysBefore = isDebit ? null : (Number(document.getElementById('input-card-reminder-days').value) || 3);
 
       FinanStore.addCard({ 
         alias, 
@@ -545,7 +589,7 @@ const FinanApp = (() => {
         reminderDaysBefore 
       });
       closeModal('modal-card');
-      showToast(`Tarjeta "${alias}" agregada con vencimiento día ${paymentDueDay}`, 'success');
+      showToast(isDebit ? `Tarjeta de Débito "${alias}" agregada con éxito` : `Tarjeta "${alias}" agregada con vencimiento día ${paymentDueDay}`, 'success');
     });
 
     // Form Abonar a Jarra

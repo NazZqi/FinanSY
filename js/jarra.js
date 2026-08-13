@@ -145,31 +145,17 @@ const FinanJarra = (() => {
   }
 
   function renderSchemeSelector(activeScheme) {
-    const btnLibertad = document.getElementById('btn-jar-scheme-libertad');
-    const btnComun = document.getElementById('btn-jar-scheme-comun');
-    const btnPersonalizado = document.getElementById('btn-jar-scheme-personalizado');
-
-    if (btnLibertad) {
-      btnLibertad.classList.toggle('active', activeScheme === 'libertad_financiera');
-      btnLibertad.onclick = () => {
-        FinanStore.setActiveScheme('libertad_financiera');
-        FinanApp.showToast('Esquema cambiado a Libertad Financiera (F.I.R.E.)', 'success');
-      };
+    const schemeLabelEl = document.getElementById('jar-active-scheme-label');
+    if (schemeLabelEl) {
+      if (activeScheme === 'libertad_financiera') schemeLabelEl.textContent = '🌟 Libertad Financiera';
+      else if (activeScheme === 'comun') schemeLabelEl.textContent = '🔷 Esquema Común (50/30/20)';
+      else schemeLabelEl.textContent = '⚙️ Esquema Personalizado';
     }
 
-    if (btnComun) {
-      btnComun.classList.toggle('active', activeScheme === 'comun');
-      btnComun.onclick = () => {
-        FinanStore.setActiveScheme('comun');
-        FinanApp.showToast('Esquema cambiado a Regla Común (50/30/20)', 'info');
-      };
-    }
-
-    if (btnPersonalizado) {
-      btnPersonalizado.classList.toggle('active', activeScheme === 'personalizado');
-      btnPersonalizado.onclick = () => {
-        FinanStore.setActiveScheme('personalizado');
-        FinanApp.showToast('Esquema cambiado a Personalizado', 'success');
+    const btnOpenScheme = document.getElementById('btn-open-scheme-modal-jar');
+    if (btnOpenScheme) {
+      btnOpenScheme.onclick = () => {
+        FinanApp.openModal('modal-change-scheme');
       };
     }
   }
@@ -230,37 +216,22 @@ const FinanJarra = (() => {
 
       container.innerHTML = `
         <div class="scheme-guidelines-header">
-          <div>
-            <h4>🌟 Tipo de Ahorro: Libertad Financiera</h4>
-            <p class="text-subtle">Fórmulas calculadas en tiempo real según tu sueldo base.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h4>🌟 Tipo de Ahorro: Libertad Financiera</h4>
+              <p class="text-subtle">Fórmulas calculadas en tiempo real según tu sueldo base.</p>
+            </div>
+            <button class="btn-xs btn-outline" id="btn-guidelines-change-scheme" title="Abrir selector de esquema">⚙️ Cambiar Esquema</button>
           </div>
         </div>
 
         <div class="scheme-rules-grid">
-          <div class="scheme-rule-item">
-            <span class="rule-bullet">🚀</span>
+          <div class="scheme-rule-item ${isFixedOk ? '' : 'rule-alert'}">
+            <span class="rule-bullet">🏠</span>
             <div class="rule-detail">
-              <strong>Invertido (sueldo base * 200)</strong>
-              <div class="rule-calc-val">${formatMoney(income * 200)}</div>
-              <small class="text-subtle">Meta patrimonial para independencia y vivir de rentas.</small>
-            </div>
-          </div>
-
-          <div class="scheme-rule-item">
-            <span class="rule-bullet">💎</span>
-            <div class="rule-detail">
-              <strong>Ahorro (sueldo base * 0.10)</strong>
-              <div class="rule-calc-val">${formatMoney(income * 0.10)} / mes</div>
-              <small class="text-subtle">Aporte mensual continuo del 10%.</small>
-            </div>
-          </div>
-
-          <div class="scheme-rule-item">
-            <span class="rule-bullet">🛡️</span>
-            <div class="rule-detail">
-              <strong>Fondo de emergencia (sueldo base * 4)</strong>
-              <div class="rule-calc-val">${formatMoney(income * 4)}</div>
-              <small class="text-subtle">Colchón de tranquilidad de 4 meses de ingresos.</small>
+              <strong>Máximo gastos fijos (sueldo base * 0.70)</strong>
+              <div class="rule-calc-val ${isFixedOk ? 'text-emerald' : 'text-rose'}">${formatMoney(totalFixed)} (Tope: ${formatMoney(fixedMax)})</div>
+              <small class="text-subtle">${isFixedOk ? '✓ Dentro del límite saludable del 70%.' : '⚠️ Supera el 70% tope permitido.'}</small>
             </div>
           </div>
 
@@ -269,29 +240,36 @@ const FinanJarra = (() => {
             <div class="rule-detail">
               <strong>Disponible para ti o gustos (sueldo base * 0.20)</strong>
               <div class="rule-calc-val">${formatMoney(income * 0.20)} / mes</div>
-              <small class="text-subtle">Margen libre para recreación y gastos sin culpa.</small>
+              <small class="text-subtle">Margen libre del 20% para recreación y gastos sin culpa.</small>
             </div>
           </div>
 
-          <div class="scheme-rule-item ${isFixedOk ? '' : 'rule-alert'}">
-            <span class="rule-bullet">🏠</span>
+          <div class="scheme-rule-item">
+            <span class="rule-bullet">💎</span>
             <div class="rule-detail">
-              <strong>Máximo gastos fijos (sueldo base * 0.70)</strong>
-              <div class="rule-calc-val ${isFixedOk ? 'text-emerald' : 'text-rose'}">${formatMoney(totalFixed)} (Tope: ${formatMoney(fixedMax)})</div>
-              <small class="text-subtle">${isFixedOk ? '✓ Dentro del límite saludable.' : '⚠️ Supera el 70% tope permitido.'}</small>
+              <strong>Ahorro Mensual (sueldo base * 0.10)</strong>
+              <div class="rule-calc-val">${formatMoney(income * 0.10)} / mes</div>
+              <small class="text-subtle">Aporte mensual continuo protegido del 10%.</small>
             </div>
           </div>
         </div>
       `;
+
+      document.getElementById('btn-guidelines-change-scheme')?.addEventListener('click', () => {
+        FinanApp.openModal('modal-change-scheme');
+      });
     } else if (activeScheme === 'comun') {
       const fixedSuggested = income * 0.5;
       const isFixedOk = totalFixed <= fixedSuggested;
 
       container.innerHTML = `
         <div class="scheme-guidelines-header">
-          <div>
-            <h4>🔷 Tipo de Ahorro: Esquema Común</h4>
-            <p class="text-subtle">Distribución clásica equilibrada 50 / 30 / 20.</p>
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <h4>🔷 Tipo de Ahorro: Esquema Común</h4>
+              <p class="text-subtle">Distribución clásica equilibrada 50 / 30 / 20.</p>
+            </div>
+            <button class="btn-xs btn-outline" id="btn-guidelines-change-scheme" title="Abrir selector de esquema">⚙️ Cambiar Esquema</button>
           </div>
         </div>
 
@@ -324,6 +302,10 @@ const FinanJarra = (() => {
           </div>
         </div>
       `;
+
+      document.getElementById('btn-guidelines-change-scheme')?.addEventListener('click', () => {
+        FinanApp.openModal('modal-change-scheme');
+      });
     } else {
       // Esquema Personalizado
       const fixedMax = income * ((customSettings.fixedPercent || 50) / 100);
@@ -337,6 +319,7 @@ const FinanJarra = (() => {
               <p class="text-subtle">Tus metas, jarras y porcentajes diseñados a tu medida.</p>
             </div>
             <div style="display: flex; gap: 0.4rem;">
+              <button class="btn-xs btn-outline" id="btn-guidelines-change-scheme" title="Cambiar a otro esquema">⇄ Esquema</button>
               <button class="btn-xs btn-outline" id="btn-edit-custom-scheme-rules">⚙️ Configurar Reglas</button>
               <button class="btn-xs btn-primary" id="btn-add-custom-jar-action">+ Añadir Jarra</button>
             </div>
@@ -370,17 +353,12 @@ const FinanJarra = (() => {
               <small class="text-subtle">Aporte mensual objetivo protegido.</small>
             </div>
           </div>
-
-          <div class="scheme-rule-item">
-            <span class="rule-bullet">🛡️</span>
-            <div class="rule-detail">
-              <strong>Fondo de Emergencia (${customSettings.emergencyMonths || 6} meses)</strong>
-              <div class="rule-calc-val">${formatMoney(income * (customSettings.emergencyMonths || 6))}</div>
-              <small class="text-subtle">Meta total calculada para tu respaldo financiero.</small>
-            </div>
-          </div>
         </div>
       `;
+
+      document.getElementById('btn-guidelines-change-scheme')?.addEventListener('click', () => {
+        FinanApp.openModal('modal-change-scheme');
+      });
 
       document.getElementById('btn-edit-custom-scheme-rules')?.addEventListener('click', () => {
         FinanApp.openCustomSchemeModal();

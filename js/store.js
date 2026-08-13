@@ -10,28 +10,6 @@ const FinanStore = (() => {
   const defaultJarsConfig = {
     libertad_financiera: [
       {
-        id: 'jar_libertad_emergencia',
-        name: 'Fondo de Emergencia',
-        category: 'emergencia',
-        emoji: '🛡️',
-        formulaMultiplier: 4, // sueldo base * 4
-        formulaType: 'target',
-        balance: 0,
-        customTarget: null,
-        description: 'Colchón de seguridad de 4 meses de sueldo base para imprevistos.'
-      },
-      {
-        id: 'jar_libertad_invertido',
-        name: 'Inversión & Libertad Financiera',
-        category: 'inversion',
-        emoji: '🚀',
-        formulaMultiplier: 200, // sueldo base * 200
-        formulaType: 'target',
-        balance: 0,
-        customTarget: null,
-        description: 'Patrimonio invertido a largo plazo para vivir de rentas (200 sueldos base).'
-      },
-      {
         id: 'jar_libertad_ahorro',
         name: 'Ahorro Mensual (10%)',
         category: 'ahorro',
@@ -56,26 +34,15 @@ const FinanStore = (() => {
     ],
     comun: [
       {
-        id: 'jar_comun_ahorro',
-        name: 'Ahorro e Inversión (20%)',
-        category: 'ahorro',
-        emoji: '🪙',
-        formulaMultiplier: 0.2, // sueldo base * 0.2
+        id: 'jar_comun_fijos',
+        name: 'Gastos Fijos (50%)',
+        category: 'fijos',
+        emoji: '🏠',
+        formulaMultiplier: 0.5, // sueldo base * 0.5
         formulaType: 'monthly',
         balance: 0,
         customTarget: null,
-        description: 'Regla 50/30/20: 20% destinado a ahorro sistemático e inversión.'
-      },
-      {
-        id: 'jar_comun_emergencia',
-        name: 'Fondo de Emergencia',
-        category: 'emergencia',
-        emoji: '🛡️',
-        formulaMultiplier: 3, // sueldo base * 3
-        formulaType: 'target',
-        balance: 0,
-        customTarget: null,
-        description: 'Colchón de tranquilidad de 3 meses de gastos esenciales.'
+        description: 'Regla 50/30/20: 50% máximo para vivienda, alimentación y servicios básicos.'
       },
       {
         id: 'jar_comun_gustos',
@@ -89,15 +56,15 @@ const FinanStore = (() => {
         description: 'Regla 50/30/20: 30% destinado a estilo de vida, salidas y entretenimiento.'
       },
       {
-        id: 'jar_comun_fijos',
-        name: 'Gastos Fijos (50%)',
-        category: 'fijos',
-        emoji: '🏠',
-        formulaMultiplier: 0.5, // sueldo base * 0.5
+        id: 'jar_comun_ahorro',
+        name: 'Ahorro e Inversión (20%)',
+        category: 'ahorro',
+        emoji: '🪙',
+        formulaMultiplier: 0.2, // sueldo base * 0.2
         formulaType: 'monthly',
         balance: 0,
         customTarget: null,
-        description: 'Regla 50/30/20: 50% máximo para vivienda, alimentación y servicios básicos.'
+        description: 'Regla 50/30/20: 20% destinado a ahorro sistemático e inversión.'
       }
     ],
     personalizado: [
@@ -111,17 +78,6 @@ const FinanStore = (() => {
         balance: 0,
         customTarget: null,
         description: 'Aporte mensual protegido según tu propia meta personalizada.'
-      },
-      {
-        id: 'jar_custom_emergencia',
-        name: 'Fondo de Emergencia',
-        category: 'emergencia',
-        emoji: '🛡️',
-        formulaMultiplier: 6, // 6 meses
-        formulaType: 'target',
-        balance: 0,
-        customTarget: null,
-        description: 'Colchón de tranquilidad para imprevistos (configurable en meses).'
       },
       {
         id: 'jar_custom_proyectos',
@@ -140,9 +96,7 @@ const FinanStore = (() => {
   const defaultCustomSchemeSettings = {
     fixedPercent: 50,
     freePercent: 30,
-    savingsPercent: 20,
-    emergencyMonths: 6,
-    freedomMultiplier: 150
+    savingsPercent: 20
   };
 
   // Initial Clean State
@@ -154,7 +108,7 @@ const FinanStore = (() => {
     savingsRulePercent: 20,
     savingsRuleAmount: null,
     activeScheme: 'libertad_financiera', // 'libertad_financiera' | 'comun' | 'personalizado'
-    activeJarId: 'jar_libertad_emergencia',
+    activeJarId: 'jar_libertad_ahorro',
     customSchemeSettings: JSON.parse(JSON.stringify(defaultCustomSchemeSettings)),
     jars: JSON.parse(JSON.stringify(defaultJarsConfig)),
     fixedExpenses: [],
@@ -177,17 +131,27 @@ const FinanStore = (() => {
         const parsed = JSON.parse(saved);
         const merged = { ...defaultState, ...parsed };
 
-        // Asegurar que exista jars.personalizado y customSchemeSettings
+        // Depurar jarras eliminadas de versiones anteriores
+        const legacyJarIds = ['jar_libertad_emergencia', 'jar_libertad_invertido', 'jar_comun_emergencia', 'jar_custom_emergencia'];
+        
         if (!merged.jars) {
           merged.jars = JSON.parse(JSON.stringify(defaultJarsConfig));
         } else {
-          if (!merged.jars.personalizado) {
+          for (const schemeKey in merged.jars) {
+            if (Array.isArray(merged.jars[schemeKey])) {
+              merged.jars[schemeKey] = merged.jars[schemeKey].filter(j => !legacyJarIds.includes(j.id));
+              if (merged.jars[schemeKey].length === 0 && defaultJarsConfig[schemeKey]) {
+                merged.jars[schemeKey] = JSON.parse(JSON.stringify(defaultJarsConfig[schemeKey]));
+              }
+            }
+          }
+          if (!merged.jars.personalizado || merged.jars.personalizado.length === 0) {
             merged.jars.personalizado = JSON.parse(JSON.stringify(defaultJarsConfig.personalizado));
           }
-          if (!merged.jars.libertad_financiera) {
+          if (!merged.jars.libertad_financiera || merged.jars.libertad_financiera.length === 0) {
             merged.jars.libertad_financiera = JSON.parse(JSON.stringify(defaultJarsConfig.libertad_financiera));
           }
-          if (!merged.jars.comun) {
+          if (!merged.jars.comun || merged.jars.comun.length === 0) {
             merged.jars.comun = JSON.parse(JSON.stringify(defaultJarsConfig.comun));
           }
         }
@@ -199,7 +163,7 @@ const FinanStore = (() => {
         if (!merged.activeScheme) merged.activeScheme = 'libertad_financiera';
         const currentJars = merged.jars[merged.activeScheme] || [];
         if (!merged.activeJarId || !currentJars.some(j => j.id === merged.activeJarId)) {
-          merged.activeJarId = currentJars[0]?.id || 'jar_libertad_emergencia';
+          merged.activeJarId = currentJars[0]?.id || 'jar_libertad_ahorro';
         }
 
         return merged;
@@ -525,11 +489,13 @@ const FinanStore = (() => {
   }
 
   function addGoal(goal) {
+    const target = Math.max(1, Number(goal.target) || 100000);
+    const current = Math.max(0, Math.min(target, Number(goal.current) || 0));
     state.goals.push({
       id: 'goal_' + Date.now(),
       name: goal.name.trim() || 'Nueva Meta',
-      target: Number(goal.target) || 100000,
-      current: Number(goal.current) || 0,
+      target: target,
+      current: current,
       emoji: goal.emoji || '🎯'
     });
     saveState();
@@ -538,28 +504,34 @@ const FinanStore = (() => {
   function updateGoalAmount(id, delta) {
     const goal = state.goals.find(g => g.id === id);
     if (goal) {
-      goal.current = Math.max(0, goal.current + delta);
+      const newAmount = (Number(goal.current) || 0) + Number(delta);
+      goal.current = Math.max(0, Math.min(goal.target, newAmount));
       saveState();
     }
   }
 
-  function deleteGoal(id) {
+  function deleteGoal(id, transferToActiveJar = false) {
+    const goal = state.goals.find(g => g.id === id);
+    if (goal && transferToActiveJar && (Number(goal.current) || 0) > 0) {
+      depositSavings(goal.current);
+    }
     state.goals = state.goals.filter(g => g.id !== id);
     saveState();
   }
 
   function addCard(card) {
+    const isDebit = card.type === 'debito';
     state.cards.push({
       id: 'card_' + Date.now(),
-      alias: card.alias.trim() || 'Mi Tarjeta',
+      alias: card.alias.trim() || (isDebit ? 'Mi Débito' : 'Mi Tarjeta'),
       type: card.type || 'credito',
       color: card.color || 'gradient-dark',
-      limit: Number(card.limit) || 0,
-      used: Number(card.used) || 0,
-      interestRate: Number(card.interestRate) || 0,
-      billingDay: Number(card.billingDay) || 15,
-      paymentDueDay: Number(card.paymentDueDay) || 5,
-      reminderDaysBefore: Number(card.reminderDaysBefore) || 3,
+      limit: isDebit ? 0 : (Number(card.limit) || 0),
+      used: isDebit ? 0 : (Number(card.used) || 0),
+      interestRate: isDebit ? 0 : (Number(card.interestRate) || 0),
+      billingDay: isDebit ? null : (Number(card.billingDay) || 15),
+      paymentDueDay: isDebit ? null : (Number(card.paymentDueDay) || 5),
+      reminderDaysBefore: isDebit ? null : (Number(card.reminderDaysBefore) || 3),
       lastPaidMonth: null
     });
     saveState();

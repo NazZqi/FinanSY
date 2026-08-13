@@ -1,59 +1,89 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>FinanSY — Asistente de Financiamiento y Control Personal</title>
-  <meta name="description" content="Controla tus ingresos, gastos, metas, tarjetas y simula compras inteligentes protegiendo tu porcentaje de ahorro. 100% privado y anónimo.">
-  
+  <meta name="description"
+    content="Controla tus ingresos, gastos, metas, tarjetas y simula compras inteligentes protegiendo tu porcentaje de ahorro. 100% privado y anónimo.">
+
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#10B981">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FinanSY">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%2310B981'/><path d='M380 180V120a20 20 0 0 0-20-20H100a40 40 0 0 0 0 80h300a20 20 0 0 1 20 20v80h-60a40 40 0 0 0 0 80h60a20 20 0 0 0 20-20v-40a20 20 0 0 0-20-20' fill='none' stroke='%230B0F17' stroke-width='36' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="apple-touch-icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%2310B981'/><path d='M380 180V120a20 20 0 0 0-20-20H100a40 40 0 0 0 0 80h300a20 20 0 0 1 20 20v80h-60a40 40 0 0 0 0 80h60a20 20 0 0 0 20-20v-40a20 20 0 0 0-20-20' fill='none' stroke='%230B0F17' stroke-width='36' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/jarra-animada.css">
 </head>
+
 <body>
   <div id="app" class="app-container">
-    
+
     <!-- Top Header -->
     <header class="app-header">
       <div class="header-brand">
         <div class="brand-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1">
+            </path>
             <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
           </svg>
         </div>
         <div class="brand-text">
           <h1>Finan<span>SY</span></h1>
-          <p class="brand-subtitle">Web & Celular · 100% Privado</p>
+          <p class="brand-subtitle">Tus Reglas · 100% Privado</p>
         </div>
       </div>
 
       <div class="header-actions">
-        <button id="btn-install-pwa" class="btn-install-app" style="display: none;" title="Instalar en celular o escritorio">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <button id="btn-header-scan-receipt" class="btn-scan-glow" title="Escanear boleta o ticket de compra (OCR)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          <span>Escanear Boleta</span>
+        </button>
+        <button id="btn-install-pwa" class="btn-install-app" style="display: none;"
+          title="Instalar en celular o escritorio">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
           <span>Instalar</span>
         </button>
         <button id="btn-open-tutorial" class="btn-ghost-icon" title="Ver Guía y Tutorial de Bienvenida">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
           <span>Tutorial</span>
         </button>
         <button id="btn-privacy-info" class="badge-privacy" title="Tu información está 100% segura en tu dispositivo">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
           <span>Privado</span>
         </button>
         <button id="btn-quick-demo" class="btn-demo-glow" title="Cargar demostración interactiva rápida">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
           <span>Demo</span>
         </button>
       </div>
@@ -65,7 +95,10 @@
         <span class="summary-label">Ingresos Mensuales</span>
         <span class="summary-value income" id="global-income-display">$0</span>
         <button class="btn-mini-edit" id="btn-edit-income" title="Editar ingresos">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
         </button>
       </div>
 
@@ -91,36 +124,55 @@
     <!-- Main Navigation Tabs (Matching all 5 views) -->
     <nav class="main-nav-tabs" role="tablist">
       <button class="nav-tab active" data-tab="ahorros" role="tab" aria-selected="true">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
         <span>Ahorros (Jarras)</span>
       </button>
 
       <button class="nav-tab" data-tab="dashboard" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+          <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+          <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+        </svg>
         <span>Resumen</span>
       </button>
 
       <button class="nav-tab" data-tab="metas" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
         <span>Metas</span>
         <span class="tab-badge" id="goals-count-badge">0</span>
       </button>
 
       <button class="nav-tab" data-tab="tarjetas" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
         <span>Tarjetas y Cupo</span>
         <span class="tab-badge" id="cards-count-badge">0</span>
       </button>
 
       <button class="nav-tab special-calc-tab" data-tab="calculadora" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+          <line x1="16" y1="14" x2="16" y2="18"></line>
+          <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path>
+        </svg>
         <span>Calculadora de Compra</span>
       </button>
     </nav>
 
     <!-- Main Content Views Container -->
     <main class="views-wrapper">
-      
+
       <!-- ============================================================== -->
       <!-- VIEW 1: AHORROS (JARRAS DINÁMICAS POR ESQUEMA) -->
       <!-- ============================================================== -->
@@ -131,26 +183,27 @@
             <p class="text-muted">Visualiza el crecimiento de tus fondos según tu esquema financiero.</p>
           </div>
           <div class="view-header-right-actions">
-            <!-- Selector de Esquema en Vista Jarras -->
-            <div class="scheme-toggle-group-small">
-              <button type="button" class="btn-scheme-toggle-sm active" id="btn-jar-scheme-libertad">
-                <span>🌟 Libertad Financiera</span>
-              </button>
-              <button type="button" class="btn-scheme-toggle-sm" id="btn-jar-scheme-comun">
-                <span>🔷 Esquema Común</span>
-              </button>
-              <button type="button" class="btn-scheme-toggle-sm" id="btn-jar-scheme-personalizado">
-                <span>⚙️ Personalizado</span>
+            <!-- Selector Deliberado de Esquema en Vista Jarras -->
+            <div class="jar-scheme-header-controls">
+              <span class="scheme-badge-pill" id="jar-active-scheme-label">🌟 Libertad Financiera</span>
+              <button type="button" class="btn-scheme-sandwich" id="btn-open-scheme-modal-jar" title="Cambiar Esquema Financiero">
+                <span class="sandwich-icon">☰</span>
+                <span>Cambiar Esquema</span>
               </button>
             </div>
 
             <div class="view-header-buttons">
               <button class="btn-secondary" id="btn-quick-deposit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
                 <span>Abonar Ahorro</span>
               </button>
               <button class="btn-ghost" id="btn-quick-withdraw">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
                 <span>Retirar</span>
               </button>
             </div>
@@ -226,7 +279,7 @@
 
           <!-- Columna Derecha: Directrices del Esquema, Distribución y Gastos Fijos -->
           <div class="jar-details-column">
-            
+
             <!-- Directrices del Esquema Sugerido (Fórmulas calculadas exactas) -->
             <div class="card panel-card" id="jar-scheme-guidelines-box">
               <!-- Renderizado por FinanJarra.render -->
@@ -238,7 +291,7 @@
                 <h3>Distribución de tu Dinero</h3>
                 <span class="pill-badge pill-info">Mes Actual</span>
               </div>
-              
+
               <div class="budget-bars-stack">
                 <div class="budget-row">
                   <div class="budget-info">
@@ -317,17 +370,14 @@
         <div class="view-header">
           <div>
             <h2>Resumen Mensual & Salud Financiera</h2>
-            <p class="text-muted">Resumen ejecutivo consolidado de patrimonio, flujo mensual de dinero y calendario de vencimientos.</p>
+            <p class="text-muted">Resumen ejecutivo consolidado de patrimonio, flujo mensual de dinero y calendario de
+              vencimientos.</p>
           </div>
-          <div class="scheme-toggle-group">
-            <button type="button" class="btn-scheme-toggle active" id="btn-scheme-tab-libertad">
-              <span>🌟 Libertad Financiera</span>
-            </button>
-            <button type="button" class="btn-scheme-toggle" id="btn-scheme-tab-comun">
-              <span>🔷 Esquema Común</span>
-            </button>
-            <button type="button" class="btn-scheme-toggle" id="btn-scheme-tab-personalizado">
-              <span>⚙️ Personalizado</span>
+          <div class="scheme-header-controls">
+            <span class="scheme-active-badge" id="dash-active-scheme-badge">🌟 Libertad Financiera</span>
+            <button type="button" class="btn-scheme-sandwich" id="btn-open-scheme-modal-dash" title="Cambiar Esquema Financiero">
+              <span class="sandwich-icon">☰</span>
+              <span>Cambiar Esquema</span>
             </button>
           </div>
         </div>
@@ -376,10 +426,10 @@
 
         <!-- 2-Column Main Dashboard Layout -->
         <div class="dashboard-main-grid">
-          
+
           <!-- Columna Izquierda: Gráfico Donut de Presupuesto + Proyecciones + Calendario Mensual -->
           <div class="dash-col">
-            
+
             <!-- Gráfico Donut SVG de Distribución de Dinero -->
             <div class="card panel-card">
               <div class="panel-header">
@@ -429,7 +479,8 @@
                   <span style="font-size: 1.25rem;">📅</span>
                   <div>
                     <h3>Calendario Financiero Mensual</h3>
-                    <p class="text-subtle" style="font-size: 0.76rem;">Planificación mensual de vencimientos, cuotas e ingresos.</p>
+                    <p class="text-subtle" style="font-size: 0.76rem;">Planificación mensual de vencimientos, cuotas e
+                      ingresos.</p>
                   </div>
                 </div>
                 <div class="calendar-controls">
@@ -458,13 +509,14 @@
 
           <!-- Columna Derecha: Directrices del Esquema + Grid de Jarras Dinámicas -->
           <div class="dash-col">
-            
+
             <!-- Directrices del Esquema Activo -->
             <div class="card panel-card">
               <div class="panel-header">
                 <div>
                   <h3 id="dash-scheme-title">🌟 Esquema Libertad Financiera</h3>
-                  <p class="text-subtle" id="dash-scheme-subtitle" style="font-size: 0.78rem;">Reglas dinámicas y comparativa de cumplimiento.</p>
+                  <p class="text-subtle" id="dash-scheme-subtitle" style="font-size: 0.78rem;">Reglas dinámicas y
+                    comparativa de cumplimiento.</p>
                 </div>
               </div>
 
@@ -500,7 +552,10 @@
             <p class="text-muted">Define tus objetivos, asígnales fondos y haz seguimiento de tu progreso.</p>
           </div>
           <button class="btn-primary" id="btn-open-create-goal">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
             <span>Nueva Meta</span>
           </button>
         </div>
@@ -525,10 +580,14 @@
         <div class="view-header">
           <div>
             <h2>Tus Tarjetas y Cupos</h2>
-            <p class="text-muted">Gestiona el cupo total, utilizado y disponible de tus tarjetas de forma 100% privada.</p>
+            <p class="text-muted">Gestiona el cupo total, utilizado y disponible de tus tarjetas de forma 100% privada.
+            </p>
           </div>
           <button class="btn-primary" id="btn-open-create-card">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
             <span>Registrar Tarjeta</span>
           </button>
         </div>
@@ -558,7 +617,8 @@
               <span class="reminders-icon">🔔</span>
               <div>
                 <h3>Recordatorios y Fechas de Pago</h3>
-                <p class="text-subtle" style="font-size: 0.78rem;">Monitorea los vencimientos de tus estados de cuenta para pagar a tiempo y no generar intereses.</p>
+                <p class="text-subtle" style="font-size: 0.78rem;">Monitorea los vencimientos de tus estados de cuenta
+                  para pagar a tiempo y no generar intereses.</p>
               </div>
             </div>
             <button class="btn-xs btn-outline" id="btn-request-notifications" title="Activar avisos en el navegador">
@@ -592,11 +652,14 @@
         <div class="view-header">
           <div>
             <h2>Calculadora de Compra y Financiamiento</h2>
-            <p class="text-muted">Evalúa si tu compra es financieramente sana y protege tu porcentaje de ahorro antes de pagar.</p>
+            <p class="text-muted">Evalúa si tu compra es financieramente sana y protege tu porcentaje de ahorro antes de
+              pagar.</p>
           </div>
           <div class="calc-quick-demo-action">
             <button class="btn-outline-glow" id="btn-calc-load-sample">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
               <span>Cargar Ejemplo de Demostración</span>
             </button>
           </div>
@@ -615,7 +678,8 @@
                 <label for="calc-product-name">Nombre del Producto / Compra</label>
                 <div class="input-with-icon">
                   <span class="input-icon">🛍️</span>
-                  <input type="text" id="calc-product-name" placeholder="Ej: PlayStation 5, Laptop, Viaje" value="Notebook Ultrabook 16GB">
+                  <input type="text" id="calc-product-name" placeholder="Ej: PlayStation 5, Laptop, Viaje"
+                    value="Notebook Ultrabook 16GB">
                 </div>
               </div>
 
@@ -623,7 +687,8 @@
                 <label for="calc-product-price">Valor del Producto ($ CLP)</label>
                 <div class="input-with-icon">
                   <span class="input-icon">$</span>
-                  <input type="number" id="calc-product-price" placeholder="Ej: 699990" value="650000" min="0" step="any">
+                  <input type="number" id="calc-product-price" placeholder="Ej: 699990" value="650000" min="0"
+                    step="any">
                 </div>
               </div>
             </div>
@@ -696,7 +761,7 @@
                 <span class="slider-value-tag" id="calc-installments-display">6 cuotas</span>
               </div>
               <input type="range" id="calc-installments-slider" min="1" max="36" value="6" class="custom-slider">
-              
+
               <div class="quick-installments-pills">
                 <button type="button" class="btn-pill-installment" data-cuotas="1">1 (Contado)</button>
                 <button type="button" class="btn-pill-installment" data-cuotas="3">3</button>
@@ -721,10 +786,12 @@
                 <span class="savings-percent-badge" id="calc-savings-guard-percent">20%</span>
               </div>
 
-              <input type="range" id="calc-savings-guard-slider" min="0" max="50" step="5" value="20" class="custom-slider slider-emerald">
-              
+              <input type="range" id="calc-savings-guard-slider" min="0" max="50" step="5" value="20"
+                class="custom-slider slider-emerald">
+
               <div class="savings-guard-math">
-                <span>Monto protegido al mes: <strong id="calc-savings-guard-amount" class="text-emerald">$200.000</strong></span>
+                <span>Monto protegido al mes: <strong id="calc-savings-guard-amount"
+                    class="text-emerald">$200.000</strong></span>
                 <span>Ingreso base considerado: <strong id="calc-base-income-display">$1.000.000</strong></span>
               </div>
             </div>
@@ -769,7 +836,7 @@
             <!-- Impacto en la Salud Financiera del Usuario -->
             <div class="health-impact-box">
               <h4>Impacto en tu Presupuesto Mensual</h4>
-              
+
               <div class="impact-metric">
                 <div class="impact-metric-labels">
                   <span>Presupuesto Libre Disponible tras la Cuota:</span>
@@ -796,14 +863,17 @@
               <div class="callout-icon" id="calc-diagnosis-icon">💡</div>
               <div class="callout-content">
                 <h5 id="calc-diagnosis-title">¡Compra Recomendada y Segura!</h5>
-                <p id="calc-diagnosis-desc">La cuota mensual encaja perfectamente en tu presupuesto disponible y respeta tu meta del 20% de ahorro.</p>
+                <p id="calc-diagnosis-desc">La cuota mensual encaja perfectamente en tu presupuesto disponible y respeta
+                  tu meta del 20% de ahorro.</p>
               </div>
             </div>
 
             <!-- Botones de Acción -->
             <div class="results-actions">
               <button class="btn-primary btn-full" id="btn-save-as-commitment">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span>Añadir a mis Cuotas Activas</span>
               </button>
             </div>
@@ -853,7 +923,8 @@
           <input type="hidden" id="input-expense-id">
           <div class="form-field">
             <label for="input-expense-name">Concepto / Categoría</label>
-            <input type="text" id="input-expense-name" placeholder="Ej: Arriendo, Servicios, Supermercado, Internet" required>
+            <input type="text" id="input-expense-name" placeholder="Ej: Arriendo, Servicios, Supermercado, Internet"
+              required>
           </div>
           <div class="form-field">
             <label for="input-expense-amount">Monto Mensual ($ CLP)</label>
@@ -921,15 +992,20 @@
         </div>
         <form id="form-card" class="modal-body">
           <input type="hidden" id="input-card-id">
-          
+
           <div class="card-privacy-notice">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span>Solo ingresa un <strong>alias o apodo</strong> para identificarla. Jamás ingreses números de tu tarjeta real.</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Solo ingresa un <strong>alias o apodo</strong> para identificarla. Jamás ingreses números de tu
+              tarjeta real.</span>
           </div>
 
           <div class="form-field">
             <label for="input-card-alias">Alias o Nombre de la Tarjeta</label>
-            <input type="text" id="input-card-alias" placeholder="Ej: Santander Black, CMR Falabella, Banco Estado" required>
+            <input type="text" id="input-card-alias" placeholder="Ej: Santander Black, CMR Falabella, Banco Estado"
+              required>
           </div>
 
           <div class="input-grid">
@@ -953,41 +1029,47 @@
             </div>
           </div>
 
-          <div class="input-grid">
-            <div class="form-field">
-              <label for="input-card-limit">Cupo Total Autorizado ($)</label>
-              <input type="number" id="input-card-limit" min="0" step="any" placeholder="Ej: 1500000" required>
-            </div>
-            <div class="form-field">
-              <label for="input-card-used">Cupo Actualmente Utilizado ($)</label>
-              <input type="number" id="input-card-used" min="0" step="any" value="0">
-            </div>
+          <div id="debit-card-info-note" class="debit-info-callout" style="display: none;">
+            💡 <strong>Tarjeta de Débito Bancaria:</strong> Solo requiere alias y color. Las tarjetas de débito operan al contado y no tienen cupo de endeudamiento ni fechas de vencimiento.
           </div>
 
-          <div class="input-grid">
-            <div class="form-field">
-              <label for="input-card-interest">Tasa Interés Mensual (%)</label>
-              <input type="number" id="input-card-interest" min="0" max="100" step="any" value="1.89">
+          <div id="credit-card-fields-wrap">
+            <div class="input-grid">
+              <div class="form-field">
+                <label for="input-card-limit">Cupo Total Autorizado ($)</label>
+                <input type="number" id="input-card-limit" min="0" step="any" placeholder="Ej: 1500000" required>
+              </div>
+              <div class="form-field">
+                <label for="input-card-used">Cupo Actualmente Utilizado ($)</label>
+                <input type="number" id="input-card-used" min="0" step="any" value="0">
+              </div>
             </div>
-            <div class="form-field">
-              <label for="input-card-billing-day">Día de Facturación / Corte (1-31)</label>
-              <input type="number" id="input-card-billing-day" min="1" max="31" step="1" value="15">
-            </div>
-          </div>
 
-          <div class="input-grid">
-            <div class="form-field">
-              <label for="input-card-due-day">Día de Vencimiento / Pago (1-31)</label>
-              <input type="number" id="input-card-due-day" min="1" max="31" step="1" value="5" required>
+            <div class="input-grid">
+              <div class="form-field">
+                <label for="input-card-interest">Tasa Interés Mensual (%)</label>
+                <input type="number" id="input-card-interest" min="0" max="100" step="any" value="1.89">
+              </div>
+              <div class="form-field">
+                <label for="input-card-billing-day">Día de Facturación / Corte (1-31)</label>
+                <input type="number" id="input-card-billing-day" min="1" max="31" step="1" value="15">
+              </div>
             </div>
-            <div class="form-field">
-              <label for="input-card-reminder-days">Avisar Recordatorio</label>
-              <select id="input-card-reminder-days" class="custom-select">
-                <option value="1">1 día antes</option>
-                <option value="3" selected>3 días antes</option>
-                <option value="5">5 días antes</option>
-                <option value="7">1 semana antes</option>
-              </select>
+
+            <div class="input-grid">
+              <div class="form-field">
+                <label for="input-card-due-day">Día de Vencimiento / Pago (1-31)</label>
+                <input type="number" id="input-card-due-day" min="1" max="31" step="1" value="5" required>
+              </div>
+              <div class="form-field">
+                <label for="input-card-reminder-days">Avisar Recordatorio</label>
+                <select id="input-card-reminder-days" class="custom-select">
+                  <option value="1">1 día antes</option>
+                  <option value="3" selected>3 días antes</option>
+                  <option value="5">5 días antes</option>
+                  <option value="7">1 semana antes</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -1070,17 +1152,20 @@
         <div class="modal-body privacy-body">
           <div class="privacy-point">
             <strong>🔒 100% Almacenamiento Local (Local-First)</strong>
-            <p>Toda tu información financiera se guarda únicamente en la memoria de tu propio navegador. Ningún dato viaja a servidores externos ni se vende a terceros.</p>
+            <p>Toda tu información financiera se guarda únicamente en la memoria de tu propio navegador. Ningún dato
+              viaja a servidores externos ni se vende a terceros.</p>
           </div>
           <div class="privacy-point">
             <strong>🚫 Cero Datos Personales Sensibles</strong>
-            <p>FinanSY nunca te pedirá tu RUT, número de cédula, nombres reales ni los 16 dígitos de tus tarjetas bancarias ni contraseñas.</p>
+            <p>FinanSY nunca te pedirá tu RUT, número de cédula, nombres reales ni los 16 dígitos de tus tarjetas
+              bancarias ni contraseñas.</p>
           </div>
           <div class="privacy-point">
             <strong>✨ Diseñado para tu Libertad y Control</strong>
             <p>Puedes reiniciar o borrar todos tus datos cuando quieras con un solo clic.</p>
             <div style="margin-top: 0.5rem;">
-              <button type="button" class="btn-xs btn-outline" id="btn-reset-all-data" style="color: #FB7185; border-color: rgba(244,63,94,0.4);">
+              <button type="button" class="btn-xs btn-outline" id="btn-reset-all-data"
+                style="color: #FB7185; border-color: rgba(244,63,94,0.4);">
                 🗑️ Borrar y Reiniciar Todos los Datos a $0
               </button>
             </div>
@@ -1117,7 +1202,8 @@
               </div>
             </div>
           </div>
-          <small class="text-muted" style="margin-top: -0.3rem;">Puedes ingresar el porcentaje (%) o el monto fijo ($/mes); se sincronizan automáticamente.</small>
+          <small class="text-muted" style="margin-top: -0.3rem;">Puedes ingresar el porcentaje (%) o el monto fijo
+            ($/mes); se sincronizan automáticamente.</small>
 
           <div class="form-field">
             <label for="input-jar-target">Meta Total de la Jarra ($ CLP)</label>
@@ -1202,7 +1288,8 @@
         <form id="form-custom-jar" class="modal-body">
           <div class="form-field">
             <label for="input-custom-jar-name">Nombre de la Jarra</label>
-            <input type="text" id="input-custom-jar-name" placeholder="Ej: Fondo Viajes, Inversiones Cripto, Educación" required>
+            <input type="text" id="input-custom-jar-name" placeholder="Ej: Fondo Viajes, Inversiones Cripto, Educación"
+              required>
           </div>
 
           <div class="form-field">
@@ -1229,7 +1316,8 @@
             </div>
             <div class="form-field">
               <label for="input-custom-jar-multiplier">Factor / Multiplicador</label>
-              <input type="number" id="input-custom-jar-multiplier" step="any" min="0.01" value="0.15" placeholder="Ej: 0.15 o 6" required>
+              <input type="number" id="input-custom-jar-multiplier" step="any" min="0.01" value="0.15"
+                placeholder="Ej: 0.15 o 6" required>
             </div>
           </div>
 
@@ -1243,7 +1331,8 @@
 
           <div class="form-field">
             <label for="input-custom-jar-desc">Descripción o Propósito</label>
-            <input type="text" id="input-custom-jar-desc" placeholder="Ej: Ahorro mensual destinado para las vacaciones de verano">
+            <input type="text" id="input-custom-jar-desc"
+              placeholder="Ej: Ahorro mensual destinado para las vacaciones de verano">
           </div>
 
           <div class="modal-footer">
@@ -1262,7 +1351,8 @@
           <button class="btn-modal-close" data-close="modal-custom-scheme-settings">&times;</button>
         </div>
         <form id="form-custom-scheme-settings" class="modal-body">
-          <p class="text-subtle" style="font-size: 0.82rem; margin-bottom: 0.5rem;">Define tus propios límites de gasto y metas de ahorro sobre tu ingreso mensual (deben sumar idealmente 100%).</p>
+          <p class="text-subtle" style="font-size: 0.82rem; margin-bottom: 0.5rem;">Define tus propios límites de gasto
+            y metas de ahorro sobre tu ingreso mensual (deben sumar idealmente 100%).</p>
 
           <div class="input-grid">
             <div class="form-field">
@@ -1281,17 +1371,11 @@
             </div>
           </div>
 
-          <div class="input-grid">
-            <div class="form-field">
-              <label for="input-custom-savings">% Ahorro e Inversión</label>
-              <div class="input-with-icon">
-                <span class="input-icon">%</span>
-                <input type="number" id="input-custom-savings" min="0" max="100" step="1" value="20" required>
-              </div>
-            </div>
-            <div class="form-field">
-              <label for="input-custom-emerg-months">Fondo Emergencia (Meses)</label>
-              <input type="number" id="input-custom-emerg-months" min="1" max="60" step="1" value="6" required>
+          <div class="form-field">
+            <label for="input-custom-savings">% Ahorro e Inversión</label>
+            <div class="input-with-icon">
+              <span class="input-icon">%</span>
+              <input type="number" id="input-custom-savings" min="0" max="100" step="1" value="20" required>
             </div>
           </div>
 
@@ -1300,6 +1384,158 @@
             <button type="submit" class="btn-primary">Guardar Reglas</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal: Cambiar Esquema Financiero (Deliberado / Sandwich) -->
+    <div class="modal-overlay" id="modal-change-scheme" style="display: none;">
+      <div class="modal-card modal-scheme-selector-card">
+        <div class="modal-header">
+          <div>
+            <h3>Cambiar Esquema Financiero</h3>
+            <p class="text-subtle" style="font-size: 0.8rem;">Selecciona una estrategia deliberada para organizar tus gastos, ahorros y jarras.</p>
+          </div>
+          <button class="btn-modal-close" data-close="modal-change-scheme">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="deliberate-schemes-deck">
+            <!-- Opción 1: Libertad Financiera -->
+            <label class="scheme-option-card active" data-change-scheme="libertad_financiera">
+              <input type="radio" name="select-active-scheme" value="libertad_financiera" checked>
+              <div class="scheme-option-content">
+                <div class="scheme-option-header">
+                  <span class="scheme-opt-title">🌟 Libertad Financiera (F.I.R.E.)</span>
+                  <span class="pill-badge pill-success">Estrategia Activa</span>
+                </div>
+                <p class="scheme-opt-desc">Enfocado en mantener un límite estricto de costos fijos y proteger el ahorro continuo.</p>
+                <div class="scheme-opt-pills">
+                  <span class="mini-pill">🏠 Fijos: 70% máx</span>
+                  <span class="mini-pill">✨ Gustos: 20%</span>
+                  <span class="mini-pill">💎 Ahorro: 10%/mes</span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Opción 2: Esquema Común -->
+            <label class="scheme-option-card" data-change-scheme="comun">
+              <input type="radio" name="select-active-scheme" value="comun">
+              <div class="scheme-option-content">
+                <div class="scheme-option-header">
+                  <span class="scheme-opt-title">🔷 Esquema Común (50 / 30 / 20)</span>
+                  <span class="pill-badge pill-cyan">Equilibrio Clásico</span>
+                </div>
+                <p class="scheme-opt-desc">Distribución balanceada de finanzas personales para control diario y proyectos.</p>
+                <div class="scheme-opt-pills">
+                  <span class="mini-pill">🏠 Fijos: 50%</span>
+                  <span class="mini-pill">🏖️ Gustos: 30%</span>
+                  <span class="mini-pill">🪙 Ahorro: 20%</span>
+                </div>
+              </div>
+            </label>
+
+            <!-- Opción 3: Personalizado -->
+            <label class="scheme-option-card" data-change-scheme="personalizado">
+              <input type="radio" name="select-active-scheme" value="personalizado">
+              <div class="scheme-option-content">
+                <div class="scheme-option-header">
+                  <span class="scheme-opt-title">⚙️ Esquema Personalizado</span>
+                  <span class="pill-badge pill-purple">100% a tu Medida</span>
+                </div>
+                <p class="scheme-opt-desc">Define tus propios porcentajes y crea libremente las jarras que tú decidas.</p>
+                <div class="scheme-opt-pills">
+                  <span class="mini-pill">🎯 Porcentajes configurables</span>
+                  <span class="mini-pill">🏺 Jarras ilimitadas</span>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-ghost" data-close="modal-change-scheme">Cancelar</button>
+          <button type="button" class="btn-primary" id="btn-confirm-apply-scheme">
+            <span>✓ Confirmar y Aplicar Esquema</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Lector y Digitalizador de Boletas (OCR) -->
+    <div class="modal-overlay" id="modal-receipt-scanner" style="display: none;">
+      <div class="modal-card modal-scanner-card">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.5rem;">📷</span>
+            <div>
+              <h3>Lector y Digitalizador de Boletas</h3>
+              <p class="text-subtle" style="font-size: 0.8rem;">Escanea o sube un ticket para extraer el monto y comercio automáticamente.</p>
+            </div>
+          </div>
+          <button class="btn-modal-close" data-close="modal-receipt-scanner">&times;</button>
+        </div>
+        <div class="modal-body">
+          <!-- Dropzone / Input buttons -->
+          <div class="scanner-dropzone-box" id="receipt-dropzone">
+            <div class="dropzone-inner-content">
+              <div class="dropzone-icon">🧾</div>
+              <p class="dropzone-title">Arrastra tu boleta aquí o selecciónala</p>
+              <p class="dropzone-subtitle text-subtle">Formatos soportados: JPG, PNG, WebP</p>
+              <div class="scanner-btn-actions">
+                <label class="btn-xs btn-primary upload-btn-label">
+                  📁 Subir Archivo
+                  <input type="file" id="receipt-file-input" accept="image/*" style="display: none;">
+                </label>
+                <label class="btn-xs btn-outline upload-btn-label">
+                  📸 Tomar Foto
+                  <input type="file" id="receipt-camera-input" accept="image/*" capture="environment" style="display: none;">
+                </label>
+              </div>
+            </div>
+            <img id="receipt-image-preview" class="receipt-preview-img" style="display: none;" alt="Vista previa de boleta">
+          </div>
+
+          <!-- Estado del escaneo -->
+          <div class="scan-status-indicator" id="receipt-scan-status">
+            <span>Sube una imagen o prueba con una boleta de ejemplo</span>
+          </div>
+
+          <!-- Boletas de prueba para prueba inmediata en 1 clic -->
+          <div class="sample-receipts-section">
+            <span class="text-subtle" style="font-size: 0.76rem; text-transform: uppercase; font-weight: 700;">O prueba con una boleta de ejemplo:</span>
+            <div class="sample-receipts-grid" id="receipt-samples-container">
+              <!-- Botones de ejemplo inyectados dinámicamente -->
+            </div>
+          </div>
+
+          <!-- Campos extraídos y confirmación -->
+          <div class="scanner-results-card" id="receipt-result-preview-box" style="display: none;">
+            <h4 style="font-size: 0.88rem; margin-bottom: 0.5rem; color: #10B981;">✓ Datos Detectados de la Boleta</h4>
+            <div class="input-grid">
+              <div class="form-field">
+                <label for="receipt-detected-amount">Monto Total Detectado ($)</label>
+                <input type="number" id="receipt-detected-amount" min="0" step="any" required>
+              </div>
+              <div class="form-field">
+                <label for="receipt-detected-merchant">Comercio / Detalle</label>
+                <input type="text" id="receipt-detected-merchant" required>
+              </div>
+            </div>
+
+            <div class="form-field" style="margin-top: 0.5rem;">
+              <label for="receipt-target-action">¿Dónde deseas registrar esta boleta?</label>
+              <select id="receipt-target-action" class="custom-select">
+                <option value="expense" selected>📌 Registrar como Gasto Fijo Mensual</option>
+                <option value="calculator">💳 Enviar a Calculadora de Cuotas / Tarjetas</option>
+                <option value="jar">💎 Abonar a Jarra de Ahorro Activa</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-ghost" data-close="modal-receipt-scanner">Cancelar</button>
+          <button type="button" class="btn-primary" id="btn-apply-scanned-receipt">
+            <span>✓ Aplicar y Guardar Registro</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1314,23 +1550,26 @@
             <span class="step-dot" data-step-dot="4"></span>
             <span class="step-dot" data-step-dot="5"></span>
           </div>
-          <button type="button" class="btn-onboarding-skip" id="btn-onboarding-skip-top" title="Omitir tutorial">Omitir</button>
+          <button type="button" class="btn-onboarding-skip" id="btn-onboarding-skip-top"
+            title="Omitir tutorial">Omitir</button>
         </div>
 
         <div class="onboarding-slides-container">
-          
+
           <!-- Slide 1: Bienvenida y Privacidad -->
           <div class="onboarding-slide active" data-onboarding-step="1">
             <div class="slide-badge-hero">🛡️ 100% Privado</div>
             <h2>¡Bienvenido a <span>FinanSY</span>!</h2>
-            <p class="slide-subtitle">Tu asistente inteligente y privado para el control de financiamiento, compras y ahorro.</p>
-            
+            <p class="slide-subtitle">Tu asistente inteligente y privado para el control de financiamiento, compras y
+              ahorro.</p>
+
             <div class="onboarding-features-list">
               <div class="feature-item">
                 <span class="feat-icon">🔒</span>
                 <div>
                   <strong>Cero datos bancarios o personales</strong>
-                  <p>No te pediremos tu RUT, tu nombre real ni los números de tus tarjetas. Todo queda en este dispositivo.</p>
+                  <p>No te pediremos tu RUT, tu nombre real ni los números de tus tarjetas. Todo queda en este
+                    dispositivo.</p>
                 </div>
               </div>
               <div class="feature-item">
@@ -1348,13 +1587,13 @@
             <div class="slide-badge-hero">🪙 Visual & Dinámico</div>
             <h2>Tu Jarra de Ahorro Activa</h2>
             <p class="slide-subtitle">Una forma gráfica y entretenida de ver crecer tu dinero.</p>
-            
+
             <div class="onboarding-features-list">
               <div class="feature-item">
                 <span class="feat-icon">🌊</span>
                 <div>
-                  <strong>Llenado líquido en tiempo real</strong>
-                  <p>Conforme abones dinero o ahorres, el nivel de líquido de la jarra subirá hacia tu meta.</p>
+                  <strong>Llenado líquido en tiempo real (Simulación de Control)</strong>
+                  <p>Conforme registres tus abonos, el nivel de líquido subirá visualmente hacia tu meta. <em>Nota: Es una simulación visual privada de control financiero, no se abona dinero bancario real.</em></p>
                 </div>
               </div>
               <div class="feature-item">
@@ -1372,7 +1611,7 @@
             <div class="slide-badge-hero">💳 Cero Deudas Innecesarias</div>
             <h2>Tarjetas, Cupo y Fechas de Pago</h2>
             <p class="slide-subtitle">Monitorea tus estados de cuenta para no pagar intereses por mora.</p>
-            
+
             <div class="onboarding-features-list">
               <div class="feature-item">
                 <span class="feat-icon">🔔</span>
@@ -1395,8 +1634,9 @@
           <div class="onboarding-slide" data-onboarding-step="4">
             <div class="slide-badge-hero">🧭 Estrategia & Esquemas</div>
             <h2>Elige tu Esquema Financiero</h2>
-            <p class="slide-subtitle">¿Cómo deseas organizar tu presupuesto y metas de ahorro? Podrás cambiarlo cuando quieras.</p>
-            
+            <p class="slide-subtitle">¿Cómo deseas organizar tu presupuesto y metas de ahorro? Podrás cambiarlo cuando
+              quieras.</p>
+
             <div class="onboarding-schemes-deck">
               <!-- Opción 1: Libertad Financiera -->
               <label class="onboarding-scheme-card active" data-scheme-card="libertad_financiera">
@@ -1406,13 +1646,11 @@
                     <span class="scheme-title">🌟 Libertad Financiera (F.I.R.E.)</span>
                     <span class="scheme-badge-pill">Meta Patrimonial</span>
                   </div>
-                  <p class="scheme-summary">Enfoque para generar rentas pasivas, acumular 200 sueldos y lograr independencia.</p>
+                  <p class="scheme-summary">Enfoque para generar rentas pasivas y lograr independencia financiera.</p>
                   <div class="scheme-bullet-pills">
-                    <span class="scheme-mini-pill">🚀 Invertido: Sueldo × 200</span>
-                    <span class="scheme-mini-pill">🛡️ Emergencia: Sueldo × 4</span>
-                    <span class="scheme-mini-pill">💎 Ahorro: 10%/mes</span>
-                    <span class="scheme-mini-pill">✨ Gustos: 20%</span>
                     <span class="scheme-mini-pill">🏠 Fijos: 70% máx</span>
+                    <span class="scheme-mini-pill">✨ Gustos: 20%</span>
+                    <span class="scheme-mini-pill">💎 Ahorro: 10%/mes</span>
                   </div>
                 </div>
               </label>
@@ -1425,12 +1663,12 @@
                     <span class="scheme-title">🔷 Esquema Común (50 / 30 / 20)</span>
                     <span class="scheme-badge-pill">Equilibrio Clásico</span>
                   </div>
-                  <p class="scheme-summary">Estructura tradicional para mantener gastos bajo control y ahorro constante del 20%.</p>
+                  <p class="scheme-summary">Estructura tradicional para mantener gastos bajo control y ahorro constante
+                    del 20%.</p>
                   <div class="scheme-bullet-pills">
                     <span class="scheme-mini-pill">🏠 Fijos: 50%</span>
                     <span class="scheme-mini-pill">🏖️ Gustos: 30%</span>
                     <span class="scheme-mini-pill">🪙 Ahorro e Inversión: 20%</span>
-                    <span class="scheme-mini-pill">🛡️ Emergencia: 3 meses</span>
                   </div>
                 </div>
               </label>
@@ -1443,11 +1681,11 @@
                     <span class="scheme-title">⚙️ Esquema Personalizado</span>
                     <span class="scheme-badge-pill">100% Flexible</span>
                   </div>
-                  <p class="scheme-summary">Define tus propios porcentajes y crea libremente las jarras que tú decidas.</p>
+                  <p class="scheme-summary">Define tus propios porcentajes y crea libremente las jarras que tú decidas.
+                  </p>
                   <div class="scheme-bullet-pills">
                     <span class="scheme-mini-pill">🎯 Porcentajes configurables</span>
                     <span class="scheme-mini-pill">🏺 Jarras libres ilimitadas</span>
-                    <span class="scheme-mini-pill">🛡️ Fondo configurable</span>
                   </div>
                 </div>
               </label>
@@ -1458,13 +1696,15 @@
           <div class="onboarding-slide" data-onboarding-step="5">
             <div class="slide-badge-hero">🚀 ¡Comencemos!</div>
             <h2>Configura tus Ingresos y Calibra tu Plan</h2>
-            <p class="slide-subtitle">Ingresa tu ingreso mensual neto aproximado para calcular automáticamente las metas de tu esquema.</p>
-            
+            <p class="slide-subtitle">Ingresa tu ingreso mensual neto aproximado para calcular automáticamente las metas
+              de tu esquema.</p>
+
             <div class="onboarding-quick-form">
               <label for="onboarding-income-input">Ingreso Mensual Estimado ($ CLP):</label>
               <div class="input-with-icon">
                 <span class="input-icon">$</span>
-                <input type="number" id="onboarding-income-input" min="0" step="10000" placeholder="Ej: 1000000" value="1000000">
+                <input type="number" id="onboarding-income-input" min="0" step="10000" placeholder="Ej: 1000000"
+                  value="1000000">
               </div>
 
               <!-- Vista Previa Dinámica de Metas según el Esquema Elegido -->
@@ -1474,24 +1714,29 @@
 
               <!-- Campos opcionales si eligió Personalizado -->
               <div id="onboarding-custom-fields" style="display: none; margin-top: 0.75rem;">
-                <label style="font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">Ajusta tus Porcentajes Personalizados:</label>
+                <label style="font-size: 0.82rem; margin-bottom: 0.35rem; display: block;">Ajusta tus Porcentajes
+                  Personalizados:</label>
                 <div class="input-grid" style="grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
                   <div class="form-field">
                     <label for="onboarding-custom-fixed" style="font-size: 0.75rem;">% Fijos</label>
-                    <input type="number" id="onboarding-custom-fixed" min="0" max="100" value="50" style="padding: 0.4rem;">
+                    <input type="number" id="onboarding-custom-fixed" min="0" max="100" value="50"
+                      style="padding: 0.4rem;">
                   </div>
                   <div class="form-field">
                     <label for="onboarding-custom-free" style="font-size: 0.75rem;">% Libres</label>
-                    <input type="number" id="onboarding-custom-free" min="0" max="100" value="30" style="padding: 0.4rem;">
+                    <input type="number" id="onboarding-custom-free" min="0" max="100" value="30"
+                      style="padding: 0.4rem;">
                   </div>
                   <div class="form-field">
                     <label for="onboarding-custom-savings" style="font-size: 0.75rem;">% Ahorro</label>
-                    <input type="number" id="onboarding-custom-savings" min="0" max="100" value="20" style="padding: 0.4rem;">
+                    <input type="number" id="onboarding-custom-savings" min="0" max="100" value="20"
+                      style="padding: 0.4rem;">
                   </div>
                 </div>
               </div>
 
-              <small class="text-muted">Podrás modificar tu sueldo o tu esquema en cualquier momento desde el menú principal.</small>
+              <small class="text-muted">Podrás modificar tu sueldo o tu esquema en cualquier momento desde el menú
+                principal.</small>
             </div>
           </div>
 
@@ -1501,7 +1746,8 @@
           <button type="button" class="btn-ghost" id="btn-onboarding-prev" style="visibility: hidden;">Anterior</button>
           <div class="onboarding-nav-actions">
             <button type="button" class="btn-primary" id="btn-onboarding-next">Siguiente</button>
-            <button type="button" class="btn-primary" id="btn-onboarding-finish" style="display: none;">¡Comenzar ahora!</button>
+            <button type="button" class="btn-primary" id="btn-onboarding-finish" style="display: none;">¡Comenzar
+              ahora!</button>
           </div>
         </div>
       </div>
@@ -1513,7 +1759,9 @@
         <div class="demo-modal-header">
           <div class="demo-title-group">
             <div class="demo-header-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
               <span>Simulador Interactivo de Demostración</span>
             </div>
             <h2>Prueba de Compra & Protección de Ahorro</h2>
@@ -1527,7 +1775,8 @@
             <div class="demo-notice-icon">🛡️</div>
             <div class="demo-notice-text">
               <strong>Entorno 100% de Demostración Aislado</strong>
-              <p>Esta simulación utiliza un perfil financiero de prueba para que explores la inteligencia de FinanSY. <span>Tus datos reales configurados en la app no se modificarán ni sobreescribirán.</span></p>
+              <p>Esta simulación utiliza un perfil financiero de prueba para que explores la inteligencia de FinanSY.
+                <span>Tus datos reales configurados en la app no se modificarán ni sobreescribirán.</span></p>
             </div>
           </div>
 
@@ -1572,7 +1821,7 @@
 
           <!-- Main 2-Column Grid -->
           <div class="demo-grid-layout">
-            
+
             <!-- Left Column: Simulation Inputs -->
             <div class="demo-col-form">
               <div class="demo-group-title">
@@ -1633,7 +1882,8 @@
                   <label for="demo-installments-slider">Número de Cuotas:</label>
                   <span class="badge-value" id="demo-installments-display">6 cuotas</span>
                 </div>
-                <input type="range" id="demo-installments-slider" min="1" max="24" step="1" value="6" class="range-slider">
+                <input type="range" id="demo-installments-slider" min="1" max="24" step="1" value="6"
+                  class="range-slider">
                 <div class="quick-installments-row">
                   <button type="button" class="demo-pill-installment" data-demo-cuotas="1">1 pago</button>
                   <button type="button" class="demo-pill-installment" data-demo-cuotas="3">3 cuotas</button>
@@ -1649,14 +1899,16 @@
                   <label for="demo-savings-guard-slider">🛡️ Escudo de Ahorro Mensual Protegido:</label>
                   <span class="badge-value emerald" id="demo-savings-guard-percent">20%</span>
                 </div>
-                <input type="range" id="demo-savings-guard-slider" min="0" max="50" step="5" value="20" class="range-slider slider-emerald">
-                <span class="field-helper">Protege <strong id="demo-savings-guard-amount">$240.000</strong>/mes antes de permitir cuotas.</span>
+                <input type="range" id="demo-savings-guard-slider" min="0" max="50" step="5" value="20"
+                  class="range-slider slider-emerald">
+                <span class="field-helper">Protege <strong id="demo-savings-guard-amount">$240.000</strong>/mes antes de
+                  permitir cuotas.</span>
               </div>
             </div>
 
             <!-- Right Column: Results, Mini Liquid Jar & Live Verdict -->
             <div class="demo-col-results">
-              
+
               <!-- Result Hero Card -->
               <div class="demo-result-card">
                 <div class="demo-hero-header">
@@ -1706,13 +1958,14 @@
                     <span class="status-dot"></span>
                     <span id="demo-status-text">¡Compra Saludable y Segura!</span>
                   </div>
-                  
+
                   <div class="diagnosis-callout safe" id="demo-diagnosis-callout">
                     <div class="callout-header">
                       <span class="callout-icon" id="demo-diagnosis-icon">✅</span>
                       <strong id="demo-diagnosis-title">¡Compra Recomendada!</strong>
                     </div>
-                    <p id="demo-diagnosis-desc">La cuota mensual de $199.998 cabe perfectamente en el presupuesto simulado y respeta íntegramente la meta del 20% de ahorro protegido.</p>
+                    <p id="demo-diagnosis-desc">La cuota mensual de $199.998 cabe perfectamente en el presupuesto
+                      simulado y respeta íntegramente la meta del 20% de ahorro protegido.</p>
                   </div>
                 </div>
               </div>
@@ -1746,9 +1999,12 @@
         </div>
 
         <div class="demo-modal-footer">
-          <p class="demo-footer-tip">💡 Mueve los deslizadores de cuotas o el escudo de ahorro para ver cómo reacciona la jarra y el diagnóstico en tiempo real.</p>
+          <p class="demo-footer-tip">💡 Mueve los deslizadores de cuotas o el escudo de ahorro para ver cómo reacciona
+            la jarra y el diagnóstico en tiempo real.</p>
           <button type="button" class="btn-primary" data-close="modal-demo">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
             <span>Cerrar Demostración</span>
           </button>
         </div>
@@ -1767,7 +2023,9 @@
   <script src="js/cards.js"></script>
   <script src="js/goals.js"></script>
   <script src="js/calculator.js"></script>
+  <script src="js/receipt-scanner.js"></script>
   <script src="js/demo.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>

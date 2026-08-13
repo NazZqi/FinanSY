@@ -154,31 +154,17 @@ const FinanDashboard = (() => {
     const { formatMoney } = FinanStore;
     const { income, totalFixed, totalInstallments, suggestedSavings, freeDiscretionary, activeScheme, customSettings } = data;
 
-    const btnLibertad = document.getElementById('btn-scheme-tab-libertad');
-    const btnComun = document.getElementById('btn-scheme-tab-comun');
-    const btnPersonalizado = document.getElementById('btn-scheme-tab-personalizado');
-
-    if (btnLibertad) {
-      btnLibertad.classList.toggle('active', activeScheme === 'libertad_financiera');
-      btnLibertad.onclick = () => {
-        FinanStore.setActiveScheme('libertad_financiera');
-        FinanApp.showToast('Esquema cambiado a Libertad Financiera (F.I.R.E.)', 'success');
-      };
+    const schemeBadgeEl = document.getElementById('dash-active-scheme-badge');
+    if (schemeBadgeEl) {
+      if (activeScheme === 'libertad_financiera') schemeBadgeEl.textContent = '🌟 Libertad Financiera';
+      else if (activeScheme === 'comun') schemeBadgeEl.textContent = '🔷 Esquema Común (50/30/20)';
+      else schemeBadgeEl.textContent = '⚙️ Esquema Personalizado';
     }
 
-    if (btnComun) {
-      btnComun.classList.toggle('active', activeScheme === 'comun');
-      btnComun.onclick = () => {
-        FinanStore.setActiveScheme('comun');
-        FinanApp.showToast('Esquema cambiado a Regla Común (50/30/20)', 'info');
-      };
-    }
-
-    if (btnPersonalizado) {
-      btnPersonalizado.classList.toggle('active', activeScheme === 'personalizado');
-      btnPersonalizado.onclick = () => {
-        FinanStore.setActiveScheme('personalizado');
-        FinanApp.showToast('Esquema cambiado a Personalizado', 'success');
+    const btnOpenScheme = document.getElementById('btn-open-scheme-modal-dash');
+    if (btnOpenScheme) {
+      btnOpenScheme.onclick = () => {
+        FinanApp.openModal('modal-change-scheme');
       };
     }
 
@@ -189,12 +175,12 @@ const FinanDashboard = (() => {
     if (activeScheme === 'libertad_financiera') {
       if (schemeTitleEl) schemeTitleEl.textContent = '🌟 Esquema Libertad Financiera (F.I.R.E.)';
       if (schemeSubtitleEl) {
-        schemeSubtitleEl.textContent = 'Estrategia para alcanzar independencia financiera, fondo de 4 meses y rentas pasivas.';
+        schemeSubtitleEl.textContent = 'Estrategia de optimización: 70% tope de fijos, 20% margen libre y 10% ahorro mensual.';
       }
     } else if (activeScheme === 'comun') {
       if (schemeTitleEl) schemeTitleEl.textContent = '🔷 Esquema Común (Regla 50 / 30 / 20)';
       if (schemeSubtitleEl) {
-        schemeSubtitleEl.textContent = 'Estructura equilibrada clásica de finanzas personales para control de vida y metas.';
+        schemeSubtitleEl.textContent = 'Estructura equilibrada clásica: 50% gastos fijos, 30% estilo de vida y 20% ahorro.';
       }
     } else {
       if (schemeTitleEl) schemeTitleEl.textContent = '⚙️ Esquema Personalizado';
@@ -222,31 +208,7 @@ const FinanDashboard = (() => {
             <div class="progress-bar-bg">
               <div class="progress-bar-fill ${isFixedOk ? 'fill-emerald' : 'fill-rose'}" style="width: ${Math.min(100, (pFixed / 70) * 100)}%;"></div>
             </div>
-            <small class="gl-note">${isFixedOk ? '✓ Gastos fijos dentro del límite saludable' : '⚠️ Has superado el 70% máximo sugerido para costos fijos'}</small>
-          </div>
-
-          <div class="guideline-card">
-            <div class="gl-header">
-              <span>🛡️ Fondo de Emergencia (sueldo base * 4)</span>
-              <strong>Meta: ${formatMoney(income * 4)}</strong>
-            </div>
-            <small class="gl-note">Colchón de tranquilidad equivalente a 4 meses de ingresos para imprevistos sin endeudarse.</small>
-          </div>
-
-          <div class="guideline-card">
-            <div class="gl-header">
-              <span>🚀 Invertido Libertad Financiera (sueldo base * 200)</span>
-              <strong>Meta: ${formatMoney(income * 200)}</strong>
-            </div>
-            <small class="gl-note">Patrimonio para generar ingresos pasivos y vivir de rentas con total independencia.</small>
-          </div>
-
-          <div class="guideline-card">
-            <div class="gl-header">
-              <span>💎 Ahorro Mensual (sueldo base * 0.10)</span>
-              <strong>Sugerido: ${formatMoney(income * 0.1)}/mes (10%)</strong>
-            </div>
-            <small class="gl-note">Aporte constante protegido mes a mes para nutrir tus inversiones y proyectos.</small>
+            <small class="gl-note">${isFixedOk ? '✓ Gastos fijos dentro del límite saludable del 70%' : '⚠️ Has superado el 70% máximo sugerido para costos fijos'}</small>
           </div>
 
           <div class="guideline-card">
@@ -254,7 +216,21 @@ const FinanDashboard = (() => {
               <span>✨ Disponible para Ti / Gustos (sueldo base * 0.20)</span>
               <strong>Sugerido: ${formatMoney(income * 0.2)}/mes (20%)</strong>
             </div>
-            <small class="gl-note">Disfrute sin culpa: salidas, hobbies y recreación personal.</small>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill fill-cyan" style="width: ${Math.min(100, (pFree / 20) * 100)}%;"></div>
+            </div>
+            <small class="gl-note">Disfrute sin culpa: recreación, salidas y hobbies personales.</small>
+          </div>
+
+          <div class="guideline-card">
+            <div class="gl-header">
+              <span>💎 Ahorro Mensual (sueldo base * 0.10)</span>
+              <strong>Sugerido: ${formatMoney(income * 0.1)}/mes (10%)</strong>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill fill-emerald" style="width: ${Math.min(100, (pSav / 10) * 100)}%;"></div>
+            </div>
+            <small class="gl-note">Aporte constante protegido mes a mes para nutrir tus proyectos e inversiones.</small>
           </div>
         `;
       } else if (activeScheme === 'comun') {
@@ -335,13 +311,6 @@ const FinanDashboard = (() => {
             </div>
             <div class="progress-bar-bg">
               <div class="progress-bar-fill ${isSavOk ? 'fill-emerald' : 'fill-amber'}" style="width: ${Math.min(100, (pSav / targetSav) * 100)}%;"></div>
-            </div>
-          </div>
-
-          <div class="guideline-card">
-            <div class="gl-header">
-              <span>🛡️ Fondo Emergencia Configurado (${customSettings.emergencyMonths || 6} meses)</span>
-              <strong>Meta: ${formatMoney(income * (customSettings.emergencyMonths || 6))}</strong>
             </div>
           </div>
         `;

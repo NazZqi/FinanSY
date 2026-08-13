@@ -1,6 +1,6 @@
 /**
  * FINANSY — PURCHASE CALCULATOR & SAVINGS PRESERVATION ENGINE
- * Motor inteligente de cálculo de compras en cuotas con verificación estricta de tarjetas.
+ * Motor inteligente de cálculo de compras en cuotas con soporte adaptativo para crédito y débito.
  */
 
 const FinanCalculator = (() => {
@@ -86,6 +86,7 @@ const FinanCalculator = (() => {
     // Quick installment pills
     document.querySelectorAll('.btn-pill-installment').forEach(pill => {
       pill.addEventListener('click', () => {
+        if (pill.classList.contains('disabled')) return;
         const cuotas = Number(pill.getAttribute('data-cuotas')) || 1;
         calcState.installments = cuotas;
         if (instSlider) instSlider.value = cuotas;
@@ -168,21 +169,72 @@ const FinanCalculator = (() => {
     const { formatMoney } = FinanStore;
     const globalState = FinanStore.getState();
 
-    const price = Math.max(0, calcState.productPrice);
-    const n = Math.max(1, calcState.installments);
-    const hasInt = calcState.hasInterest;
-    const monthlyRateDec = (calcState.monthlyRate || 0) / 100;
-    const income = globalState.monthlyIncome || 0;
-    const totalFixed = globalState.fixedExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-    const currentInstallments = globalState.installments.reduce((acc, i) => acc + (Number(i.monthlyAmount) || 0), 0);
-
     // Selected Card Check
     const cardSelect = document.getElementById('calc-card-select');
     let cardId = (cardSelect && cardSelect.value) ? cardSelect.value : (globalState.cards[0] ? globalState.cards[0].id : null);
     const selectedCard = globalState.cards.find(c => c.id === cardId) || null;
+    const isDebit = selectedCard && selectedCard.type === 'debito';
+
+    // Manejo de Débito (Contado obligatorio y sin interés)
+    const radioNo = document.getElementById('radio-interest-no');
+    const radioYes = document.getElementById('radio-interest-yes');
+    const rateWrap = document.getElementById('calc-custom-rate-wrap');
+    const instSlider = document.getElementById('calc-installments-slider');
+    const instDisplay = document.getElementById('calc-installments-display');
+    const interestOptionWrap = document.querySelector('.interest-mode-grid');
+
+    if (isDebit) {
+      calcState.hasInterest = false;
+      calcState.installments = 1;
+      if (radioNo) {
+        radioNo.checked = true;
+        radioNo.disabled = true;
+      }
+      if (radioYes) {
+        radioYes.checked = false;
+        radioYes.disabled = true;
+      }
+      if (rateWrap) rateWrap.style.display = 'none';
+      if (instSlider) {
+        instSlider.value = 1;
+        instSlider.disabled = true;
+      }
+      if (instDisplay) instDisplay.textContent = '1 cuota (Contado)';
+
+      document.querySelectorAll('.btn-pill-installment').forEach(pill => {
+        const c = Number(pill.getAttribute('data-cuotas'));
+        if (c > 1) {
+          pill.classList.add('disabled');
+          pill.style.opacity = '0.4';
+          pill.style.pointerEvents = 'none';
+        } else {
+          pill.classList.remove('disabled');
+          pill.style.opacity = '1';
+          pill.style.pointerEvents = 'auto';
+        }
+      });
+      updatePills(1);
+    } else {
+      if (radioNo) radioNo.disabled = false;
+      if (radioYes) radioYes.disabled = false;
+      if (instSlider) instSlider.disabled = false;
+      document.querySelectorAll('.btn-pill-installment').forEach(pill => {
+        pill.classList.remove('disabled');
+        pill.style.opacity = '1';
+        pill.style.pointerEvents = 'auto';
+      });
+    }
 
     // Update Selected Card Preview
     updateCardPreview(selectedCard);
+
+    const price = Math.max(0, calcState.productPrice);
+    const n = isDebit ? 1 : Math.max(1, calcState.installments);
+    const hasInt = isDebit ? false : calcState.hasInterest;
+    const monthlyRateDec = (calcState.monthlyRate || 0) / 100;
+    const income = globalState.monthlyIncome || 0;
+    const totalFixed = globalState.fixedExpenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const currentInstallments = globalState.installments.reduce((acc, i) => acc + (Number(i.monthlyAmount) || 0), 0);
 
     // 1. Calculate Monthly Installment & Total Cost
     let monthlyInstallment = 0;
@@ -215,10 +267,10 @@ const FinanCalculator = (() => {
     const baseDiscretionary = Math.max(0, income - totalFixed - currentInstallments - protectedSavingsAmount);
     const remainingFreeAfterPayment = baseDiscretionary - monthlyInstallment;
 
-    // 3. Card Cupo Impact
-    const cardAvail = selectedCard ? Math.max(0, selectedCard.limit - selectedCard.used) : 0;
-    const cardLimit = selectedCard ? selectedCard.limit : 0;
-    const isExceedingCupo = selectedCard && (price > cardAvail);
+    // 3. Card Cupo Impact (Solo para crédito)
+    const cardAvail = (!isDebit && selectedCard) ? Math.max(0, selectedCard.limit - selectedCard.used) : 0;
+    const cardLimit = (!isDebit && selectedCard) ? selectedCard.limit : 0;
+    const isExceedingCupo = (!isDebit && selectedCard) && (price > cardAvail);
     const cupoUsagePercentAfter = cardLimit > 0 ? Math.min(100, Math.round(((selectedCard.used + price) / cardLimit) * 100)) : 0;
 
     // 4. Update UI Outputs
@@ -231,14 +283,21 @@ const FinanCalculator = (() => {
     const baseIncomeEl = document.getElementById('calc-base-income-display');
 
     if (heroPriceEl) heroPriceEl.textContent = formatMoney(monthlyInstallment);
-    if (heroPeriodEl) heroPeriodEl.textContent = `por ${n} ${n === 1 ? 'mes' : 'meses consecutivos'}`;
+    if (heroPeriodEl) {
+      heroPeriodEl.textContent = isDebit ? 'Pago total al contado (Débito)' : `por ${n} ${n === 1 ? 'mes' : 'meses consecutivos'}`;
+    }
     if (origPriceEl) origPriceEl.textContent = formatMoney(price);
     
     if (totalIntEl) {
-      totalIntEl.textContent = hasInt 
-        ? `${formatMoney(totalInterest)} (${calcState.monthlyRate}% mensual)` 
-        : '$0 (Sin Interés)';
-      totalIntEl.className = hasInt ? 'text-rose' : 'text-emerald';
+      if (isDebit) {
+        totalIntEl.textContent = '$0 (Débito al Contado)';
+        totalIntEl.className = 'text-emerald';
+      } else {
+        totalIntEl.textContent = hasInt 
+          ? `${formatMoney(totalInterest)} (${calcState.monthlyRate}% mensual)` 
+          : '$0 (Sin Interés)';
+        totalIntEl.className = hasInt ? 'text-rose' : 'text-emerald';
+      }
     }
 
     if (finalTotalEl) finalTotalEl.textContent = formatMoney(totalCost);
@@ -263,13 +322,17 @@ const FinanCalculator = (() => {
     }
 
     if (cupoTextEl) {
-      cupoTextEl.textContent = selectedCard 
-        ? `${cupoUsagePercentAfter}% proyectado (Disp: ${formatMoney(Math.max(0, cardAvail - price))})`
-        : '⚠️ Requiere registrar tarjeta';
+      if (isDebit) {
+        cupoTextEl.textContent = '💵 Tarjeta de Débito: Sin cupo mensual de crédito';
+      } else {
+        cupoTextEl.textContent = selectedCard 
+          ? `${cupoUsagePercentAfter}% proyectado (Disp: ${formatMoney(Math.max(0, cardAvail - price))})`
+          : '⚠️ Requiere registrar tarjeta';
+      }
     }
 
     if (cupoBarEl) {
-      cupoBarEl.style.width = `${cupoUsagePercentAfter}%`;
+      cupoBarEl.style.width = isDebit ? '0%' : `${cupoUsagePercentAfter}%`;
       cupoBarEl.className = `progress-bar-fill ${cupoUsagePercentAfter > 85 ? 'fill-rose' : (cupoUsagePercentAfter > 60 ? 'fill-amber' : 'fill-emerald')}`;
     }
 
@@ -277,6 +340,7 @@ const FinanCalculator = (() => {
     updateVerdict({
       hasCard: !!selectedCard,
       cardsCount: globalState.cards.length,
+      isDebit,
       price,
       monthlyInstallment,
       remainingFreeAfterPayment,
@@ -311,8 +375,24 @@ const FinanCalculator = (() => {
       return;
     }
 
+    const isDebit = card.type === 'debito';
+
+    if (isDebit) {
+      previewBox.innerHTML = `
+        <div class="preview-card-chip"></div>
+        <div class="preview-card-info">
+          <strong id="preview-card-name">${escapeHtml(card.alias)}</strong>
+          <span class="preview-card-type" id="preview-card-type">Débito Bancario · Pago al Contado</span>
+        </div>
+        <div class="preview-card-balance">
+          <span style="color: #6EE7B7; font-size: 0.85rem; font-weight: 600;">✓ Pago directo (1 cuota sin interés)</span>
+        </div>
+      `;
+      return;
+    }
+
     const avail = Math.max(0, card.limit - card.used);
-    const typeText = card.type === 'credito' ? 'Crédito' : (card.type === 'debito' ? 'Débito' : 'Prepago');
+    const typeText = card.type === 'credito' ? 'Crédito' : 'Prepago Digital';
 
     previewBox.innerHTML = `
       <div class="preview-card-chip"></div>
@@ -346,7 +426,7 @@ const FinanCalculator = (() => {
       callout.className = 'diagnosis-callout warning';
       calloutIcon.textContent = '💳';
       calloutTitle.textContent = 'Debes ingresar al menos 1 tarjeta para hacer un pago';
-      calloutDesc.textContent = 'Para calcular con precisión el impacto en tu cupo y registrar el pago, necesitas agregar al menos 1 tarjeta (sin números confidenciales).';
+      calloutDesc.textContent = 'Para calcular con precisión el impacto en tu presupuesto y registrar el pago, necesitas agregar al menos 1 tarjeta.';
       if (btnCommit) {
         btnCommit.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -374,39 +454,27 @@ const FinanCalculator = (() => {
       callout.className = 'diagnosis-callout danger';
       calloutIcon.textContent = '⚠️';
       calloutTitle.textContent = `Alerta: Canibaliza tu ${data.savingsGuardPercent}% de Ahorro`;
-      calloutDesc.textContent = `Pagar una cuota de ${formatMoney(data.monthlyInstallment)} te dejaría con déficit de ${formatMoney(Math.abs(data.remainingFreeAfterPayment))} respecto a tu meta de ahorro mensual de ${formatMoney(data.protectedSavingsAmount)}. Te sugerimos aumentar el número de cuotas o postergar la compra.`;
+      calloutDesc.textContent = `Pagar este monto de ${formatMoney(data.monthlyInstallment)} te dejaría con déficit de ${formatMoney(Math.abs(data.remainingFreeAfterPayment))} respecto a tu meta de ahorro mensual de ${formatMoney(data.protectedSavingsAmount)}.`;
       if (btnCommit) {
         btnCommit.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Añadir a mis Cuotas Activas</span>
-        `;
-      }
-    } else if (data.remainingFreeAfterPayment < 50000) {
-      // WARNING: TIGHT BUDGET
-      badge.className = 'status-indicator-badge status-warning';
-      badgeText.textContent = 'Presupuesto Ajustado';
-      callout.className = 'diagnosis-callout warning';
-      calloutIcon.textContent = '⚡';
-      calloutTitle.textContent = 'Compra Viable pero Ajustada';
-      calloutDesc.textContent = `Tu ahorro del ${data.savingsGuardPercent}% se mantiene a salvo, pero tu margen libre quedará en solo ${formatMoney(data.remainingFreeAfterPayment)} al mes durante los próximos ${data.n} meses.`;
-      if (btnCommit) {
-        btnCommit.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Añadir a mis Cuotas Activas</span>
+          <span>${data.isDebit ? 'Registrar Gasto de Débito' : 'Añadir a mis Cuotas Activas'}</span>
         `;
       }
     } else {
       // SAFE: GREEN LIGHT
       badge.className = 'status-indicator-badge status-safe';
-      badgeText.textContent = '¡Compra Saludable y Segura!';
+      badgeText.textContent = data.isDebit ? '¡Compra al Contado Lista!' : '¡Compra Saludable y Segura!';
       callout.className = 'diagnosis-callout safe';
       calloutIcon.textContent = '✅';
-      calloutTitle.textContent = '¡Compra Recomendada y Segura!';
-      calloutDesc.textContent = `La cuota mensual de ${formatMoney(data.monthlyInstallment)} encaja perfectamente en tu presupuesto disponible y respeta tu meta del ${data.savingsGuardPercent}% de ahorro protegido.`;
+      calloutTitle.textContent = data.isDebit ? 'Pago al Contado con Débito' : '¡Compra Recomendada y Segura!';
+      calloutDesc.textContent = data.isDebit 
+        ? `El pago al contado de ${formatMoney(data.price)} encaja en tu presupuesto mensual disponible y respeta tu meta del ${data.savingsGuardPercent}% de ahorro.`
+        : `La cuota mensual de ${formatMoney(data.monthlyInstallment)} encaja perfectamente en tu presupuesto disponible y respeta tu meta del ${data.savingsGuardPercent}% de ahorro protegido.`;
       if (btnCommit) {
         btnCommit.innerHTML = `
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          <span>Añadir a mis Cuotas Activas</span>
+          <span>${data.isDebit ? 'Registrar Pago al Contado (Débito)' : 'Añadir a mis Cuotas Activas'}</span>
         `;
       }
     }
@@ -418,7 +486,6 @@ const FinanCalculator = (() => {
     const cardSelect = document.getElementById('calc-card-select');
     const cardId = cardSelect ? cardSelect.value : null;
 
-    // Validación obligatoria: Debes ingresar al menos 1 tarjeta para hacer un pago
     if (!globalState.cards || globalState.cards.length === 0 || !cardId) {
       FinanApp.showToast('Debes ingresar al menos 1 tarjeta para hacer un pago o compra.', 'danger');
       FinanApp.openModal('modal-card');
@@ -427,6 +494,24 @@ const FinanCalculator = (() => {
 
     if (!calcState.productPrice || calcState.productPrice <= 0) {
       FinanApp.showToast('Ingresa un valor válido para la compra', 'info');
+      return;
+    }
+
+    const card = globalState.cards.find(c => c.id === cardId);
+    const isDebit = card && card.type === 'debito';
+
+    if (isDebit) {
+      // Débito se registra como compromiso / pago directo al contado
+      FinanStore.addInstallment({
+        name: `${calcState.productName || 'Compra al contado'} (${card.alias})`,
+        monthlyAmount: calcState.productPrice,
+        totalInstallments: 1,
+        currentInstallment: 1,
+        remainingMonths: 1,
+        cardId: cardId,
+        totalPurchase: calcState.productPrice
+      });
+      FinanApp.showToast(`¡Pago al contado de ${formatMoney(calcState.productPrice)} registrado con tu tarjeta de Débito!`, 'success');
       return;
     }
 
@@ -441,6 +526,8 @@ const FinanCalculator = (() => {
     FinanStore.addInstallment({
       name: calcState.productName || 'Compra en cuotas',
       monthlyAmount: monthlyInstallment,
+      totalInstallments: n,
+      currentInstallment: 1,
       remainingMonths: n,
       cardId: cardId,
       totalPurchase: calcState.productPrice

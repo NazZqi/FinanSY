@@ -48,6 +48,7 @@ const FinanCards = (() => {
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     deckContainer.innerHTML = cards.map(card => {
+      const isDebit = card.type === 'debito';
       const avail = Math.max(0, card.limit - card.used);
       const usedPercent = card.limit > 0 ? Math.min(100, Math.round((card.used / card.limit) * 100)) : 0;
       
@@ -59,7 +60,9 @@ const FinanCards = (() => {
       const daysInfo = getDaysUntilDue(card.paymentDueDay || 5);
 
       let reminderBadge = '';
-      if (isPaid) {
+      if (isDebit) {
+        reminderBadge = `<span class="card-due-badge badge-paid">💵 Contado</span>`;
+      } else if (isPaid) {
         reminderBadge = `<span class="card-due-badge badge-paid">✓ Pagado este mes</span>`;
       } else if (daysInfo.daysRemaining === 0) {
         reminderBadge = `<span class="card-due-badge badge-urgent">🚨 ¡Vence Hoy!</span>`;
@@ -70,7 +73,7 @@ const FinanCards = (() => {
       }
 
       return `
-        <div class="visual-credit-card ${card.color || 'gradient-dark'}" data-card-id="${card.id}">
+        <div class="visual-credit-card ${card.color || 'gradient-dark'} ${isDebit ? 'visual-card-debit' : ''}" data-card-id="${card.id}">
           <div class="card-top-row">
             <div class="card-chip"></div>
             <div class="card-badges-wrap">
@@ -84,26 +87,39 @@ const FinanCards = (() => {
           </div>
 
           <div class="card-bottom-row">
-            <div class="card-cupo-labels">
-              <span>Cupo Utilizado (${usedPercent}%)</span>
-              <strong>${formatMoney(card.used)}</strong>
-            </div>
+            ${isDebit ? `
+              <div class="card-debit-badge-note">
+                <span>Cuenta de Débito Bancaria</span>
+                <strong style="color: #6EE7B7; font-size: 0.85rem;">Pago al Contado (Sin Cupo Mensual)</strong>
+              </div>
+              <div class="card-action-bar" style="margin-top: 0.8rem;">
+                <span style="font-size: 0.76rem; color: rgba(255,255,255,0.7);">💳 Transacciones directas sin cobro de interés</span>
+                <button class="card-btn-delete" data-delete-card-id="${card.id}" title="Eliminar tarjeta">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              </div>
+            ` : `
+              <div class="card-cupo-labels">
+                <span>Cupo Utilizado (${usedPercent}%)</span>
+                <strong>${formatMoney(card.used)}</strong>
+              </div>
 
-            <div class="progress-bar-bg" style="background: rgba(0,0,0,0.3); height: 7px;">
-              <div class="progress-bar-fill fill-amber" style="width: ${usedPercent}%;"></div>
-            </div>
+              <div class="progress-bar-bg" style="background: rgba(0,0,0,0.3); height: 7px;">
+                <div class="progress-bar-fill fill-amber" style="width: ${usedPercent}%;"></div>
+              </div>
 
-            <div class="card-cupo-labels" style="margin-top: 0.2rem;">
-              <span>Disponible:</span>
-              <strong style="color: #6EE7B7; font-size: 0.95rem;">${formatMoney(avail)}</strong>
-            </div>
+              <div class="card-cupo-labels" style="margin-top: 0.2rem;">
+                <span>Disponible:</span>
+                <strong style="color: #6EE7B7; font-size: 0.95rem;">${formatMoney(avail)}</strong>
+              </div>
 
-            <div class="card-action-bar">
-              <span>📅 Corte: Día ${card.billingDay || 15} · Vencimiento: Día ${card.paymentDueDay || 5}</span>
-              <button class="card-btn-delete" data-delete-card-id="${card.id}" title="Eliminar tarjeta">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              </button>
-            </div>
+              <div class="card-action-bar">
+                <span>📅 Corte: Día ${card.billingDay || 15} · Vencimiento: Día ${card.paymentDueDay || 5}</span>
+                <button class="card-btn-delete" data-delete-card-id="${card.id}" title="Eliminar tarjeta">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+              </div>
+            `}
           </div>
         </div>
       `;
