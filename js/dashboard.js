@@ -1,10 +1,15 @@
 /**
- * FINANSY — DASHBOARD GENERAL & RESUMEN FINANCIERO CONSOLIDADO
- * Pestaña ejecutiva de visualización con KPIs, Gráfico Donut SVG de flujo de dinero,
- * comparativa del esquema activo (Libertad Financiera vs Común vs Personalizado) y proyecciones.
+ * FINANSY — RESUMEN FINANCIERO & DASHBOARD MENSUAL
+ * Visualización ejecutiva consolidada con KPIs, Gráfico Donut SVG de flujo de dinero,
+ * comparativa del esquema activo (Libertad Financiera, Común, Personalizado),
+ * proyecciones F.I.R.E. y Calendario Financiero Mensual interactivo.
  */
 
 const FinanDashboard = (() => {
+
+  // Variables de estado del calendario mensual
+  let calCurrentDate = new Date();
+  let calSelectedDay = null;
 
   function render(state) {
     const { formatMoney, formatPercent } = FinanStore;
@@ -15,8 +20,8 @@ const FinanDashboard = (() => {
     const customSettings = state.customSchemeSettings || { fixedPercent: 50, freePercent: 30, savingsPercent: 20, emergencyMonths: 6, freedomMultiplier: 150 };
 
     // 1. Totales de Gastos Fijos y Cuotas
-    const totalFixed = state.fixedExpenses.reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0);
-    const totalInstallments = state.installments.reduce((acc, inst) => acc + (Number(inst.monthlyAmount) || 0), 0);
+    const totalFixed = (state.fixedExpenses || []).reduce((acc, exp) => acc + (Number(exp.amount) || 0), 0);
+    const totalInstallments = (state.installments || []).reduce((acc, inst) => acc + (Number(inst.monthlyAmount) || 0), 0);
     const totalCommitted = totalFixed + totalInstallments;
 
     // Ahorro mensual sugerido
@@ -37,10 +42,10 @@ const FinanDashboard = (() => {
 
     // Patrimonio total (Jarras + Metas)
     const totalSavings = FinanStore.getTotalSavings();
-    const totalGoals = state.goals.reduce((acc, g) => acc + (Number(g.current) || 0), 0);
+    const totalGoals = (state.goals || []).reduce((acc, g) => acc + (Number(g.current) || 0), 0);
 
     // Tarjetas y deuda
-    const creditCards = state.cards.filter(c => c.type === 'credito');
+    const creditCards = (state.cards || []).filter(c => c.type === 'credito');
     const totalCreditLimit = creditCards.reduce((acc, c) => acc + (Number(c.limit) || 0), 0);
     const totalCreditUsed = creditCards.reduce((acc, c) => acc + (Number(c.used) || 0), 0);
 
@@ -107,6 +112,9 @@ const FinanDashboard = (() => {
 
     // Renderizar Proyecciones F.I.R.E. y Fondo de Emergencia
     renderFinancialProjections(state, activeJars, income, suggestedSavings, customSettings);
+
+    // Renderizar Calendario Financiero Mensual
+    renderMonthlyCalendar(state);
   }
 
   function renderKPIs(data) {
@@ -143,16 +151,36 @@ const FinanDashboard = (() => {
   }
 
   function renderSchemeOverview(state, data) {
-    const { formatMoney, formatPercent } = FinanStore;
+    const { formatMoney } = FinanStore;
     const { income, totalFixed, totalInstallments, suggestedSavings, freeDiscretionary, activeScheme, customSettings } = data;
 
     const btnLibertad = document.getElementById('btn-scheme-tab-libertad');
     const btnComun = document.getElementById('btn-scheme-tab-comun');
     const btnPersonalizado = document.getElementById('btn-scheme-tab-personalizado');
 
-    if (btnLibertad) btnLibertad.classList.toggle('active', activeScheme === 'libertad_financiera');
-    if (btnComun) btnComun.classList.toggle('active', activeScheme === 'comun');
-    if (btnPersonalizado) btnPersonalizado.classList.toggle('active', activeScheme === 'personalizado');
+    if (btnLibertad) {
+      btnLibertad.classList.toggle('active', activeScheme === 'libertad_financiera');
+      btnLibertad.onclick = () => {
+        FinanStore.setActiveScheme('libertad_financiera');
+        FinanApp.showToast('Esquema cambiado a Libertad Financiera (F.I.R.E.)', 'success');
+      };
+    }
+
+    if (btnComun) {
+      btnComun.classList.toggle('active', activeScheme === 'comun');
+      btnComun.onclick = () => {
+        FinanStore.setActiveScheme('comun');
+        FinanApp.showToast('Esquema cambiado a Regla Común (50/30/20)', 'info');
+      };
+    }
+
+    if (btnPersonalizado) {
+      btnPersonalizado.classList.toggle('active', activeScheme === 'personalizado');
+      btnPersonalizado.onclick = () => {
+        FinanStore.setActiveScheme('personalizado');
+        FinanApp.showToast('Esquema cambiado a Personalizado', 'success');
+      };
+    }
 
     const schemeTitleEl = document.getElementById('dash-scheme-title');
     const schemeSubtitleEl = document.getElementById('dash-scheme-subtitle');
@@ -177,7 +205,6 @@ const FinanDashboard = (() => {
 
     // Porcentajes Reales
     const pFixed = income > 0 ? Number(((totalFixed / income) * 100).toFixed(1)) : 0;
-    const pDebt = income > 0 ? Number(((totalInstallments / income) * 100).toFixed(1)) : 0;
     const pSav = income > 0 ? Number(((suggestedSavings / income) * 100).toFixed(1)) : 0;
     const pFree = income > 0 ? Number(((freeDiscretionary / income) * 100).toFixed(1)) : 0;
 
@@ -477,17 +504,62 @@ const FinanDashboard = (() => {
     });
   }
 
-    // Renderizar Proyecciones F.I.R.E. y Fondo de Emergencia
-    renderFinancialProjections(state, activeJars, income, suggestedSavings, customSettings);
+  function renderFinancialProjections(state, jars, income, monthlySavings, customSettings) {
+    const { formatMoney } = FinanStore;
 
-    // Renderizar Calendario Financiero Mensual & Asistencia
-    renderMonthlyCalendar(state);
+    const emergJar = (jars || []).find(j => j.category === 'emergencia') || (jars && jars[0]);
+    const freedomJar = (jars || []).find(j => j.category === 'inversion') || (jars && jars[1]);
+
+    const emergContainer = document.getElementById('dash-projection-emergency');
+    const freedomContainer = document.getElementById('dash-projection-freedom');
+
+    if (emergContainer && emergJar) {
+      const targetEmerg = FinanStore.calculateJarTarget(emergJar, income);
+      const balanceEmerg = Number(emergJar.balance) || 0;
+      const remainingEmerg = Math.max(0, targetEmerg - balanceEmerg);
+
+      let monthsToEmerg = 0;
+      if (remainingEmerg === 0) {
+        monthsToEmerg = 0;
+      } else if (monthlySavings > 0) {
+        monthsToEmerg = Math.ceil(remainingEmerg / monthlySavings);
+      } else {
+        monthsToEmerg = '—';
+      }
+
+      emergContainer.innerHTML = `
+        <div class="projection-badge">🛡️ Fondo de Emergencia</div>
+        <div class="projection-target-title">${formatMoney(balanceEmerg)} de ${formatMoney(targetEmerg)}</div>
+        <div class="projection-time">${remainingEmerg === 0 ? '¡Meta Completada! 🎉' : `Faltan ~${monthsToEmerg} meses`}</div>
+        <p class="projection-desc">Al ritmo actual de ahorro de ${formatMoney(monthlySavings)}/mes.</p>
+      `;
+    }
+
+    if (freedomContainer && freedomJar) {
+      const targetFreedom = FinanStore.calculateJarTarget(freedomJar, income);
+      const balanceFreedom = Number(freedomJar.balance) || 0;
+      const remainingFreedom = Math.max(0, targetFreedom - balanceFreedom);
+
+      let yearsToFreedom = 0;
+      if (remainingFreedom === 0) {
+        yearsToFreedom = 0;
+      } else if (monthlySavings > 0) {
+        const annualSavings = monthlySavings * 12;
+        yearsToFreedom = (remainingFreedom / annualSavings).toFixed(1);
+      } else {
+        yearsToFreedom = '—';
+      }
+
+      freedomContainer.innerHTML = `
+        <div class="projection-badge">🚀 Libertad / Meta Principal</div>
+        <div class="projection-target-title">${formatMoney(balanceFreedom)} de ${formatMoney(targetFreedom)}</div>
+        <div class="projection-time">${remainingFreedom === 0 ? '¡Meta Alcanzada! 🏆' : `~${yearsToFreedom} años`}</div>
+        <p class="projection-desc">Para acumular los ${formatMoney(targetFreedom)} definidos en tu plan.</p>
+      `;
+    }
   }
 
   // --- Módulo Calendario Financiero Mensual ---
-  let calCurrentDate = new Date();
-  let calSelectedDay = null;
-
   function renderMonthlyCalendar(state) {
     const { formatMoney } = FinanStore;
 
@@ -511,7 +583,7 @@ const FinanDashboard = (() => {
       monthTitleEl.textContent = `${monthNames[month]} ${year}`;
     }
 
-    // Configurar listeners de navegación (solo una vez o idempotente)
+    // Configurar listeners de navegación
     if (btnPrev && !btnPrev.dataset.bound) {
       btnPrev.dataset.bound = 'true';
       btnPrev.addEventListener('click', () => {
@@ -546,7 +618,7 @@ const FinanDashboard = (() => {
       eventsByDay[d] = [];
     }
 
-    // 1. Ingreso Mensual (Día 1 y fin de mes si hay ingreso)
+    // 1. Ingreso Mensual
     const income = Number(state.monthlyIncome) || 0;
     if (income > 0) {
       eventsByDay[1].push({
@@ -598,7 +670,7 @@ const FinanDashboard = (() => {
 
     // 3. Cuotas Activas
     (state.installments || []).forEach(inst => {
-      const instDay = 10; // Día estándar de cuotas en el mes
+      const instDay = 10;
       const total = inst.totalInstallments || inst.remainingMonths || 1;
       const current = inst.currentInstallment || 1;
 
@@ -614,7 +686,7 @@ const FinanDashboard = (() => {
     // Generar cuadrícula de celdas
     let gridHtml = '';
 
-    // Días del mes anterior (padding inicial)
+    // Días del mes anterior
     for (let i = adjustedFirstDay - 1; i >= 0; i--) {
       const prevD = prevMonthDays - i;
       gridHtml += `<div class="cal-day-cell other-month"><span class="cal-day-num">${prevD}</span></div>`;
@@ -655,7 +727,7 @@ const FinanDashboard = (() => {
       `;
     }
 
-    // Días del mes siguiente (padding final para completar filas de 7)
+    // Días del mes siguiente
     const totalCells = adjustedFirstDay + totalDaysInMonth;
     const remainingCells = (7 - (totalCells % 7)) % 7;
     for (let nextD = 1; nextD <= remainingCells; nextD++) {
@@ -669,7 +741,7 @@ const FinanDashboard = (() => {
       cell.addEventListener('click', () => {
         const clickedDay = Number(cell.getAttribute('data-cal-day'));
         if (calSelectedDay === clickedDay) {
-          calSelectedDay = null; // deseleccionar para ver todo el mes
+          calSelectedDay = null;
         } else {
           calSelectedDay = clickedDay;
         }
@@ -686,7 +758,6 @@ const FinanDashboard = (() => {
     if (!container) return;
 
     if (selectedDay) {
-      // Mostrar solo los eventos del día seleccionado
       const events = eventsByDay[selectedDay] || [];
       if (events.length === 0) {
         container.innerHTML = `
@@ -726,7 +797,6 @@ const FinanDashboard = (() => {
       return;
     }
 
-    // Si no hay día seleccionado, mostrar Resumen Mensual Consolidado
     const allEvents = [];
     for (let d = 1; d <= totalDays; d++) {
       (eventsByDay[d] || []).forEach(ev => {
@@ -775,62 +845,8 @@ const FinanDashboard = (() => {
     `;
   }
 
-  function renderFinancialProjections(state, jars, income, monthlySavings, customSettings) {
-    const { formatMoney } = FinanStore;
-
-    const emergJar = jars.find(j => j.category === 'emergencia') || jars[0];
-    const freedomJar = jars.find(j => j.category === 'inversion') || jars[1];
-
-    const emergContainer = document.getElementById('dash-projection-emergency');
-    const freedomContainer = document.getElementById('dash-projection-freedom');
-
-    if (emergContainer && emergJar) {
-      const targetEmerg = FinanStore.calculateJarTarget(emergJar, income);
-      const balanceEmerg = Number(emergJar.balance) || 0;
-      const remainingEmerg = Math.max(0, targetEmerg - balanceEmerg);
-
-      let monthsToEmerg = 0;
-      if (remainingEmerg === 0) {
-        monthsToEmerg = 0;
-      } else if (monthlySavings > 0) {
-        monthsToEmerg = Math.ceil(remainingEmerg / monthlySavings);
-      } else {
-        monthsToEmerg = '—';
-      }
-
-      emergContainer.innerHTML = `
-        <div class="projection-badge">🛡️ Fondo de Emergencia</div>
-        <div class="projection-target-title">${formatMoney(balanceEmerg)} de ${formatMoney(targetEmerg)}</div>
-        <div class="projection-time">${remainingEmerg === 0 ? '¡Meta Completada! 🎉' : `Faltan ~${monthsToEmerg} meses`}</div>
-        <p class="projection-desc">Al ritmo actual de ahorro de ${formatMoney(monthlySavings)}/mes.</p>
-      `;
-    }
-
-    if (freedomContainer && freedomJar) {
-      const targetFreedom = FinanStore.calculateJarTarget(freedomJar, income);
-      const balanceFreedom = Number(freedomJar.balance) || 0;
-      const remainingFreedom = Math.max(0, targetFreedom - balanceFreedom);
-
-      let yearsToFreedom = 0;
-      if (remainingFreedom === 0) {
-        yearsToFreedom = 0;
-      } else if (monthlySavings > 0) {
-        const annualSavings = monthlySavings * 12;
-        yearsToFreedom = (remainingFreedom / annualSavings).toFixed(1);
-      } else {
-        yearsToFreedom = '—';
-      }
-
-      freedomContainer.innerHTML = `
-        <div class="projection-badge">🚀 Libertad / Meta Principal</div>
-        <div class="projection-target-title">${formatMoney(balanceFreedom)} de ${formatMoney(targetFreedom)}</div>
-        <div class="projection-time">${remainingFreedom === 0 ? '¡Meta Alcanzada! 🏆' : `~${yearsToFreedom} años`}</div>
-        <p class="projection-desc">Para acumular los ${formatMoney(targetFreedom)} definidos en tu plan.</p>
-      `;
-    }
-  }
-
   function escapeHtml(str) {
+    if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
