@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FinanSY — Asistente de Financiamiento y Control Personal</title>
+  <meta name="description" content="Controla tus ingresos, gastos, metas, tarjetas y simula compras inteligentes protegiendo tu porcentaje de ahorro. 100% privado y anónimo.">
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10B981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FinanSY">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%2310B981'/><path d='M380 180V120a20 20 0 0 0-20-20H100a40 40 0 0 0 0 80h300a20 20 0 0 1 20 20v80h-60a40 40 0 0 0 0 80h60a20 20 0 0 0 20-20v-40a20 20 0 0 0-20-20' fill='none' stroke='%230B0F17' stroke-width='36' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/jarra-animada.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Finan<span>SY</span></h1>
+          <p class="brand-subtitle">Web & Celular · 100% Privado</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btn-install-pwa" class="btn-install-app" style="display: none;" title="Instalar en celular o escritorio">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Instalar</span>
+        </button>
+        <button id="btn-open-tutorial" class="btn-ghost-icon" title="Ver Guía y Tutorial de Bienvenida">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Tutorial</span>
+        </button>
+        <button id="btn-privacy-info" class="badge-privacy" title="Tu información está 100% segura en tu dispositivo">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span>Privado</span>
+        </button>
+        <button id="btn-quick-demo" class="btn-demo-glow" title="Cargar demostración interactiva rápida">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Demo</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Global Quick Financial Bar -->
+    <section class="global-summary-bar">
+      <div class="summary-card" id="summary-income-card">
+        <span class="summary-label">Ingresos Mensuales</span>
+        <span class="summary-value income" id="global-income-display">$0</span>
+        <button class="btn-mini-edit" id="btn-edit-income" title="Editar ingresos">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        </button>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-label">Gastos Fijos + Cuotas</span>
+        <span class="summary-value expense" id="global-expenses-display">$0</span>
+        <span class="summary-sub" id="global-commit-rate">0% del ingreso</span>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-label">Disponible Mensual</span>
+        <span class="summary-value available" id="global-available-display">$0</span>
+        <span class="summary-sub" id="global-free-rate">Capacidad libre</span>
+      </div>
+
+      <div class="summary-card highlight-card">
+        <span class="summary-label">Ahorro Acumulado</span>
+        <span class="summary-value savings" id="global-savings-display">$0</span>
+        <span class="summary-sub" id="global-savings-rate">En tu jarra activa</span>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs (Matching the 4 sketch views) -->
+    <nav class="main-nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="ahorros" role="tab" aria-selected="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Ahorros (Jarra)</span>
+      </button>
+
+      <button class="nav-tab" data-tab="metas" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        <span>Metas</span>
+        <span class="tab-badge" id="goals-count-badge">0</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tarjetas" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Tarjetas y Cupo</span>
+        <span class="tab-badge" id="cards-count-badge">0</span>
+      </button>
+
+      <button class="nav-tab special-calc-tab" data-tab="calculadora" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path></svg>
+        <span>Calculadora de Compra</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Views Container -->
+    <main class="views-wrapper">
+      
+      <!-- ============================================================== -->
+      <!-- VIEW 1: AHORROS (JARRA DINÁMICA) -->
+      <!-- ============================================================== -->
+      <section id="view-ahorros" class="view-panel active">
+        <div class="view-header">
+          <div>
+            <h2>Jarra Dinámica de Ahorros</h2>
+            <p class="text-muted">Visualiza el crecimiento de tus fondos en tiempo real.</p>
+          </div>
+          <div class="view-header-buttons">
+            <button class="btn-secondary" id="btn-quick-deposit">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Abonar Ahorro</span>
+            </button>
+            <button class="btn-ghost" id="btn-quick-withdraw">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Retirar</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="jarra-layout-grid">
+          <!-- Columna Izquierda: Jarra Visual Interactiva -->
+          <div class="jar-display-card">
+            <div class="jar-card-header">
+              <span class="jar-tag">Nivel de Ahorro Activo</span>
+              <span class="jar-fill-percent" id="jar-percentage-text">0%</span>
+            </div>
+
+            <!-- Contenedor Visual de la Jarra de Cristal -->
+            <div class="jar-visual-container">
+              <!-- Marcas de medición al lado de la jarra -->
+              <div class="jar-milestones">
+                <span class="milestone-mark m-100" id="mark-top-val">$1.000.000 (Meta)</span>
+                <span class="milestone-mark m-75" id="mark-75-val">$750.000</span>
+                <span class="milestone-mark m-50" id="mark-50-val">$500.000</span>
+                <span class="milestone-mark m-25" id="mark-25-val">$250.000</span>
+                <span class="milestone-mark m-0">$0</span>
+              </div>
+
+              <div class="jar-glass-body" id="jar-glass-body">
+                <div class="jar-lid"></div>
+                <div class="jar-neck"></div>
+                <div class="jar-inner-space">
+                  <!-- Capa de líquido animado -->
+                  <div class="jar-liquid-fill" id="jar-liquid-fill" style="height: 0%;">
+                    <div class="liquid-wave liquid-wave-1"></div>
+                    <div class="liquid-wave liquid-wave-2"></div>
+                    <div class="liquid-foam"></div>
+                    <!-- Burbujas y partículas de monedas flotantes -->
+                    <div class="liquid-bubbles">
+                      <span class="bubble b1"></span>
+                      <span class="bubble b2"></span>
+                      <span class="bubble b3"></span>
+                      <span class="bubble b4"></span>
+                    </div>
+                  </div>
+                  <!-- Texto central flotante en el centro de la jarra -->
+                  <div class="jar-center-stat">
+                    <span class="jar-coins-icon">🪙</span>
+                    <strong class="jar-current-amount" id="jar-current-amount-display">$0</strong>
+                    <span class="jar-goal-reference" id="jar-goal-reference-text">de meta $1.000.000</span>
+                  </div>
+                </div>
+                <div class="jar-glass-reflection"></div>
+              </div>
+            </div>
+
+            <div class="jar-footer-info">
+              <div class="jar-info-item">
+                <span class="info-label">Capacidad de Ahorro / Mes</span>
+                <strong class="info-val text-emerald" id="jar-monthly-capacity">$0</strong>
+              </div>
+              <div class="jar-info-item">
+                <span class="info-label">Regla de Ahorro Sugerida</span>
+                <strong class="info-val text-cyan" id="jar-suggested-rule">20% ($0/mes)</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Control de Ingresos / Gastos Fijos / Movimientos -->
+          <div class="jar-details-column">
+            
+            <!-- Tarjeta de Distribución Mensual (Regla 50/30/20 o Personalizada) -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>Distribución de tu Dinero</h3>
+                <span class="pill-badge pill-info">Mes Actual</span>
+              </div>
+              
+              <div class="budget-bars-stack">
+                <div class="budget-row">
+                  <div class="budget-info">
+                    <span class="budget-name">🏠 Gastos Fijos y Básicos</span>
+                    <span class="budget-amount" id="budget-fixed-val">$0</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-rose" id="bar-fixed-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="budget-row">
+                  <div class="budget-info">
+                    <span class="budget-name">💳 Compromisos en Cuotas</span>
+                    <span class="budget-amount" id="budget-installments-val">$0</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-amber" id="bar-installments-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="budget-row">
+                  <div class="budget-info">
+                    <span class="budget-name">🌱 Ahorro Protegido</span>
+                    <span class="budget-amount" id="budget-savings-val">$0</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-emerald" id="bar-savings-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+
+                <div class="budget-row">
+                  <div class="budget-info">
+                    <span class="budget-name">✨ Disponible Libre (Gastos variables)</span>
+                    <span class="budget-amount" id="budget-free-val">$0</span>
+                  </div>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill fill-cyan" id="bar-free-fill" style="width: 0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjeta de Gastos Fijos Rápidos -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>🏠 Gastos Fijos Mensuales</h3>
+                <button class="btn-xs btn-outline" id="btn-add-expense-modal">+ Añadir Gasto</button>
+              </div>
+
+              <div class="fixed-expenses-list" id="fixed-expenses-list-container">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Tarjeta de Compromisos en Cuotas / Deudas Activas -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>💳 Cuotas y Deudas Activas</h3>
+                <button class="btn-xs btn-outline" id="btn-add-installment-modal">+ Añadir Cuota</button>
+              </div>
+
+              <div class="fixed-expenses-list" id="installments-list-container">
+                <!-- Se llena dinámicamente con las cuotas y botón eliminar -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 2: METAS DE AHORRO -->
+      <!-- ============================================================== -->
+      <section id="view-metas" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h2>Tus Metas Financieras</h2>
+            <p class="text-muted">Define tus objetivos, asígnales fondos y haz seguimiento de tu progreso.</p>
+          </div>
+          <button class="btn-primary" id="btn-open-create-goal">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Nueva Meta</span>
+          </button>
+        </div>
+
+        <div class="goals-grid" id="goals-grid-container">
+          <!-- Tarjetas de metas renderizadas dinámicamente -->
+        </div>
+
+        <!-- Estado vacío si no hay metas -->
+        <div class="empty-state-card" id="goals-empty-state" style="display: none;">
+          <div class="empty-icon">🎯</div>
+          <h3>No tienes metas registradas aún</h3>
+          <p>Crea tu primera meta de ahorro como un fondo de emergencia, vacaciones o tu próximo equipo.</p>
+          <button class="btn-secondary" id="btn-empty-create-goal">+ Crear Primera Meta</button>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 3: TARJETAS Y SU CUPO -->
+      <!-- ============================================================== -->
+      <section id="view-tarjetas" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h2>Tus Tarjetas y Cupos</h2>
+            <p class="text-muted">Gestiona el cupo total, utilizado y disponible de tus tarjetas de forma 100% privada.</p>
+          </div>
+          <button class="btn-primary" id="btn-open-create-card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Registrar Tarjeta</span>
+          </button>
+        </div>
+
+        <!-- Resumen consolidado de cupo de crédito -->
+        <div class="cards-total-summary-card">
+          <div class="summary-col">
+            <span class="label">Cupo Total Línea de Crédito</span>
+            <strong class="value" id="cards-total-limit">$0</strong>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-col">
+            <span class="label">Cupo Utilizado</span>
+            <strong class="value text-rose" id="cards-total-used">$0</strong>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-col">
+            <span class="label">Cupo Total Disponible</span>
+            <strong class="value text-emerald" id="cards-total-avail">$0</strong>
+          </div>
+        </div>
+
+        <!-- Sección de Recordatorios de Próximos Pagos -->
+        <div class="card card-reminders-panel">
+          <div class="panel-header">
+            <div class="reminders-header-left">
+              <span class="reminders-icon">🔔</span>
+              <div>
+                <h3>Recordatorios y Fechas de Pago</h3>
+                <p class="text-subtle" style="font-size: 0.78rem;">Monitorea los vencimientos de tus estados de cuenta para pagar a tiempo y no generar intereses.</p>
+              </div>
+            </div>
+            <button class="btn-xs btn-outline" id="btn-request-notifications" title="Activar avisos en el navegador">
+              🔔 Activar Alertas
+            </button>
+          </div>
+
+          <div class="reminders-list" id="card-reminders-container">
+            <!-- Recordatorios de tarjetas renderizados dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Lista visual de tarjetas -->
+        <div class="cards-deck-grid" id="cards-deck-container">
+          <!-- Tarjetas renderizadas dinámicamente -->
+        </div>
+
+        <!-- Estado vacío si no hay tarjetas -->
+        <div class="empty-state-card" id="cards-empty-state" style="display: none;">
+          <div class="empty-icon">💳</div>
+          <h3>No has agregado ninguna tarjeta</h3>
+          <p>Registra un alias referencial (ej: "Tarjeta Banco Chile Black") y su cupo para calcular tus compras.</p>
+          <button class="btn-secondary" id="btn-empty-create-card">+ Agregar Tarjeta</button>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW 4: CALCULADORA DE COMPRA INTELIGENTE (SIMULADOR) -->
+      <!-- ============================================================== -->
+      <section id="view-calculadora" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h2>Calculadora de Compra y Financiamiento</h2>
+            <p class="text-muted">Evalúa si tu compra es financieramente sana y protege tu porcentaje de ahorro antes de pagar.</p>
+          </div>
+          <div class="calc-quick-demo-action">
+            <button class="btn-outline-glow" id="btn-calc-load-sample">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              <span>Cargar Ejemplo de Demostración</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="calc-main-layout">
+          <!-- Columna Izquierda: Formulario de Configuración de la Compra -->
+          <div class="calc-form-card">
+            <div class="form-group-title">
+              <span class="step-num">1</span>
+              <h3>Detalles del Producto o Gasto</h3>
+            </div>
+
+            <div class="input-grid">
+              <div class="form-field">
+                <label for="calc-product-name">Nombre del Producto / Compra</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">🛍️</span>
+                  <input type="text" id="calc-product-name" placeholder="Ej: PlayStation 5, Laptop, Viaje" value="Notebook Ultrabook 16GB">
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="calc-product-price">Valor del Producto ($ CLP)</label>
+                <div class="input-with-icon">
+                  <span class="input-icon">$</span>
+                  <input type="number" id="calc-product-price" placeholder="Ej: 699990" value="650000" min="0" step="any">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group-title">
+              <span class="step-num">2</span>
+              <h3>Método de Pago y Tarjeta</h3>
+            </div>
+
+            <div class="form-field">
+              <label for="calc-card-select">Selecciona la Tarjeta a Utilizar</label>
+              <select id="calc-card-select" class="custom-select">
+                <!-- Se llena con las tarjetas creadas -->
+              </select>
+            </div>
+
+            <!-- Mini Preview de la Tarjeta Seleccionada -->
+            <div class="selected-card-preview-box" id="selected-card-preview">
+              <div class="preview-card-chip"></div>
+              <div class="preview-card-info">
+                <strong id="preview-card-name">Tarjeta Principal</strong>
+                <span class="preview-card-type" id="preview-card-type">Crédito Visa</span>
+              </div>
+              <div class="preview-card-balance">
+                <span>Cupo disponible:</span>
+                <strong id="preview-card-avail">$1.200.000</strong>
+              </div>
+            </div>
+
+            <div class="form-group-title">
+              <span class="step-num">3</span>
+              <h3>Modalidad de Pago y Cuotas</h3>
+            </div>
+
+            <!-- Selector de Interés -->
+            <div class="interest-mode-switch">
+              <label class="interest-radio">
+                <input type="radio" name="calc-interest-mode" value="no" checked id="radio-interest-no">
+                <span class="radio-card">
+                  <strong>Sin Interés (Precio Contado)</strong>
+                  <small>0% de recargo en las cuotas</small>
+                </span>
+              </label>
+
+              <label class="interest-radio">
+                <input type="radio" name="calc-interest-mode" value="yes" id="radio-interest-yes">
+                <span class="radio-card">
+                  <strong>Con Interés de la Tarjeta</strong>
+                  <small>Tasa mensual o anual</small>
+                </span>
+              </label>
+            </div>
+
+            <!-- Tasa de Interés Configurable (si tiene interés) -->
+            <div class="form-field interest-rate-field" id="calc-custom-rate-wrap" style="display: none;">
+              <div class="rate-header-label">
+                <label for="calc-interest-rate">Tasa de Interés Mensual (%)</label>
+                <span class="text-hint">Referencial de tu tarjeta</span>
+              </div>
+              <div class="input-with-icon">
+                <span class="input-icon">%</span>
+                <input type="number" id="calc-interest-rate" value="1.89" step="any" min="0" max="100">
+              </div>
+            </div>
+
+            <!-- Selector de Cantidad de Cuotas -->
+            <div class="form-field installments-selector-wrap">
+              <div class="slider-header">
+                <label for="calc-installments-slider">Número de Cuotas:</label>
+                <span class="slider-value-tag" id="calc-installments-display">6 cuotas</span>
+              </div>
+              <input type="range" id="calc-installments-slider" min="1" max="36" value="6" class="custom-slider">
+              
+              <div class="quick-installments-pills">
+                <button type="button" class="btn-pill-installment" data-cuotas="1">1 (Contado)</button>
+                <button type="button" class="btn-pill-installment" data-cuotas="3">3</button>
+                <button type="button" class="btn-pill-installment active" data-cuotas="6">6</button>
+                <button type="button" class="btn-pill-installment" data-cuotas="12">12</button>
+                <button type="button" class="btn-pill-installment" data-cuotas="24">24</button>
+              </div>
+            </div>
+
+            <div class="form-group-title">
+              <span class="step-num">4</span>
+              <h3>Protección de Ahorro Mensual</h3>
+            </div>
+
+            <!-- Slider de Retención de % de Ahorro -->
+            <div class="form-field savings-guard-box">
+              <div class="savings-guard-header">
+                <div>
+                  <strong>Porcentaje de Ahorro Intocable</strong>
+                  <p class="text-subtle">¿Cuánto de tu ingreso quieres salvaguardar pase lo que pase?</p>
+                </div>
+                <span class="savings-percent-badge" id="calc-savings-guard-percent">20%</span>
+              </div>
+
+              <input type="range" id="calc-savings-guard-slider" min="0" max="50" step="5" value="20" class="custom-slider slider-emerald">
+              
+              <div class="savings-guard-math">
+                <span>Monto protegido al mes: <strong id="calc-savings-guard-amount" class="text-emerald">$200.000</strong></span>
+                <span>Ingreso base considerado: <strong id="calc-base-income-display">$1.000.000</strong></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Columna Derecha: Veredicto Financiero y Desglose Visual -->
+          <div class="calc-results-card">
+            <div class="results-header">
+              <span class="verdict-tag" id="calc-verdict-tag">Análisis Financiero</span>
+              <div class="status-indicator-badge" id="calc-status-badge">
+                <span class="indicator-dot"></span>
+                <span id="calc-status-text">Calculando...</span>
+              </div>
+            </div>
+
+            <!-- Resumen Principal de Cuota -->
+            <div class="monthly-payment-hero">
+              <span class="hero-label">Valor Cuota Mensual</span>
+              <div class="hero-price" id="calc-monthly-installment-display">$108.333</div>
+              <span class="hero-period" id="calc-period-subtitle">por 6 meses consecutivos</span>
+            </div>
+
+            <!-- Desglose de Costos de la Compra -->
+            <div class="costs-breakdown-list">
+              <div class="breakdown-row">
+                <span>Precio Original del Producto</span>
+                <strong id="calc-original-price-display">$650.000</strong>
+              </div>
+
+              <div class="breakdown-row" id="calc-interest-row">
+                <span>Interés Total Cobrado</span>
+                <strong class="text-rose" id="calc-total-interest-display">$0 (Sin Interés)</strong>
+              </div>
+
+              <div class="breakdown-row total-highlight">
+                <span>Costo Total Final</span>
+                <strong class="text-cyan" id="calc-final-total-display">$650.000</strong>
+              </div>
+            </div>
+
+            <!-- Impacto en la Salud Financiera del Usuario -->
+            <div class="health-impact-box">
+              <h4>Impacto en tu Presupuesto Mensual</h4>
+              
+              <div class="impact-metric">
+                <div class="impact-metric-labels">
+                  <span>Presupuesto Libre Disponible tras la Cuota:</span>
+                  <strong id="calc-remaining-free-budget">$141.667</strong>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill fill-cyan" id="calc-free-budget-bar" style="width: 58%;"></div>
+                </div>
+              </div>
+
+              <div class="impact-metric">
+                <div class="impact-metric-labels">
+                  <span>Uso del Cupo de la Tarjeta:</span>
+                  <strong id="calc-card-cupo-usage-text">54% utilizado</strong>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill fill-amber" id="calc-card-cupo-bar" style="width: 54%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tarjeta de Diagnóstico y Consejo Personalizado -->
+            <div class="diagnosis-callout" id="calc-diagnosis-callout">
+              <div class="callout-icon" id="calc-diagnosis-icon">💡</div>
+              <div class="callout-content">
+                <h5 id="calc-diagnosis-title">¡Compra Recomendada y Segura!</h5>
+                <p id="calc-diagnosis-desc">La cuota mensual encaja perfectamente en tu presupuesto disponible y respeta tu meta del 20% de ahorro.</p>
+              </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="results-actions">
+              <button class="btn-primary btn-full" id="btn-save-as-commitment">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Añadir a mis Cuotas Activas</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- MODALES / DIÁLOGOS DE INTERACCIÓN -->
+    <!-- ============================================================== -->
+
+    <!-- Modal 1: Editar Ingreso Mensual -->
+    <div class="modal-overlay" id="modal-income" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Configurar Ingreso Mensual</h3>
+          <button class="btn-modal-close" data-close="modal-income">&times;</button>
+        </div>
+        <form id="form-income" class="modal-body">
+          <div class="form-field">
+            <label for="input-monthly-income">Tus ingresos mensuales netos estimados ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-monthly-income" min="0" step="any" placeholder="Ej: 1000000" required>
+            </div>
+            <small class="text-muted">Solo se almacena localmente en tu navegador para realizar los cálculos.</small>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-income">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Ingreso</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 2: Agregar/Editar Gasto Fijo -->
+    <div class="modal-overlay" id="modal-expense" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-expense-title">Añadir Gasto Fijo Mensual</h3>
+          <button class="btn-modal-close" data-close="modal-expense">&times;</button>
+        </div>
+        <form id="form-expense" class="modal-body">
+          <input type="hidden" id="input-expense-id">
+          <div class="form-field">
+            <label for="input-expense-name">Concepto / Categoría</label>
+            <input type="text" id="input-expense-name" placeholder="Ej: Arriendo, Servicios, Supermercado, Internet" required>
+          </div>
+          <div class="form-field">
+            <label for="input-expense-amount">Monto Mensual ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-expense-amount" min="0" step="any" placeholder="Ej: 350000" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-expense">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Gasto</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 3: Crear / Editar Meta de Ahorro -->
+    <div class="modal-overlay" id="modal-goal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-goal-title">Nueva Meta de Ahorro</h3>
+          <button class="btn-modal-close" data-close="modal-goal">&times;</button>
+        </div>
+        <form id="form-goal" class="modal-body">
+          <input type="hidden" id="input-goal-id">
+          <div class="form-field">
+            <label for="input-goal-name">Nombre de la Meta</label>
+            <input type="text" id="input-goal-name" placeholder="Ej: Fondo de Emergencia, Vacaciones, Auto" required>
+          </div>
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-goal-target">Monto Objetivo ($)</label>
+              <input type="number" id="input-goal-target" min="0" step="any" placeholder="Ej: 1500000" required>
+            </div>
+            <div class="form-field">
+              <label for="input-goal-current">Monto Inicial Ahorrado ($)</label>
+              <input type="number" id="input-goal-current" min="0" step="any" value="0">
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="input-goal-icon">Ícono o Emoji representativo</label>
+            <div class="emoji-picker-row">
+              <label><input type="radio" name="goal-emoji" value="🛡️" checked><span>🛡️</span></label>
+              <label><input type="radio" name="goal-emoji" value="✈️"><span>✈️</span></label>
+              <label><input type="radio" name="goal-emoji" value="💻"><span>💻</span></label>
+              <label><input type="radio" name="goal-emoji" value="🚗"><span>🚗</span></label>
+              <label><input type="radio" name="goal-emoji" value="🏠"><span>🏠</span></label>
+              <label><input type="radio" name="goal-emoji" value="🎓"><span>🎓</span></label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-goal">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Meta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 4: Registrar / Editar Tarjeta -->
+    <div class="modal-overlay" id="modal-card" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-card-title">Registrar Tarjeta y Cupo</h3>
+          <button class="btn-modal-close" data-close="modal-card">&times;</button>
+        </div>
+        <form id="form-card" class="modal-body">
+          <input type="hidden" id="input-card-id">
+          
+          <div class="card-privacy-notice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Solo ingresa un <strong>alias o apodo</strong> para identificarla. Jamás ingreses números de tu tarjeta real.</span>
+          </div>
+
+          <div class="form-field">
+            <label for="input-card-alias">Alias o Nombre de la Tarjeta</label>
+            <input type="text" id="input-card-alias" placeholder="Ej: Santander Black, CMR Falabella, Banco Estado" required>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-card-type">Tipo de Tarjeta</label>
+              <select id="input-card-type" class="custom-select">
+                <option value="credito">Tarjeta de Crédito</option>
+                <option value="debito">Tarjeta de Débito</option>
+                <option value="prepago">Prepago Digital (Mach/Tenpo)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="input-card-color">Tema de Color</label>
+              <select id="input-card-color" class="custom-select">
+                <option value="gradient-dark">Negro Titanio</option>
+                <option value="gradient-emerald">Esmeralda Pro</option>
+                <option value="gradient-blue">Azul Océano</option>
+                <option value="gradient-purple">Púrpura Neón</option>
+                <option value="gradient-rose">Rosa Coral</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-card-limit">Cupo Total Autorizado ($)</label>
+              <input type="number" id="input-card-limit" min="0" step="any" placeholder="Ej: 1500000" required>
+            </div>
+            <div class="form-field">
+              <label for="input-card-used">Cupo Actualmente Utilizado ($)</label>
+              <input type="number" id="input-card-used" min="0" step="any" value="0">
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-card-interest">Tasa Interés Mensual (%)</label>
+              <input type="number" id="input-card-interest" min="0" max="100" step="any" value="1.89">
+            </div>
+            <div class="form-field">
+              <label for="input-card-billing-day">Día de Facturación / Corte (1-31)</label>
+              <input type="number" id="input-card-billing-day" min="1" max="31" step="1" value="15">
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-card-due-day">Día de Vencimiento / Pago (1-31)</label>
+              <input type="number" id="input-card-due-day" min="1" max="31" step="1" value="5" required>
+            </div>
+            <div class="form-field">
+              <label for="input-card-reminder-days">Avisar Recordatorio</label>
+              <select id="input-card-reminder-days" class="custom-select">
+                <option value="1">1 día antes</option>
+                <option value="3" selected>3 días antes</option>
+                <option value="5">5 días antes</option>
+                <option value="7">1 semana antes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-card">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Tarjeta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 5: Abonar a la Jarra de Ahorro -->
+    <div class="modal-overlay" id="modal-deposit" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Abonar Fondos a tu Jarra</h3>
+          <button class="btn-modal-close" data-close="modal-deposit">&times;</button>
+        </div>
+        <form id="form-deposit" class="modal-body">
+          <div class="form-field">
+            <label for="input-deposit-amount">Monto a depositar en tu jarra ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-deposit-amount" min="0" step="any" placeholder="Ej: 50000" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-deposit">Cancelar</button>
+            <button type="submit" class="btn-primary">¡Abonar Dinero!</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 6: Retirar de la Jarra de Ahorro -->
+    <div class="modal-overlay" id="modal-withdraw" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Retirar Fondos de tu Jarra</h3>
+          <button class="btn-modal-close" data-close="modal-withdraw">&times;</button>
+        </div>
+        <form id="form-withdraw" class="modal-body">
+          <div class="form-field">
+            <label for="input-withdraw-amount">Monto a retirar de tu jarra ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-withdraw-amount" min="0" step="any" placeholder="Ej: 20000" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-withdraw">Cancelar</button>
+            <button type="submit" class="btn-secondary">Confirmar Retiro</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 7: Garantía de Privacidad y Seguridad -->
+    <div class="modal-overlay" id="modal-privacy" style="display: none;">
+      <div class="modal-card privacy-modal-card">
+        <div class="modal-header">
+          <div class="privacy-title-wrap">
+            <span class="privacy-big-icon">🛡️</span>
+            <h3>Compromiso de Privacidad y Seguridad</h3>
+          </div>
+          <button class="btn-modal-close" data-close="modal-privacy">&times;</button>
+        </div>
+        <div class="modal-body privacy-body">
+          <div class="privacy-point">
+            <strong>🔒 100% Almacenamiento Local (Local-First)</strong>
+            <p>Toda tu información financiera se guarda únicamente en la memoria de tu propio navegador. Ningún dato viaja a servidores externos ni se vende a terceros.</p>
+          </div>
+          <div class="privacy-point">
+            <strong>🚫 Cero Datos Personales Sensibles</strong>
+            <p>FinanSY nunca te pedirá tu RUT, número de cédula, nombres reales ni los 16 dígitos de tus tarjetas bancarias ni contraseñas.</p>
+          </div>
+          <div class="privacy-point">
+            <strong>✨ Diseñado para tu Libertad y Control</strong>
+            <p>Puedes reiniciar o borrar todos tus datos cuando quieras con un solo clic.</p>
+            <div style="margin-top: 0.5rem;">
+              <button type="button" class="btn-xs btn-outline" id="btn-reset-all-data" style="color: #FB7185; border-color: rgba(244,63,94,0.4);">
+                🗑️ Borrar y Reiniciar Todos los Datos a $0
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-primary" data-close="modal-privacy">Entendido, ¡gracias!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal 9: Configurar Jarra y Capacidad de Ahorro -->
+    <div class="modal-overlay" id="modal-jar-settings" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Configurar Capacidad y Meta de Ahorro</h3>
+          <button class="btn-modal-close" data-close="modal-jar-settings">&times;</button>
+        </div>
+        <form id="form-jar-settings" class="modal-body">
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-jar-rule">Capacidad de Ahorro (%)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">%</span>
+                <input type="number" id="input-jar-rule" min="0" max="100" step="any" placeholder="Ej: 9.5 o 20">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label for="input-jar-rule-amount">O Monto de Ahorro ($/mes)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input type="number" id="input-jar-rule-amount" min="0" step="any" placeholder="Ej: 10000 o 50000">
+              </div>
+            </div>
+          </div>
+          <small class="text-muted" style="margin-top: -0.3rem;">Puedes ingresar el porcentaje (%) o el monto fijo ($/mes); se sincronizan automáticamente.</small>
+
+          <div class="form-field">
+            <label for="input-jar-target">Meta Total de la Jarra ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-jar-target" min="0" step="any" placeholder="Ej: 955005" required>
+            </div>
+            <small class="text-muted">Monto total objetivo para llenar el 100% de la jarra.</small>
+          </div>
+
+          <div class="form-field">
+            <label for="input-jar-balance">Saldo Actual Ahorrado en la Jarra ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-jar-balance" min="0" step="any" placeholder="Ej: 105720">
+            </div>
+            <small class="text-muted">Dinero real que tienes acumulado actualmente.</small>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-jar-settings">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Configuración</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 10: Añadir Compromiso en Cuotas / Deuda -->
+    <div class="modal-overlay" id="modal-installment" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-installment-title">Añadir Compromiso en Cuotas / Deuda</h3>
+          <button class="btn-modal-close" data-close="modal-installment">&times;</button>
+        </div>
+        <form id="form-installment" class="modal-body">
+          <div class="form-field">
+            <label for="input-installment-name">Concepto de la Deuda / Compra</label>
+            <input type="text" id="input-installment-name" placeholder="Ej: Smartphone Cuotas, Préstamo, Curso" required>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-installment-amount">Valor Cuota Mensual ($)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input type="number" id="input-installment-amount" min="0" step="any" placeholder="Ej: 45000" required>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="input-installment-months">Meses / Cuotas Restantes</label>
+              <input type="number" id="input-installment-months" min="1" max="120" step="1" value="6" required>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-installment">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Cuota</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 8: Bienvenida & Mini Tutorial Interactivo (Onboarding Wizard) -->
+    <div class="modal-overlay" id="modal-onboarding" style="display: none;">
+      <div class="modal-card onboarding-card">
+        <div class="onboarding-header">
+          <div class="onboarding-steps-indicator">
+            <span class="step-dot active" data-step-dot="1"></span>
+            <span class="step-dot" data-step-dot="2"></span>
+            <span class="step-dot" data-step-dot="3"></span>
+            <span class="step-dot" data-step-dot="4"></span>
+          </div>
+          <button class="btn-modal-close" data-close="modal-onboarding">&times;</button>
+        </div>
+
+        <div class="onboarding-slides-container">
+          
+          <!-- Slide 1: Bienvenida y Privacidad -->
+          <div class="onboarding-slide active" data-onboarding-step="1">
+            <div class="slide-badge-hero">🛡️ 100% Privado</div>
+            <h2>¡Bienvenido a <span>FinanSY</span>!</h2>
+            <p class="slide-subtitle">Tu asistente inteligente y privado para el control de financiamiento, compras y ahorro.</p>
+            
+            <div class="onboarding-features-list">
+              <div class="feature-item">
+                <span class="feat-icon">🔒</span>
+                <div>
+                  <strong>Cero datos bancarios o personales</strong>
+                  <p>No te pediremos tu RUT, tu nombre real ni los números de tus tarjetas. Todo queda en este dispositivo.</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">⚡</span>
+                <div>
+                  <strong>Control de compras con cuotas inteligentes</strong>
+                  <p>Calcula el costo real de tus compras protegiendo tu porcentaje de ahorro antes de pagar.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2: Jarra de Ahorros Dinámica -->
+          <div class="onboarding-slide" data-onboarding-step="2">
+            <div class="slide-badge-hero">🪙 Visual & Dinámico</div>
+            <h2>Tu Jarra de Ahorro Activa</h2>
+            <p class="slide-subtitle">Una forma gráfica y entretenida de ver crecer tu dinero.</p>
+            
+            <div class="onboarding-features-list">
+              <div class="feature-item">
+                <span class="feat-icon">🌊</span>
+                <div>
+                  <strong>Llenado líquido en tiempo real</strong>
+                  <p>Conforme abones dinero o ahorres, el nivel de líquido de la jarra subirá hacia tu meta.</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">📊</span>
+                <div>
+                  <strong>Distribución de tu presupuesto</strong>
+                  <p>Monitorea cuánto destinas a gastos fijos, cuotas y ahorro mensual recomendado (20%).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3: Tarjetas y Recordatorios -->
+          <div class="onboarding-slide" data-onboarding-step="3">
+            <div class="slide-badge-hero">💳 Cero Deudas Innecesarias</div>
+            <h2>Tarjetas, Cupo y Fechas de Pago</h2>
+            <p class="slide-subtitle">Monitorea tus estados de cuenta para no pagar intereses por mora.</p>
+            
+            <div class="onboarding-features-list">
+              <div class="feature-item">
+                <span class="feat-icon">🔔</span>
+                <div>
+                  <strong>Alertas de vencimiento</strong>
+                  <p>FinanSY te avisará con anticipación los días que vence el pago de tu tarjeta.</p>
+                </div>
+              </div>
+              <div class="feature-item">
+                <span class="feat-icon">📅</span>
+                <div>
+                  <strong>Alarmas para tu Calendario</strong>
+                  <p>Descarga recordatorios en 1 clic para Google Calendar, Apple Calendar o Outlook (.ics).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 4: Configuración Inicial Rápida -->
+          <div class="onboarding-slide" data-onboarding-step="4">
+            <div class="slide-badge-hero">🚀 ¡Comencemos!</div>
+            <h2>Configura tus Ingresos</h2>
+            <p class="slide-subtitle">Ingresa tu ingreso mensual neto aproximado para calibrar tus capacidades de compra y ahorro.</p>
+            
+            <div class="onboarding-quick-form">
+              <label for="onboarding-income-input">Ingreso Mensual Estimado ($ CLP):</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input type="number" id="onboarding-income-input" min="0" step="10000" placeholder="Ej: 1000000" value="1000000">
+              </div>
+              <small class="text-muted">Podrás modificar este valor en cualquier momento.</small>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="onboarding-footer">
+          <button type="button" class="btn-ghost" id="btn-onboarding-prev" style="visibility: hidden;">Anterior</button>
+          <div class="onboarding-nav-actions">
+            <button type="button" class="btn-primary" id="btn-onboarding-next">Siguiente</button>
+            <button type="button" class="btn-primary" id="btn-onboarding-finish" style="display: none;">¡Comenzar ahora!</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/store.js"></script>
+  <script src="js/jarra.js"></script>
+  <script src="js/cards.js"></script>
+  <script src="js/goals.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

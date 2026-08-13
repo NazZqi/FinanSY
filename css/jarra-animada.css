@@ -1,0 +1,358 @@
+/* ==========================================================================
+   FINANSY — JARRA DINÁMICA STYLES
+   Realistic Glass Jar with Animated Fluid Wave, Bubble Effects & Milestones
+   ========================================================================== */
+
+.jarra-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Glass Jar Card Container */
+.jar-display-card {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.jar-display-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.jar-card-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.jar-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.jar-fill-percent {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.2rem 0.75rem;
+  border-radius: var(--radius-full);
+}
+
+/* Visual Container including side milestones */
+.jar-visual-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 380px;
+  margin: 0.5rem 0;
+}
+
+/* Side Milestones / Measurement Marks (like the $$$ on the sketch) */
+.jar-milestones {
+  position: absolute;
+  left: 20px;
+  top: 45px;
+  bottom: 25px;
+  width: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.milestone-mark {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-subtle);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.milestone-mark::after {
+  content: '';
+  width: 14px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  display: inline-block;
+}
+
+.milestone-mark.m-100 {
+  color: #34D399;
+}
+.milestone-mark.m-100::after {
+  background: #34D399;
+}
+
+/* Glass Jar Body */
+.jar-glass-body {
+  width: 190px;
+  height: 320px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Jar Lid (Tapa metálica / corcho) */
+.jar-lid {
+  width: 130px;
+  height: 14px;
+  background: linear-gradient(180deg, #E2E8F0 0%, #94A3B8 100%);
+  border-radius: 6px 6px 3px 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.jar-neck {
+  width: 110px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-left: 2px solid rgba(255, 255, 255, 0.3);
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 4;
+}
+
+/* Inner Glass Chamber */
+.jar-inner-space {
+  width: 190px;
+  height: 290px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top: none;
+  border-radius: 12px 12px 36px 36px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 0 20px rgba(255, 255, 255, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+/* Glass Reflection Highlight (Glare) */
+.jar-glass-reflection {
+  position: absolute;
+  top: 26px;
+  left: 12px;
+  width: 10px;
+  height: 240px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.05) 90%, transparent 100%);
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  z-index: 8;
+}
+
+/* Dynamic Liquid Fill Layer */
+.jar-liquid-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #10B981 0%, #059669 45%, #047857 100%);
+  transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: hidden;
+  box-shadow: 0 -4px 18px rgba(16, 185, 129, 0.4);
+}
+
+/* Animated Waves at the top of the fluid */
+.liquid-wave {
+  position: absolute;
+  top: -12px;
+  left: -50%;
+  width: 200%;
+  height: 24px;
+  background-repeat: repeat-x;
+  border-radius: 40%;
+}
+
+.liquid-wave-1 {
+  background: rgba(52, 211, 153, 0.6);
+  animation: waveMotion 4s linear infinite;
+  opacity: 0.85;
+}
+
+.liquid-wave-2 {
+  top: -9px;
+  background: #10B981;
+  animation: waveMotion 3s linear infinite reverse;
+  opacity: 0.95;
+}
+
+@keyframes waveMotion {
+  0% { transform: translateX(0) rotate(0deg); }
+  50% { transform: translateX(-25%) rotate(180deg); }
+  100% { transform: translateX(-50%) rotate(360deg); }
+}
+
+/* Bubbles inside liquid */
+.liquid-bubbles {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  animation: bubbleRise 3s ease-in-out infinite;
+}
+
+.b1 { width: 6px; height: 6px; left: 20%; animation-duration: 2.8s; }
+.b2 { width: 9px; height: 9px; left: 55%; animation-duration: 3.6s; animation-delay: 0.5s; }
+.b3 { width: 5px; height: 5px; left: 75%; animation-duration: 2.2s; animation-delay: 1.2s; }
+.b4 { width: 8px; height: 8px; left: 40%; animation-duration: 3.1s; animation-delay: 1.8s; }
+
+@keyframes bubbleRise {
+  0% {
+    bottom: -10px;
+    opacity: 0;
+    transform: translateX(0);
+  }
+  30% {
+    opacity: 0.8;
+    transform: translateX(4px);
+  }
+  100% {
+    bottom: 95%;
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
+/* Floating Center Stats in the Jar */
+.jar-center-stat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  z-index: 9;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.jar-coins-icon {
+  font-size: 1.8rem;
+  margin-bottom: -0.1rem;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+}
+
+.jar-current-amount {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.btn-mini-jar-edit {
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all var(--transition-fast);
+}
+
+.btn-mini-jar-edit:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.15);
+}
+
+.jar-goal-reference {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  margin-top: 0.2rem;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.jar-goal-reference:hover {
+  background: rgba(16, 185, 129, 0.4);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.jar-edit-hint {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.rule-clickable-btn {
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: var(--radius-sm);
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px dashed rgba(6, 182, 212, 0.35);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rule-clickable-btn:hover {
+  background: rgba(6, 182, 212, 0.25);
+  border-color: var(--secondary-light);
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .jarra-layout-grid {
+    grid-template-columns: 1fr;
+  }
+  .jar-milestones {
+    left: 10px;
+  }
+}
