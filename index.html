@@ -88,11 +88,16 @@
       </div>
     </section>
 
-    <!-- Main Navigation Tabs (Matching the 4 sketch views) -->
+    <!-- Main Navigation Tabs (Matching all 5 views) -->
     <nav class="main-nav-tabs" role="tablist">
       <button class="nav-tab active" data-tab="ahorros" role="tab" aria-selected="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-        <span>Ahorros (Jarra)</span>
+        <span>Ahorros (Jarras)</span>
+      </button>
+
+      <button class="nav-tab" data-tab="dashboard" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+        <span>Dashboard</span>
       </button>
 
       <button class="nav-tab" data-tab="metas" role="tab" aria-selected="false">
@@ -117,23 +122,46 @@
     <main class="views-wrapper">
       
       <!-- ============================================================== -->
-      <!-- VIEW 1: AHORROS (JARRA DINÁMICA) -->
+      <!-- VIEW 1: AHORROS (JARRAS DINÁMICAS POR ESQUEMA) -->
       <!-- ============================================================== -->
       <section id="view-ahorros" class="view-panel active">
         <div class="view-header">
           <div>
-            <h2>Jarra Dinámica de Ahorros</h2>
-            <p class="text-muted">Visualiza el crecimiento de tus fondos en tiempo real.</p>
+            <h2>Jarras Dinámicas de Ahorro</h2>
+            <p class="text-muted">Visualiza el crecimiento de tus fondos según tu esquema financiero.</p>
           </div>
-          <div class="view-header-buttons">
-            <button class="btn-secondary" id="btn-quick-deposit">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Abonar Ahorro</span>
-            </button>
-            <button class="btn-ghost" id="btn-quick-withdraw">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              <span>Retirar</span>
-            </button>
+          <div class="view-header-right-actions">
+            <!-- Selector de Esquema en Vista Jarras -->
+            <div class="scheme-toggle-group-small">
+              <button type="button" class="btn-scheme-toggle-sm active" id="btn-jar-scheme-libertad">
+                <span>🌟 Libertad Financiera</span>
+              </button>
+              <button type="button" class="btn-scheme-toggle-sm" id="btn-jar-scheme-comun">
+                <span>🔷 Esquema Común</span>
+              </button>
+              <button type="button" class="btn-scheme-toggle-sm" id="btn-jar-scheme-personalizado">
+                <span>⚙️ Personalizado</span>
+              </button>
+            </div>
+
+            <div class="view-header-buttons">
+              <button class="btn-secondary" id="btn-quick-deposit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Abonar Ahorro</span>
+              </button>
+              <button class="btn-ghost" id="btn-quick-withdraw">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Retirar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Selección de Jarras Dinámicas -->
+        <div class="jars-selection-bar">
+          <span class="jars-selection-label">Jarra Activa:</span>
+          <div class="jars-pills-row" id="jars-selector-pills-container">
+            <!-- Pills generadas dinámicamente -->
           </div>
         </div>
 
@@ -141,7 +169,7 @@
           <!-- Columna Izquierda: Jarra Visual Interactiva -->
           <div class="jar-display-card">
             <div class="jar-card-header">
-              <span class="jar-tag">Nivel de Ahorro Activo</span>
+              <span class="jar-tag" id="jar-active-tag">Nivel de Ahorro Activo</span>
               <span class="jar-fill-percent" id="jar-percentage-text">0%</span>
             </div>
 
@@ -196,10 +224,15 @@
             </div>
           </div>
 
-          <!-- Columna Derecha: Control de Ingresos / Gastos Fijos / Movimientos -->
+          <!-- Columna Derecha: Directrices del Esquema, Distribución y Gastos Fijos -->
           <div class="jar-details-column">
             
-            <!-- Tarjeta de Distribución Mensual (Regla 50/30/20 o Personalizada) -->
+            <!-- Directrices del Esquema Sugerido (Fórmulas calculadas exactas) -->
+            <div class="card panel-card" id="jar-scheme-guidelines-box">
+              <!-- Renderizado por FinanJarra.render -->
+            </div>
+
+            <!-- Tarjeta de Distribución Mensual -->
             <div class="card panel-card">
               <div class="panel-header">
                 <h3>Distribución de tu Dinero</h3>
@@ -274,6 +307,154 @@
             </div>
 
           </div>
+        </div>
+      </section>
+
+      <!-- ============================================================== -->
+      <!-- VIEW: DASHBOARD GENERAL & RESUMEN FINANCIERO CONSOLIDADO -->
+      <!-- ============================================================== -->
+      <section id="view-dashboard" class="view-panel">
+        <div class="view-header">
+          <div>
+            <h2>Dashboard General & Salud Financiera</h2>
+            <p class="text-muted">Resumen ejecutivo consolidado de patrimonio, cumplimiento de esquemas y proyecciones.</p>
+          </div>
+          <div class="scheme-toggle-group">
+            <button type="button" class="btn-scheme-toggle active" id="btn-scheme-tab-libertad">
+              <span>🌟 Libertad Financiera</span>
+            </button>
+            <button type="button" class="btn-scheme-toggle" id="btn-scheme-tab-comun">
+              <span>🔷 Esquema Común</span>
+            </button>
+            <button type="button" class="btn-scheme-toggle" id="btn-scheme-tab-personalizado">
+              <span>⚙️ Personalizado</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Summary Cards -->
+        <div class="dashboard-kpis-grid">
+          <div class="kpi-card highlight-emerald">
+            <div class="kpi-icon-wrap">💎</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Patrimonio Total Ahorrado</span>
+              <strong class="kpi-value text-emerald" id="dash-kpi-total-savings">$0</strong>
+              <small class="kpi-sub">Suma de jarras dinámicas y metas activas</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap">📊</div>
+            <div class="kpi-info">
+              <div class="kpi-header-row">
+                <span class="kpi-label">Score de Salud Financiera</span>
+                <span class="pill-badge pill-success" id="dash-kpi-health-badge">Excelente</span>
+              </div>
+              <strong class="kpi-value text-cyan" id="dash-kpi-health-score">100/100</strong>
+              <small class="kpi-sub">Basado en gastos fijos, cuotas y ahorro</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap">✨</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Margen Disponible Mensual</span>
+              <strong class="kpi-value text-main" id="dash-kpi-available">$0</strong>
+              <small class="kpi-sub">Capacidad libre tras costos y deudas</small>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon-wrap">💳</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Deuda en Tarjetas / Cupo Usado</span>
+              <strong class="kpi-value text-rose" id="dash-kpi-debt">$0</strong>
+              <small class="kpi-sub">Consumo consolidado en líneas de crédito</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2-Column Main Dashboard Layout -->
+        <div class="dashboard-main-grid">
+          
+          <!-- Columna Izquierda: Gráfico Donut de Presupuesto + Proyecciones -->
+          <div class="dash-col">
+            
+            <!-- Gráfico Donut SVG de Distribución de Dinero -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>Distribución del Presupuesto Mensual</h3>
+                <span class="pill-badge pill-info">En Vivo</span>
+              </div>
+
+              <div class="donut-chart-wrapper">
+                <div class="donut-svg-container">
+                  <svg id="dash-donut-svg" class="donut-svg" viewBox="0 0 200 200">
+                    <!-- Donut segments SVG -->
+                  </svg>
+                  <div class="donut-center-info">
+                    <span class="donut-center-label">Ingreso Base</span>
+                    <strong class="donut-center-val" id="dash-donut-center-amount">$0</strong>
+                  </div>
+                </div>
+
+                <div class="donut-legend-stack" id="dash-donut-legend">
+                  <!-- Leyenda interactiva -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Proyecciones F.I.R.E. y Fondo de Emergencia -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>Proyecciones y Tiempo a la Meta</h3>
+                <span class="pill-badge pill-purple">F.I.R.E. Engine</span>
+              </div>
+
+              <div class="projections-deck">
+                <div class="projection-item-card" id="dash-projection-emergency">
+                  <!-- Proyección Emergencia -->
+                </div>
+
+                <div class="projection-item-card" id="dash-projection-freedom">
+                  <!-- Proyección Libertad Financiera -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Columna Derecha: Directrices del Esquema + Grid de Jarras Dinámicas -->
+          <div class="dash-col">
+            
+            <!-- Directrices del Esquema Activo -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <div>
+                  <h3 id="dash-scheme-title">🌟 Esquema Libertad Financiera</h3>
+                  <p class="text-subtle" id="dash-scheme-subtitle" style="font-size: 0.78rem;">Reglas dinámicas y comparativa de cumplimiento.</p>
+                </div>
+              </div>
+
+              <div class="guidelines-stack" id="dash-scheme-guidelines">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+
+            <!-- Todas las Jarras Dinámicas del Esquema -->
+            <div class="card panel-card">
+              <div class="panel-header">
+                <h3>Jarras Dinámicas del Esquema Activo</h3>
+                <span class="pill-badge pill-info">Tiempo Real</span>
+              </div>
+
+              <div class="dash-jars-container" id="dash-jars-grid">
+                <!-- Se llena dinámicamente -->
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </section>
 
@@ -795,7 +976,13 @@
         </div>
         <form id="form-deposit" class="modal-body">
           <div class="form-field">
-            <label for="input-deposit-amount">Monto a depositar en tu jarra ($ CLP)</label>
+            <label for="select-deposit-jar">Jarra Destino</label>
+            <select id="select-deposit-jar" class="custom-select">
+              <!-- Se llena dinámicamente con las jarras del esquema activo -->
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="input-deposit-amount">Monto a depositar ($ CLP)</label>
             <div class="input-with-icon">
               <span class="input-icon">$</span>
               <input type="number" id="input-deposit-amount" min="0" step="any" placeholder="Ej: 50000" required>
@@ -818,7 +1005,13 @@
         </div>
         <form id="form-withdraw" class="modal-body">
           <div class="form-field">
-            <label for="input-withdraw-amount">Monto a retirar de tu jarra ($ CLP)</label>
+            <label for="select-withdraw-jar">Jarra Origen</label>
+            <select id="select-withdraw-jar" class="custom-select">
+              <!-- Se llena dinámicamente -->
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="input-withdraw-amount">Monto a retirar ($ CLP)</label>
             <div class="input-with-icon">
               <span class="input-icon">$</span>
               <input type="number" id="input-withdraw-amount" min="0" step="any" placeholder="Ej: 20000" required>
@@ -950,6 +1143,117 @@
           <div class="modal-footer">
             <button type="button" class="btn-ghost" data-close="modal-installment">Cancelar</button>
             <button type="submit" class="btn-primary">Guardar Cuota</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 11: Crear Jarra Personalizada -->
+    <div class="modal-overlay" id="modal-custom-jar" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Nueva Jarra Personalizada</h3>
+          <button class="btn-modal-close" data-close="modal-custom-jar">&times;</button>
+        </div>
+        <form id="form-custom-jar" class="modal-body">
+          <div class="form-field">
+            <label for="input-custom-jar-name">Nombre de la Jarra</label>
+            <input type="text" id="input-custom-jar-name" placeholder="Ej: Fondo Viajes, Inversiones Cripto, Educación" required>
+          </div>
+
+          <div class="form-field">
+            <label>Ícono / Emoji</label>
+            <div class="emoji-picker-row">
+              <label><input type="radio" name="custom-jar-emoji" value="💰" checked><span>💰</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="🚀"><span>🚀</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="🛡️"><span>🛡️</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="💎"><span>💎</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="🏖️"><span>🏖️</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="🎯"><span>🎯</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="🏠"><span>🏠</span></label>
+              <label><input type="radio" name="custom-jar-emoji" value="💻"><span>💻</span></label>
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-custom-jar-type">Tipo de Cálculo</label>
+              <select id="input-custom-jar-type" class="custom-select">
+                <option value="monthly">% del Sueldo Mensual (Ej: 0.15 = 15%)</option>
+                <option value="target">Multiplicador de Sueldos (Ej: 6 = 6 sueldos)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="input-custom-jar-multiplier">Factor / Multiplicador</label>
+              <input type="number" id="input-custom-jar-multiplier" step="any" min="0.01" value="0.15" placeholder="Ej: 0.15 o 6" required>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="input-custom-jar-balance">Saldo Inicial Ahorrado ($ CLP)</label>
+            <div class="input-with-icon">
+              <span class="input-icon">$</span>
+              <input type="number" id="input-custom-jar-balance" min="0" step="any" value="0">
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="input-custom-jar-desc">Descripción o Propósito</label>
+            <input type="text" id="input-custom-jar-desc" placeholder="Ej: Ahorro mensual destinado para las vacaciones de verano">
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-custom-jar">Cancelar</button>
+            <button type="submit" class="btn-primary">Crear Jarra</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 12: Configurar Reglas del Esquema Personalizado -->
+    <div class="modal-overlay" id="modal-custom-scheme-settings" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Configurar Esquema Personalizado</h3>
+          <button class="btn-modal-close" data-close="modal-custom-scheme-settings">&times;</button>
+        </div>
+        <form id="form-custom-scheme-settings" class="modal-body">
+          <p class="text-subtle" style="font-size: 0.82rem; margin-bottom: 0.5rem;">Define tus propios límites de gasto y metas de ahorro sobre tu ingreso mensual (deben sumar idealmente 100%).</p>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-custom-fixed">% Gastos Fijos Máximo</label>
+              <div class="input-with-icon">
+                <span class="input-icon">%</span>
+                <input type="number" id="input-custom-fixed" min="0" max="100" step="1" value="50" required>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="input-custom-free">% Margen Libre / Gustos</label>
+              <div class="input-with-icon">
+                <span class="input-icon">%</span>
+                <input type="number" id="input-custom-free" min="0" max="100" step="1" value="30" required>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-grid">
+            <div class="form-field">
+              <label for="input-custom-savings">% Ahorro e Inversión</label>
+              <div class="input-with-icon">
+                <span class="input-icon">%</span>
+                <input type="number" id="input-custom-savings" min="0" max="100" step="1" value="20" required>
+              </div>
+            </div>
+            <div class="form-field">
+              <label for="input-custom-emerg-months">Fondo Emergencia (Meses)</label>
+              <input type="number" id="input-custom-emerg-months" min="1" max="60" step="1" value="6" required>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-ghost" data-close="modal-custom-scheme-settings">Cancelar</button>
+            <button type="submit" class="btn-primary">Guardar Reglas</button>
           </div>
         </form>
       </div>
@@ -1326,6 +1630,7 @@
   <!-- Scripts -->
   <script src="js/store.js"></script>
   <script src="js/jarra.js"></script>
+  <script src="js/dashboard.js"></script>
   <script src="js/cards.js"></script>
   <script src="js/goals.js"></script>
   <script src="js/calculator.js"></script>

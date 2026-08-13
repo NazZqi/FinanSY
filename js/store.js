@@ -1,10 +1,149 @@
 /**
  * FINANSY — STORE & STATE MANAGEMENT (CLEAN SLATE & LOCAL-FIRST)
- * Soporta valores numéricos reales (flotantes/enteros) y montos/porcentajes de ahorro exactos.
+ * Soporta esquemas dinámicos: Libertad Financiera, Común y Personalizado,
+ * jarras múltiples customizables, valores numéricos reales y cálculo de métricas financieras.
  */
 
 const FinanStore = (() => {
-  const STORAGE_KEY = 'finansy_data_v4';
+  const STORAGE_KEY = 'finansy_data_v6';
+
+  const defaultJarsConfig = {
+    libertad_financiera: [
+      {
+        id: 'jar_libertad_emergencia',
+        name: 'Fondo de Emergencia',
+        category: 'emergencia',
+        emoji: '🛡️',
+        formulaMultiplier: 4, // sueldo base * 4
+        formulaType: 'target',
+        balance: 0,
+        customTarget: null,
+        description: 'Colchón de seguridad de 4 meses de sueldo base para imprevistos.'
+      },
+      {
+        id: 'jar_libertad_invertido',
+        name: 'Inversión & Libertad Financiera',
+        category: 'inversion',
+        emoji: '🚀',
+        formulaMultiplier: 200, // sueldo base * 200
+        formulaType: 'target',
+        balance: 0,
+        customTarget: null,
+        description: 'Patrimonio invertido a largo plazo para vivir de rentas (200 sueldos base).'
+      },
+      {
+        id: 'jar_libertad_ahorro',
+        name: 'Ahorro Mensual (10%)',
+        category: 'ahorro',
+        emoji: '💎',
+        formulaMultiplier: 0.1, // sueldo base * 0.1
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Aporte mensual protegido del 10% para acumulación continua.'
+      },
+      {
+        id: 'jar_libertad_gustos',
+        name: 'Disponible / Gustos (20%)',
+        category: 'gustos',
+        emoji: '✨',
+        formulaMultiplier: 0.2, // sueldo base * 0.2
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Margen libre del 20% para recreación, gustos personales y disfrute.'
+      }
+    ],
+    comun: [
+      {
+        id: 'jar_comun_ahorro',
+        name: 'Ahorro e Inversión (20%)',
+        category: 'ahorro',
+        emoji: '🪙',
+        formulaMultiplier: 0.2, // sueldo base * 0.2
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Regla 50/30/20: 20% destinado a ahorro sistemático e inversión.'
+      },
+      {
+        id: 'jar_comun_emergencia',
+        name: 'Fondo de Emergencia',
+        category: 'emergencia',
+        emoji: '🛡️',
+        formulaMultiplier: 3, // sueldo base * 3
+        formulaType: 'target',
+        balance: 0,
+        customTarget: null,
+        description: 'Colchón de tranquilidad de 3 meses de gastos esenciales.'
+      },
+      {
+        id: 'jar_comun_gustos',
+        name: 'Gustos y Variables (30%)',
+        category: 'gustos',
+        emoji: '🏖️',
+        formulaMultiplier: 0.3, // sueldo base * 0.3
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Regla 50/30/20: 30% destinado a estilo de vida, salidas y entretenimiento.'
+      },
+      {
+        id: 'jar_comun_fijos',
+        name: 'Gastos Fijos (50%)',
+        category: 'fijos',
+        emoji: '🏠',
+        formulaMultiplier: 0.5, // sueldo base * 0.5
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Regla 50/30/20: 50% máximo para vivienda, alimentación y servicios básicos.'
+      }
+    ],
+    personalizado: [
+      {
+        id: 'jar_custom_ahorro',
+        name: 'Ahorro Personalizado',
+        category: 'ahorro',
+        emoji: '💰',
+        formulaMultiplier: 0.2,
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Aporte mensual protegido según tu propia meta personalizada.'
+      },
+      {
+        id: 'jar_custom_emergencia',
+        name: 'Fondo de Emergencia',
+        category: 'emergencia',
+        emoji: '🛡️',
+        formulaMultiplier: 6, // 6 meses
+        formulaType: 'target',
+        balance: 0,
+        customTarget: null,
+        description: 'Colchón de tranquilidad para imprevistos (configurable en meses).'
+      },
+      {
+        id: 'jar_custom_proyectos',
+        name: 'Metas & Proyectos',
+        category: 'proyectos',
+        emoji: '🎯',
+        formulaMultiplier: 0.15,
+        formulaType: 'monthly',
+        balance: 0,
+        customTarget: null,
+        description: 'Fondo acumulativo para viajes, compras o emprendimientos.'
+      }
+    ]
+  };
+
+  const defaultCustomSchemeSettings = {
+    fixedPercent: 50,
+    freePercent: 30,
+    savingsPercent: 20,
+    emergencyMonths: 6,
+    freedomMultiplier: 150
+  };
 
   // Initial Clean State
   const defaultState = {
@@ -12,8 +151,12 @@ const FinanStore = (() => {
     monthlyIncome: 0,
     savingsBalance: 0,
     savingsTarget: 1000000,
-    savingsRulePercent: 20, // 20% por defecto
-    savingsRuleAmount: null, // Monto fijo mensual (ej: $10.000)
+    savingsRulePercent: 20,
+    savingsRuleAmount: null,
+    activeScheme: 'libertad_financiera', // 'libertad_financiera' | 'comun' | 'personalizado'
+    activeJarId: 'jar_libertad_emergencia',
+    customSchemeSettings: JSON.parse(JSON.stringify(defaultCustomSchemeSettings)),
+    jars: JSON.parse(JSON.stringify(defaultJarsConfig)),
     fixedExpenses: [],
     goals: [],
     cards: [],
@@ -25,9 +168,41 @@ const FinanStore = (() => {
 
   function loadState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      let saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) {
+        saved = localStorage.getItem('finansy_data_v5') || localStorage.getItem('finansy_data_v4');
+      }
+
       if (saved) {
-        return { ...defaultState, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        const merged = { ...defaultState, ...parsed };
+
+        // Asegurar que exista jars.personalizado y customSchemeSettings
+        if (!merged.jars) {
+          merged.jars = JSON.parse(JSON.stringify(defaultJarsConfig));
+        } else {
+          if (!merged.jars.personalizado) {
+            merged.jars.personalizado = JSON.parse(JSON.stringify(defaultJarsConfig.personalizado));
+          }
+          if (!merged.jars.libertad_financiera) {
+            merged.jars.libertad_financiera = JSON.parse(JSON.stringify(defaultJarsConfig.libertad_financiera));
+          }
+          if (!merged.jars.comun) {
+            merged.jars.comun = JSON.parse(JSON.stringify(defaultJarsConfig.comun));
+          }
+        }
+
+        if (!merged.customSchemeSettings) {
+          merged.customSchemeSettings = JSON.parse(JSON.stringify(defaultCustomSchemeSettings));
+        }
+
+        if (!merged.activeScheme) merged.activeScheme = 'libertad_financiera';
+        const currentJars = merged.jars[merged.activeScheme] || [];
+        if (!merged.activeJarId || !currentJars.some(j => j.id === merged.activeJarId)) {
+          merged.activeJarId = currentJars[0]?.id || 'jar_libertad_emergencia';
+        }
+
+        return merged;
       }
     } catch (e) {
       console.warn('Error reading from localStorage, using clean defaults:', e);
@@ -39,6 +214,10 @@ const FinanStore = (() => {
 
   function saveState() {
     try {
+      const activeJars = state.jars[state.activeScheme] || [];
+      const totalJarsBalance = activeJars.reduce((acc, j) => acc + (Number(j.balance) || 0), 0);
+      state.savingsBalance = totalJarsBalance;
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       notify();
     } catch (e) {
@@ -84,7 +263,187 @@ const FinanStore = (() => {
     return num % 1 !== 0 ? `${num.toFixed(1)}%` : `${num}%`;
   }
 
-  // Operations
+  // --- Dynamic Jars & Schemes Operations ---
+
+  function setActiveScheme(schemeName) {
+    if (schemeName !== 'libertad_financiera' && schemeName !== 'comun' && schemeName !== 'personalizado') return;
+    state.activeScheme = schemeName;
+    
+    const currentJars = state.jars[schemeName] || [];
+    if (currentJars.length > 0) {
+      state.activeJarId = currentJars[0].id;
+    }
+
+    // Ajustar porcentaje de ahorro sugerido según el esquema
+    if (schemeName === 'libertad_financiera') {
+      state.savingsRulePercent = 10;
+    } else if (schemeName === 'comun') {
+      state.savingsRulePercent = 20;
+    } else if (schemeName === 'personalizado') {
+      state.savingsRulePercent = state.customSchemeSettings.savingsPercent || 20;
+    }
+
+    if (state.monthlyIncome > 0) {
+      state.savingsRuleAmount = Math.round(state.monthlyIncome * (state.savingsRulePercent / 100));
+    }
+
+    saveState();
+  }
+
+  function setActiveJar(jarId) {
+    const activeJars = state.jars[state.activeScheme] || [];
+    const found = activeJars.find(j => j.id === jarId);
+    if (found) {
+      state.activeJarId = jarId;
+      saveState();
+    }
+  }
+
+  function calculateJarTarget(jar, income = null) {
+    if (!jar) return 1000000;
+    if (jar.customTarget && Number(jar.customTarget) > 0) {
+      return Number(jar.customTarget);
+    }
+    const inc = income !== null ? Number(income) : (Number(state.monthlyIncome) || 0);
+    const multiplier = Number(jar.formulaMultiplier) || 1;
+    const calc = inc * multiplier;
+    return calc > 0 ? Math.round(calc) : (jar.formulaMultiplier >= 1 ? 1000000 : 200000);
+  }
+
+  function getActiveJar() {
+    const activeJars = state.jars[state.activeScheme] || [];
+    let jar = activeJars.find(j => j.id === state.activeJarId);
+    if (!jar && activeJars.length > 0) {
+      jar = activeJars[0];
+      state.activeJarId = jar.id;
+    }
+    return jar;
+  }
+
+  function depositToJar(jarId, amount) {
+    const num = Math.max(0, Number(amount) || 0);
+    if (num <= 0) return;
+
+    let targetJar = null;
+    for (const scheme in state.jars) {
+      const j = state.jars[scheme].find(x => x.id === jarId);
+      if (j) {
+        j.balance = (Number(j.balance) || 0) + num;
+        targetJar = j;
+        break;
+      }
+    }
+
+    if (targetJar) {
+      saveState();
+    }
+  }
+
+  function withdrawFromJar(jarId, amount) {
+    const num = Math.max(0, Number(amount) || 0);
+    if (num <= 0) return;
+
+    let targetJar = null;
+    for (const scheme in state.jars) {
+      const j = state.jars[scheme].find(x => x.id === jarId);
+      if (j) {
+        j.balance = Math.max(0, (Number(j.balance) || 0) - num);
+        targetJar = j;
+        break;
+      }
+    }
+
+    if (targetJar) {
+      saveState();
+    }
+  }
+
+  function updateJar(jarId, updates) {
+    for (const scheme in state.jars) {
+      const j = state.jars[scheme].find(x => x.id === jarId);
+      if (j) {
+        if (updates.balance !== undefined) j.balance = Math.max(0, Number(updates.balance) || 0);
+        if (updates.customTarget !== undefined) {
+          j.customTarget = updates.customTarget ? Math.max(0, Number(updates.customTarget) || 0) : null;
+        }
+        if (updates.name !== undefined) j.name = updates.name.trim() || j.name;
+        if (updates.emoji !== undefined) j.emoji = updates.emoji || j.emoji;
+        if (updates.formulaMultiplier !== undefined) j.formulaMultiplier = Number(updates.formulaMultiplier) || j.formulaMultiplier;
+        if (updates.formulaType !== undefined) j.formulaType = updates.formulaType;
+        if (updates.description !== undefined) j.description = updates.description;
+        saveState();
+        break;
+      }
+    }
+  }
+
+  function addCustomJar(jarData) {
+    const newJar = {
+      id: 'jar_custom_' + Date.now(),
+      name: jarData.name.trim() || 'Nueva Jarra Personalizada',
+      category: jarData.category || 'personalizado',
+      emoji: jarData.emoji || '🏺',
+      formulaMultiplier: Number(jarData.formulaMultiplier) || 0.1,
+      formulaType: jarData.formulaType || 'monthly',
+      balance: Number(jarData.balance) || 0,
+      customTarget: jarData.customTarget ? Number(jarData.customTarget) : null,
+      description: jarData.description || 'Jarra configurada según tus preferencias personales.'
+    };
+
+    if (!state.jars.personalizado) state.jars.personalizado = [];
+    state.jars.personalizado.push(newJar);
+    state.activeJarId = newJar.id;
+    saveState();
+  }
+
+  function deleteCustomJar(jarId) {
+    if (!state.jars.personalizado) return;
+    state.jars.personalizado = state.jars.personalizado.filter(j => j.id !== jarId);
+    if (state.activeJarId === jarId) {
+      state.activeJarId = state.jars.personalizado[0]?.id || null;
+    }
+    saveState();
+  }
+
+  function updateCustomSchemeSettings(settings) {
+    if (!state.customSchemeSettings) {
+      state.customSchemeSettings = JSON.parse(JSON.stringify(defaultCustomSchemeSettings));
+    }
+    if (settings.fixedPercent !== undefined) {
+      state.customSchemeSettings.fixedPercent = Math.max(0, Math.min(100, Number(settings.fixedPercent) || 50));
+    }
+    if (settings.freePercent !== undefined) {
+      state.customSchemeSettings.freePercent = Math.max(0, Math.min(100, Number(settings.freePercent) || 30));
+    }
+    if (settings.savingsPercent !== undefined) {
+      state.customSchemeSettings.savingsPercent = Math.max(0, Math.min(100, Number(settings.savingsPercent) || 20));
+      if (state.activeScheme === 'personalizado') {
+        state.savingsRulePercent = state.customSchemeSettings.savingsPercent;
+        if (state.monthlyIncome > 0) {
+          state.savingsRuleAmount = Math.round(state.monthlyIncome * (state.savingsRulePercent / 100));
+        }
+      }
+    }
+    if (settings.emergencyMonths !== undefined) {
+      state.customSchemeSettings.emergencyMonths = Math.max(1, Number(settings.emergencyMonths) || 6);
+      const emgJar = state.jars.personalizado?.find(j => j.category === 'emergencia');
+      if (emgJar) emgJar.formulaMultiplier = state.customSchemeSettings.emergencyMonths;
+    }
+    if (settings.freedomMultiplier !== undefined) {
+      state.customSchemeSettings.freedomMultiplier = Math.max(1, Number(settings.freedomMultiplier) || 150);
+    }
+    saveState();
+  }
+
+  function getTotalSavings() {
+    const activeJars = state.jars[state.activeScheme] || [];
+    const jarsSum = activeJars.reduce((acc, j) => acc + (Number(j.balance) || 0), 0);
+    const goalsSum = state.goals.reduce((acc, g) => acc + (Number(g.current) || 0), 0);
+    return jarsSum + goalsSum;
+  }
+
+  // --- Core Operations ---
+
   function setOnboardingCompleted(completed = true) {
     state.hasCompletedOnboarding = !!completed;
     saveState();
@@ -92,39 +451,51 @@ const FinanStore = (() => {
 
   function updateIncome(amount) {
     state.monthlyIncome = Math.max(0, Number(amount) || 0);
-    // Si hay un monto fijo de ahorro, recalculamos el %
     if (state.savingsRuleAmount && state.monthlyIncome > 0) {
       state.savingsRulePercent = Number(((state.savingsRuleAmount / state.monthlyIncome) * 100).toFixed(2));
+    } else if (state.monthlyIncome > 0) {
+      state.savingsRuleAmount = Math.round(state.monthlyIncome * (state.savingsRulePercent / 100));
     }
     saveState();
   }
 
   function updateSavingsBalance(amount) {
-    state.savingsBalance = Math.max(0, Number(amount) || 0);
+    const jar = getActiveJar();
+    if (jar) {
+      jar.balance = Math.max(0, Number(amount) || 0);
+    }
     saveState();
   }
 
   function depositSavings(amount) {
-    const num = Math.max(0, Number(amount) || 0);
-    state.savingsBalance += num;
-    saveState();
+    const jar = getActiveJar();
+    if (jar) {
+      depositToJar(jar.id, amount);
+    }
   }
 
   function withdrawSavings(amount) {
-    const num = Math.max(0, Number(amount) || 0);
-    state.savingsBalance = Math.max(0, state.savingsBalance - num);
-    saveState();
+    const jar = getActiveJar();
+    if (jar) {
+      withdrawFromJar(jar.id, amount);
+    }
   }
 
   function updateSavingsTarget(amount) {
-    state.savingsTarget = Math.max(0, Number(amount) || 0);
-    saveState();
+    const jar = getActiveJar();
+    if (jar) {
+      jar.customTarget = Math.max(0, Number(amount) || 0);
+      saveState();
+    }
   }
 
   function updateJarSettings({ balance, target, rulePercent, ruleAmount }) {
-    if (balance !== undefined && balance !== '') state.savingsBalance = Math.max(0, Number(balance) || 0);
-    if (target !== undefined && target !== '') state.savingsTarget = Math.max(0, Number(target) || 0);
-    
+    const jar = getActiveJar();
+    if (jar) {
+      if (balance !== undefined && balance !== '') jar.balance = Math.max(0, Number(balance) || 0);
+      if (target !== undefined && target !== '') jar.customTarget = Math.max(0, Number(target) || 0);
+    }
+
     if (ruleAmount !== undefined && ruleAmount !== '' && Number(ruleAmount) > 0) {
       state.savingsRuleAmount = Number(ruleAmount);
       if (state.monthlyIncome > 0) {
@@ -262,6 +633,17 @@ const FinanStore = (() => {
     withdrawSavings,
     updateSavingsTarget,
     updateJarSettings,
+    setActiveScheme,
+    setActiveJar,
+    getActiveJar,
+    calculateJarTarget,
+    depositToJar,
+    withdrawFromJar,
+    updateJar,
+    addCustomJar,
+    deleteCustomJar,
+    updateCustomSchemeSettings,
+    getTotalSavings,
     addExpense,
     deleteExpense,
     addGoal,

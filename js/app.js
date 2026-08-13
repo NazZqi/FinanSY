@@ -1,6 +1,7 @@
 /**
  * FINANSY — MAIN APPLICATION CONTROLLER
- * Orquesta navegación, modales, PWA, recordatorios, onboarding/tutorial y reactividad global.
+ * Orquesta navegación, modales, PWA, recordatorios, onboarding/tutorial,
+ * jarras dinámicas, esquemas (Libertad, Común, Personalizado), dashboard y reactividad global.
  */
 
 const FinanApp = (() => {
@@ -13,6 +14,7 @@ const FinanApp = (() => {
     setupModals();
     setupForms();
     setupHeaderButtons();
+    setupDashboardEvents();
     setupPWA();
     setupPaymentAlerts();
     setupOnboarding();
@@ -46,6 +48,7 @@ const FinanApp = (() => {
     const totalCommitted = totalFixed + totalInst;
     const available = Math.max(0, income - totalCommitted);
     const commitRate = income > 0 ? Math.min(100, Math.round((totalCommitted / income) * 100)) : 0;
+    const totalSavings = FinanStore.getTotalSavings();
 
     const incEl = document.getElementById('global-income-display');
     const expEl = document.getElementById('global-expenses-display');
@@ -57,11 +60,12 @@ const FinanApp = (() => {
     if (incEl) incEl.textContent = formatMoney(income);
     if (expEl) expEl.textContent = formatMoney(totalCommitted);
     if (availEl) availEl.textContent = formatMoney(available);
-    if (savEl) savEl.textContent = formatMoney(state.savingsBalance);
+    if (savEl) savEl.textContent = formatMoney(totalSavings);
     if (commitRateEl) commitRateEl.textContent = `${commitRate}% del ingreso comprometido`;
     if (freeRateEl) freeRateEl.textContent = `${100 - commitRate}% libre para metas/ahorro`;
 
     // 2. Renderizar Vistas
+    FinanDashboard.render(state);
     FinanJarra.render(state);
     FinanCards.render(state);
     FinanGoals.render(state);
@@ -96,6 +100,34 @@ const FinanApp = (() => {
     if (targetPanel) {
       targetPanel.classList.add('active');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  /* ---------------- DASHBOARD EVENTS ---------------- */
+  function setupDashboardEvents() {
+    const btnLibertad = document.getElementById('btn-scheme-tab-libertad');
+    const btnComun = document.getElementById('btn-scheme-tab-comun');
+    const btnPersonalizado = document.getElementById('btn-scheme-tab-personalizado');
+
+    if (btnLibertad) {
+      btnLibertad.addEventListener('click', () => {
+        FinanStore.setActiveScheme('libertad_financiera');
+        showToast('Dashboard actualizado a Esquema Libertad Financiera', 'success');
+      });
+    }
+
+    if (btnComun) {
+      btnComun.addEventListener('click', () => {
+        FinanStore.setActiveScheme('comun');
+        showToast('Dashboard actualizado a Esquema Común (50/30/20)', 'info');
+      });
+    }
+
+    if (btnPersonalizado) {
+      btnPersonalizado.addEventListener('click', () => {
+        FinanStore.setActiveScheme('personalizado');
+        showToast('Dashboard actualizado a Esquema Personalizado', 'success');
+      });
     }
   }
 
@@ -166,11 +198,13 @@ const FinanApp = (() => {
 
     document.getElementById('btn-quick-deposit')?.addEventListener('click', () => {
       document.getElementById('form-deposit')?.reset();
+      populateJarDropdown('select-deposit-jar');
       openModal('modal-deposit');
     });
 
     document.getElementById('btn-quick-withdraw')?.addEventListener('click', () => {
       document.getElementById('form-withdraw')?.reset();
+      populateJarDropdown('select-withdraw-jar');
       openModal('modal-withdraw');
     });
 
@@ -189,6 +223,40 @@ const FinanApp = (() => {
     document.getElementById('btn-open-tutorial')?.addEventListener('click', () => {
       openOnboarding();
     });
+  }
+
+  function populateJarDropdown(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const state = FinanStore.getState();
+    const activeScheme = state.activeScheme || 'libertad_financiera';
+    const jars = state.jars[activeScheme] || [];
+    const activeJarId = state.activeJarId;
+
+    select.innerHTML = jars.map(j => {
+      return `<option value="${j.id}" ${j.id === activeJarId ? 'selected' : ''}>${j.emoji || '🏺'} ${j.name} (Saldo: ${FinanStore.formatMoney(j.balance)})</option>`;
+    }).join('');
+  }
+
+  function openCustomJarModal() {
+    document.getElementById('form-custom-jar')?.reset();
+    openModal('modal-custom-jar');
+  }
+
+  function openCustomSchemeModal() {
+    const settings = FinanStore.getState().customSchemeSettings || {};
+    const inputFixed = document.getElementById('input-custom-fixed');
+    const inputFree = document.getElementById('input-custom-free');
+    const inputSav = document.getElementById('input-custom-savings');
+    const inputEmerg = document.getElementById('input-custom-emerg-months');
+
+    if (inputFixed) inputFixed.value = settings.fixedPercent || 50;
+    if (inputFree) inputFree.value = settings.freePercent || 30;
+    if (inputSav) inputSav.value = settings.savingsPercent || 20;
+    if (inputEmerg) inputEmerg.value = settings.emergencyMonths || 6;
+
+    openModal('modal-custom-scheme-settings');
   }
 
   function openModal(id) {
@@ -249,19 +317,16 @@ const FinanApp = (() => {
   function goToOnboardingStep(stepNumber) {
     currentOnboardingStep = stepNumber;
 
-    // Actualizar slides
     document.querySelectorAll('.onboarding-slide').forEach(slide => {
       const step = Number(slide.getAttribute('data-onboarding-step'));
       slide.classList.toggle('active', step === stepNumber);
     });
 
-    // Actualizar dots
     document.querySelectorAll('.step-dot').forEach(dot => {
       const step = Number(dot.getAttribute('data-step-dot'));
       dot.classList.toggle('active', step === stepNumber);
     });
 
-    // Actualizar botones de navegación
     const btnPrev = document.getElementById('btn-onboarding-prev');
     const btnNext = document.getElementById('btn-onboarding-next');
     const btnFinish = document.getElementById('btn-onboarding-finish');
@@ -325,7 +390,7 @@ const FinanApp = (() => {
       const limit = Number(document.getElementById('input-card-limit').value) || 0;
       const used = Number(document.getElementById('input-card-used').value) || 0;
       const interestRate = Number(document.getElementById('input-card-interest').value) || 0;
-      const billingDay = Number(document.getElementById('input-card-billing-day').value) || 15;
+      const billingDay = Number(document.getElementById('input-card-billingDay')?.value || document.getElementById('input-card-billing-day')?.value) || 15;
       const paymentDueDay = Number(document.getElementById('input-card-due-day').value) || 5;
       const reminderDaysBefore = Number(document.getElementById('input-card-reminder-days').value) || 3;
 
@@ -336,9 +401,9 @@ const FinanApp = (() => {
         limit, 
         used, 
         interestRate, 
-        billingDay,
-        paymentDueDay,
-        reminderDaysBefore
+        billingDay, 
+        paymentDueDay, 
+        reminderDaysBefore 
       });
       closeModal('modal-card');
       showToast(`Tarjeta "${alias}" agregada con vencimiento día ${paymentDueDay}`, 'success');
@@ -347,19 +412,25 @@ const FinanApp = (() => {
     // Form Abonar a Jarra
     document.getElementById('form-deposit')?.addEventListener('submit', (e) => {
       e.preventDefault();
+      const jarSelect = document.getElementById('select-deposit-jar');
+      const jarId = jarSelect ? jarSelect.value : FinanStore.getState().activeJarId;
       const amount = Number(document.getElementById('input-deposit-amount').value) || 0;
-      FinanStore.depositSavings(amount);
+      
+      FinanStore.depositToJar(jarId, amount);
       closeModal('modal-deposit');
-      showToast(`¡Abonaste ${FinanStore.formatMoney(amount)} a tu jarra de ahorro!`, 'success');
+      showToast(`¡Abonaste ${FinanStore.formatMoney(amount)} a tu jarra seleccionada!`, 'success');
     });
 
     // Form Retirar de Jarra
     document.getElementById('form-withdraw')?.addEventListener('submit', (e) => {
       e.preventDefault();
+      const jarSelect = document.getElementById('select-withdraw-jar');
+      const jarId = jarSelect ? jarSelect.value : FinanStore.getState().activeJarId;
       const amount = Number(document.getElementById('input-withdraw-amount').value) || 0;
-      FinanStore.withdrawSavings(amount);
+
+      FinanStore.withdrawFromJar(jarId, amount);
       closeModal('modal-withdraw');
-      showToast(`Retiraste ${FinanStore.formatMoney(amount)} de tu jarra de ahorro`, 'info');
+      showToast(`Retiraste ${FinanStore.formatMoney(amount)} de tu jarra`, 'info');
     });
 
     // Form Configurar Jarra & Capacidad de Ahorro
@@ -386,6 +457,47 @@ const FinanApp = (() => {
       closeModal('modal-installment');
       showToast(`Compromiso de cuota "${name}" por ${FinanStore.formatMoney(monthlyAmount)}/mes registrado`, 'success');
     });
+
+    // Form Crear Jarra Personalizada
+    document.getElementById('form-custom-jar')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('input-custom-jar-name').value;
+      const emojiInput = document.querySelector('input[name="custom-jar-emoji"]:checked');
+      const emoji = emojiInput ? emojiInput.value : '🏺';
+      const formulaType = document.getElementById('input-custom-jar-type').value;
+      const multiplierVal = Number(document.getElementById('input-custom-jar-multiplier').value) || 0.1;
+      const balance = Number(document.getElementById('input-custom-jar-balance').value) || 0;
+      const description = document.getElementById('input-custom-jar-desc').value;
+
+      FinanStore.addCustomJar({
+        name,
+        emoji,
+        formulaType,
+        formulaMultiplier: multiplierVal,
+        balance,
+        description
+      });
+      closeModal('modal-custom-jar');
+      showToast(`¡Jarra personalizada "${name}" creada con éxito!`, 'success');
+    });
+
+    // Form Configurar Esquema Personalizado
+    document.getElementById('form-custom-scheme-settings')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fixedPercent = Number(document.getElementById('input-custom-fixed').value) || 50;
+      const freePercent = Number(document.getElementById('input-custom-free').value) || 30;
+      const savingsPercent = Number(document.getElementById('input-custom-savings').value) || 20;
+      const emergencyMonths = Number(document.getElementById('input-custom-emerg-months').value) || 6;
+
+      FinanStore.updateCustomSchemeSettings({
+        fixedPercent,
+        freePercent,
+        savingsPercent,
+        emergencyMonths
+      });
+      closeModal('modal-custom-scheme-settings');
+      showToast('¡Reglas y porcentajes de tu esquema personalizado guardados!', 'success');
+    });
   }
 
   /* ---------------- HEADER BUTTONS & PWA ---------------- */
@@ -396,7 +508,6 @@ const FinanApp = (() => {
   }
 
   function setupPWA() {
-    // 1. Registrar Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
@@ -405,7 +516,6 @@ const FinanApp = (() => {
       });
     }
 
-    // 2. Evento de instalación PWA en celular y escritorio
     const installBtn = document.getElementById('btn-install-pwa');
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -450,7 +560,6 @@ const FinanApp = (() => {
       });
     }
 
-    // Revisar al iniciar si hay notificaciones permitidas
     if ('Notification' in window && Notification.permission === 'granted') {
       checkUrgentPaymentNotifications();
     }
@@ -506,6 +615,8 @@ const FinanApp = (() => {
     switchTab,
     openModal,
     closeModal,
+    openCustomJarModal,
+    openCustomSchemeModal,
     openOnboarding,
     showToast
   };
