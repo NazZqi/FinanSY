@@ -314,7 +314,7 @@ const FinanApp = (() => {
     document.getElementById('onboarding-custom-free')?.addEventListener('input', updateOnboardingPreview);
     document.getElementById('onboarding-custom-savings')?.addEventListener('input', updateOnboardingPreview);
 
-    // Omitir Tutorial
+    // Omitir Tutorial (único botón superior)
     const handleSkipTutorial = () => {
       FinanStore.setOnboardingCompleted(true);
       closeModal('modal-onboarding');
@@ -322,7 +322,6 @@ const FinanApp = (() => {
     };
 
     document.getElementById('btn-onboarding-skip-top')?.addEventListener('click', handleSkipTutorial);
-    document.getElementById('btn-onboarding-skip-bottom')?.addEventListener('click', handleSkipTutorial);
 
     if (btnFinish) {
       btnFinish.addEventListener('click', () => {
