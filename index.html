@@ -121,13 +121,25 @@
       </div>
     </section>
 
-    <!-- Main Navigation Tabs (Matching all 5 views) -->
+    <!-- Main Navigation Tabs (Centrado en Simulación & Gestión de Cuotas) -->
     <nav class="main-nav-tabs" role="tablist">
-      <button class="nav-tab active" data-tab="ahorros" role="tab" aria-selected="true">
+      <button class="nav-tab special-calc-tab active" data-tab="calculadora" role="tab" aria-selected="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <line x1="8" y1="6" x2="16" y2="6"></line>
+          <line x1="16" y1="14" x2="16" y2="18"></line>
+          <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path>
         </svg>
-        <span>Ahorros (Jarras)</span>
+        <span>Simulador de Compra</span>
+      </button>
+
+      <button class="nav-tab" data-tab="tarjetas" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </svg>
+        <span>Gestor de Cuotas & Tarjetas</span>
+        <span class="tab-badge" id="cards-count-badge">0</span>
       </button>
 
       <button class="nav-tab" data-tab="dashboard" role="tab" aria-selected="false">
@@ -137,7 +149,14 @@
           <rect x="14" y="12" width="7" height="9" rx="1"></rect>
           <rect x="3" y="16" width="7" height="5" rx="1"></rect>
         </svg>
-        <span>Resumen</span>
+        <span>Calendario & Flujo de Pagos</span>
+      </button>
+
+      <button class="nav-tab" data-tab="ahorros" role="tab" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        <span>Margen & Fondo de Reserva</span>
       </button>
 
       <button class="nav-tab" data-tab="metas" role="tab" aria-selected="false">
@@ -149,34 +168,15 @@
         <span>Metas</span>
         <span class="tab-badge" id="goals-count-badge">0</span>
       </button>
-
-      <button class="nav-tab" data-tab="tarjetas" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-          <line x1="1" y1="10" x2="23" y2="10"></line>
-        </svg>
-        <span>Tarjetas y Cupo</span>
-        <span class="tab-badge" id="cards-count-badge">0</span>
-      </button>
-
-      <button class="nav-tab special-calc-tab" data-tab="calculadora" role="tab" aria-selected="false">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
-          <line x1="8" y1="6" x2="16" y2="6"></line>
-          <line x1="16" y1="14" x2="16" y2="18"></line>
-          <path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"></path>
-        </svg>
-        <span>Calculadora de Compra</span>
-      </button>
     </nav>
 
     <!-- Main Content Views Container -->
     <main class="views-wrapper">
 
       <!-- ============================================================== -->
-      <!-- VIEW 1: AHORROS (JARRAS DINÁMICAS POR ESQUEMA) -->
+      <!-- VIEW: AHORROS Y MARGEN DISPONIBLE (SOPORTE) -->
       <!-- ============================================================== -->
-      <section id="view-ahorros" class="view-panel active">
+      <section id="view-ahorros" class="view-panel">
         <div class="view-header">
           <div>
             <h2>Jarras Dinámicas de Ahorro</h2>
@@ -646,9 +646,9 @@
       </section>
 
       <!-- ============================================================== -->
-      <!-- VIEW 4: CALCULADORA DE COMPRA INTELIGENTE (SIMULADOR) -->
+      <!-- VIEW PRINCIPAL: CALCULADORA DE COMPRA INTELIGENTE (SIMULADOR) -->
       <!-- ============================================================== -->
-      <section id="view-calculadora" class="view-panel">
+      <section id="view-calculadora" class="view-panel active">
         <div class="view-header">
           <div>
             <h2>Calculadora de Compra y Financiamiento</h2>
