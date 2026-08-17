@@ -19,10 +19,9 @@ const FinanApp = (() => {
     setupPaymentAlerts();
     setupOnboarding();
 
-    // Inicializar calculadora, scanner y demo sandbox
+    // Inicializar calculadora y scanner
     FinanCalculator.init();
     FinanReceiptScanner.init();
-    FinanDemo.init();
 
     // Suscribirse a cambios en el Store para actualizar toda la UI
     FinanStore.subscribe(renderAll);

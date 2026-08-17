@@ -2,7 +2,7 @@
  * FINANSY — SERVICE WORKER (NETWORK-FIRST WITH OFFLINE CACHE FALLBACK)
  */
 
-const CACHE_NAME = 'finansy-cache-v6';
+const CACHE_NAME = 'finansy-cache-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -12,10 +12,11 @@ const ASSETS_TO_CACHE = [
   './css/jarra-animada.css',
   './js/store.js',
   './js/jarra.js',
+  './js/dashboard.js',
   './js/cards.js',
   './js/goals.js',
   './js/calculator.js',
-  './js/demo.js',
+  './js/receipt-scanner.js',
   './js/app.js'
 ];
 

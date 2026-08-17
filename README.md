@@ -132,11 +132,8 @@ js/
 ├── goals.js            # 🎯 PLANIFICACIÓN DE METAS (SOPORTE)
 │                       # Gestión de objetivos de ahorro previo a compras.
 │
-├── receipt-scanner.js  # 🧾 DIGITALIZADOR OCR AUXILIAR
-│                       # Procesamiento y extracción de datos de comprobantes.
-│
-└── demo.js             # 💡 GENERADOR DE DEMOSTRACIÓN INTERACTIVA
-                        # Carga instantánea de un escenario realista de cuotas y tarjetas.
+└── receipt-scanner.js  # 🧾 DIGITALIZADOR OCR AUXILIAR
+                        # Procesamiento y extracción de datos de comprobantes.
 ```
 
 ---

@@ -178,24 +178,6 @@ button {
   transform: translateY(-1px);
 }
 
-.btn-demo-glow {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(139, 92, 246, 0.2));
-  border: 1px solid rgba(6, 182, 212, 0.4);
-  color: #E0F2FE;
-  padding: 0.45rem 1rem;
-  border-radius: var(--radius-full);
-  font-size: 0.82rem;
-  font-weight: 700;
-  box-shadow: 0 0 16px rgba(6, 182, 212, 0.15);
-}
-
-.btn-demo-glow:hover {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(139, 92, 246, 0.35));
-  border-color: var(--secondary-light);
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-}
-
 /* Global Summary Bar */
 .global-summary-bar {
   display: grid;
