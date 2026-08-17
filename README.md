@@ -62,14 +62,19 @@ El endeudamiento descontrolado en cuotas ocurre porque las personas toman decisi
 
 ### 1. 🧮 Módulo Principal — Simulador de Compra & Semáforo de Impacto
 * **Pantalla Inicial & Núcleo Operativo:** Diseñado para utilizarse en el punto de decisión de compra (tienda física o e-commerce).
-* **Motor de Amortización:**
-  * Simulación dinámica de 1 a 36 cuotas.
-  * Comparación instantánea: Precio Contado vs. Costo Total Financiado con interés mensual.
-* **Protección de Margen Libre:** Define un porcentaje o monto mínimo de tus ingresos que debe quedar blindado.
-* **Semáforo Financiero de Decisión:**
-  * 🟢 **Verde (Compra Segura):** La cuota se absorbe holgadamente dentro de tu disponible sin comprometer tu fondo de reserva.
-  * 🟡 **Amarillo (Ajuste Requerido):** La cuota reduce significativamente tu holgura mensual; requiere recortar gastos variables.
-  * 🔴 **Rojo (Alto Riesgo de Sobreendeudamiento):** La cuota supera tu capacidad de pago o invade tu margen protegido.
+* **Dos Modos de Simulación Adaptables:**
+  * ⚡ **Modo Rápido (Quick Check):** Evalúa la viabilidad en segundos ingresando únicamente tu ingreso estimado y el valor de la compra, sin requerir haber configurado tarjetas ni gastos previamente.
+  * 🔗 **Modo Integrado (Perfil Completo):** Cruza la simulación contra tus gastos fijos, cuotas activas y cupos reales almacenados en `store.js`.
+* **Motor de Amortización Francesa & Costos Operacionales:**
+  $$\text{Cuota Base} = \begin{cases} \frac{M}{n} & \text{si } i = 0 \\ M \cdot \frac{i(1+i)^n}{(1+i)^n - 1} & \text{si } i > 0 \end{cases}$$
+  $$\text{Cuota Real Mensual} = \text{Cuota Base} + \text{Comisión Mantención} + \frac{\text{Impuesto Timbres}}{n}$$
+* **Umbrales Matemáticos Cuantitativos del Semáforo:**
+
+| Modo | 🟢 Verde (Compra Segura) | 🟡 Amarillo (Precaución / Ajuste) | 🔴 Rojo (Alto Riesgo) |
+| :--- | :--- | :--- | :--- |
+| **⚡ Quick Check** | Cuota $\le 10\%$ del ingreso estimado | Cuota entre $10\%$ y $20\%$ del ingreso | Cuota $> 20\%$ del ingreso estimado |
+| **🔗 Integrado** | $\text{DTI}_{\text{post}} \le 35\%$ y Consumo Margen $\le 50\%$ | $35\% < \text{DTI}_{\text{post}} \le 50\%$ o Consumo Margen $50\%-85\%$ | $\text{DTI}_{\text{post}} > 50\%$, Consumo $> 85\%$ o Cupo Excedido |
+
 * **Acción en un Clic:** Botón para consolidar la simulación directamente como un compromiso activo en tu plan de pagos.
 
 ---

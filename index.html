@@ -652,8 +652,7 @@
         <div class="view-header">
           <div>
             <h2>Calculadora de Compra y Financiamiento</h2>
-            <p class="text-muted">Evalúa si tu compra es financieramente sana y protege tu porcentaje de ahorro antes de
-              pagar.</p>
+            <p class="text-muted">Evalúa con rigor matemático si tu compra a plazo es viable antes de endeudarte.</p>
           </div>
           <div class="calc-quick-demo-action">
             <button class="btn-outline-glow" id="btn-calc-load-sample">
@@ -665,12 +664,39 @@
           </div>
         </div>
 
+        <!-- Selector de Modo de Simulación -->
+        <div class="calc-mode-selector-wrap">
+          <button type="button" class="btn-calc-mode active" id="btn-mode-quick" data-mode="quick">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span>Modo Rápido (Quick Check)</span>
+          </button>
+          <button type="button" class="btn-calc-mode" id="btn-mode-integrated" data-mode="integrated">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span>Modo Integrado (Perfil Completo)</span>
+          </button>
+        </div>
+
         <div class="calc-main-layout">
           <!-- Columna Izquierda: Formulario de Configuración de la Compra -->
           <div class="calc-form-card">
             <div class="form-group-title">
               <span class="step-num">1</span>
               <h3>Detalles del Producto o Gasto</h3>
+            </div>
+
+            <!-- Campo de Ingreso en Modo Rápido (Quick Check) -->
+            <div class="form-field" id="calc-quick-income-wrap">
+              <label for="calc-quick-income">Tu Ingreso Mensual Estimado ($ CLP)</label>
+              <div class="input-with-icon">
+                <span class="input-icon">$</span>
+                <input type="number" id="calc-quick-income" placeholder="Ej: 1000000" value="1000000" min="0" step="any">
+              </div>
+              <small class="text-subtle">Ingreso estimado para evaluar la viabilidad sin requerir configuración previa.</small>
             </div>
 
             <div class="input-grid">
@@ -693,12 +719,12 @@
               </div>
             </div>
 
-            <div class="form-group-title">
+            <div class="form-group-title" id="calc-step-card-title">
               <span class="step-num">2</span>
               <h3>Método de Pago y Tarjeta</h3>
             </div>
 
-            <div class="form-field">
+            <div class="form-field" id="calc-card-select-wrap">
               <label for="calc-card-select">Selecciona la Tarjeta a Utilizar</label>
               <select id="calc-card-select" class="custom-select">
                 <!-- Se llena con las tarjetas creadas -->
@@ -736,8 +762,8 @@
               <label class="interest-radio">
                 <input type="radio" name="calc-interest-mode" value="yes" id="radio-interest-yes">
                 <span class="radio-card">
-                  <strong>Con Interés de la Tarjeta</strong>
-                  <small>Tasa mensual o anual</small>
+                  <strong>Con Interés (Amortización Francesa)</strong>
+                  <small>Tasa de interés mensual</small>
                 </span>
               </label>
             </div>
@@ -746,11 +772,40 @@
             <div class="form-field interest-rate-field" id="calc-custom-rate-wrap" style="display: none;">
               <div class="rate-header-label">
                 <label for="calc-interest-rate">Tasa de Interés Mensual (%)</label>
-                <span class="text-hint">Referencial de tu tarjeta</span>
+                <span class="text-hint">Tasa periódica aplicada a la cuota</span>
               </div>
               <div class="input-with-icon">
                 <span class="input-icon">%</span>
                 <input type="number" id="calc-interest-rate" value="1.89" step="any" min="0" max="100">
+              </div>
+            </div>
+
+            <!-- Costos Operacionales e Impuestos (Opcional / Desplegable) -->
+            <div class="calc-operational-costs-toggle">
+              <button type="button" class="btn-toggle-costs" id="btn-toggle-operational-costs">
+                <span>⚙️ Costos Fijos e Impuestos (Comisión / Timbres)</span>
+                <span class="chevron" id="costs-toggle-chevron">▼</span>
+              </button>
+            </div>
+
+            <div class="operational-costs-fields" id="operational-costs-fields-wrap" style="display: none;">
+              <div class="input-grid">
+                <div class="form-field">
+                  <label for="calc-maintenance-fee">Comisión Fija de Tarjeta ($ / mes)</label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">$</span>
+                    <input type="number" id="calc-maintenance-fee" placeholder="Ej: 3500" value="0" min="0" step="any">
+                  </div>
+                  <small class="text-subtle">Costo generado al facturar la tarjeta</small>
+                </div>
+                <div class="form-field">
+                  <label for="calc-tax-fee">Impuestos / Timbres ($ Total)</label>
+                  <div class="input-with-icon">
+                    <span class="input-icon">$</span>
+                    <input type="number" id="calc-tax-fee" placeholder="0" value="0" min="0" step="any">
+                  </div>
+                  <small class="text-subtle">Prorrateado en el plazo de cuotas</small>
+                </div>
               </div>
             </div>
 
@@ -773,15 +828,15 @@
 
             <div class="form-group-title">
               <span class="step-num">4</span>
-              <h3>Protección de Ahorro Mensual</h3>
+              <h3>Protección de Margen Libre</h3>
             </div>
 
             <!-- Slider de Retención de % de Ahorro -->
             <div class="form-field savings-guard-box">
               <div class="savings-guard-header">
                 <div>
-                  <strong>Porcentaje de Ahorro Intocable</strong>
-                  <p class="text-subtle">¿Cuánto de tu ingreso quieres salvaguardar pase lo que pase?</p>
+                  <strong>Porcentaje de Margen Intocable</strong>
+                  <p class="text-subtle">¿Cuánto de tu ingreso quieres salvaguardar como reserva libre?</p>
                 </div>
                 <span class="savings-percent-badge" id="calc-savings-guard-percent">20%</span>
               </div>
@@ -802,7 +857,7 @@
           <div class="calc-results-card">
             <div class="results-header">
               <span class="verdict-tag" id="calc-verdict-tag">Análisis Financiero</span>
-              <div class="status-indicator-badge" id="calc-status-badge">
+              <div class="status-indicator-badge status-safe" id="calc-status-badge">
                 <span class="indicator-dot"></span>
                 <span id="calc-status-text">Calculando...</span>
               </div>
@@ -810,7 +865,7 @@
 
             <!-- Resumen Principal de Cuota -->
             <div class="monthly-payment-hero">
-              <span class="hero-label">Valor Cuota Mensual</span>
+              <span class="hero-label">Valor Cuota Mensual Real</span>
               <div class="hero-price" id="calc-monthly-installment-display">$108.333</div>
               <span class="hero-period" id="calc-period-subtitle">por 6 meses consecutivos</span>
             </div>
@@ -823,31 +878,36 @@
               </div>
 
               <div class="breakdown-row" id="calc-interest-row">
-                <span>Interés Total Cobrado</span>
+                <span>Interés Total Amortizado</span>
                 <strong class="text-rose" id="calc-total-interest-display">$0 (Sin Interés)</strong>
               </div>
 
+              <div class="breakdown-row" id="calc-operational-costs-row" style="display: none;">
+                <span>Costos Operacionales & Impuestos</span>
+                <strong class="text-amber" id="calc-total-operational-display">$0</strong>
+              </div>
+
               <div class="breakdown-row total-highlight">
-                <span>Costo Total Final</span>
+                <span>Costo Total Final Real</span>
                 <strong class="text-cyan" id="calc-final-total-display">$650.000</strong>
               </div>
             </div>
 
             <!-- Impacto en la Salud Financiera del Usuario -->
             <div class="health-impact-box">
-              <h4>Impacto en tu Presupuesto Mensual</h4>
+              <h4>Impacto Cuantitativo en tu Flujo</h4>
 
               <div class="impact-metric">
                 <div class="impact-metric-labels">
-                  <span>Presupuesto Libre Disponible tras la Cuota:</span>
-                  <strong id="calc-remaining-free-budget">$141.667</strong>
+                  <span id="calc-impact-ratio-label">Carga Financiera Total Post-Compra (DTI):</span>
+                  <strong id="calc-impact-ratio-value">28%</strong>
                 </div>
                 <div class="progress-bar-bg">
-                  <div class="progress-bar-fill fill-cyan" id="calc-free-budget-bar" style="width: 58%;"></div>
+                  <div class="progress-bar-fill fill-emerald" id="calc-impact-ratio-bar" style="width: 28%;"></div>
                 </div>
               </div>
 
-              <div class="impact-metric">
+              <div class="impact-metric" id="calc-cupo-metric-wrap">
                 <div class="impact-metric-labels">
                   <span>Uso del Cupo de la Tarjeta:</span>
                   <strong id="calc-card-cupo-usage-text">54% utilizado</strong>
@@ -859,12 +919,12 @@
             </div>
 
             <!-- Tarjeta de Diagnóstico y Consejo Personalizado -->
-            <div class="diagnosis-callout" id="calc-diagnosis-callout">
-              <div class="callout-icon" id="calc-diagnosis-icon">💡</div>
+            <div class="diagnosis-callout safe" id="calc-diagnosis-callout">
+              <div class="callout-icon" id="calc-diagnosis-icon">✅</div>
               <div class="callout-content">
                 <h5 id="calc-diagnosis-title">¡Compra Recomendada y Segura!</h5>
                 <p id="calc-diagnosis-desc">La cuota mensual encaja perfectamente en tu presupuesto disponible y respeta
-                  tu meta del 20% de ahorro.</p>
+                  tu meta del 20% de margen libre.</p>
               </div>
             </div>
 
