@@ -3416,6 +3416,26 @@ input:focus,
   color: #FCD34D;
 }
 
+@media (max-width: 768px) {
+  .calc-mode-selector-wrap {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  .btn-calc-mode {
+    justify-content: center;
+    padding: 0.45rem 0.35rem;
+    font-size: 0.74rem;
+    text-align: center;
+    border-radius: var(--radius-sm);
+  }
+}
+
+
 
 
 
