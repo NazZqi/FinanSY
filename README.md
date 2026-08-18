@@ -1,167 +1,94 @@
-# 💳 FinanSY — Simulador Inteligente de Compras en Cuotas & Gestor de Flujo Futuro
+# 💳 FinanSY — Asistente Preventivo de Compras a Plazos
 
 <div align="center">
 
 ![FinanSY Banner](https://img.shields.io/badge/FinanSY-Simulador_de_Cuotas-10B981?style=for-the-badge&logo=shield)
-![Foco](https://img.shields.io/badge/Foco-Compras_a_Plazos_%26_Amortización-0284C7?style=for-the-badge)
-![PWA](https://img.shields.io/badge/PWA-100%25_Privado_%26_Offline-F59E0B?style=for-the-badge&logo=pwa)
-![Tech](https://img.shields.io/badge/Vanilla-JS_ES6+_%26_CSS3-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Foco](https://img.shields.io/badge/Foco-Amortización_Francesa_%26_Semáforo-0284C7?style=for-the-badge)
+![Tech](https://img.shields.io/badge/React_18-TypeScript_5-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![UI](https://img.shields.io/badge/HeroUI-Tailwind_CSS-8B5CF6?style=for-the-badge)
 ![License](https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge)
 
-**Evalúa el costo real de tus compras a plazo y proyecta el impacto en tu flujo de caja mensual antes de endeudarte.**  
-100% privado, sin registros bancarios invasivos, ejecutado en tu navegador.
+**Herramienta preventiva de apoyo a la toma de decisiones financieras antes de realizar compras a plazos.**  
+Evalúa el impacto en el flujo de caja, calcula el Costo Total Financiero bajo amortización formal y proyecta la recuperación paulatina de liquidez.
 
-[🎯 Propuesta de Valor](#-propuesta-única-de-valor) • [🧮 Módulos del Sistema](#-jerarquía-y-módulos-del-sistema) • [🏗️ Arquitectura JS](#%EF%B8%8F-arquitectura-de-módulos-js) • [🚀 Uso Rápido](#-instalación-y-uso-rápido)
+[🎯 Propuesta de Valor](#-propuesta-de-valor) • [🧮 Fórmulas Financieras](#-reglas-financieras-y-fórmulas) • [🏗️ Arquitectura](#%EF%B8%8F-arquitectura-del-proyecto) • [🚀 Ejecución Local](#-ejecución-local)
 
 </div>
 
 ---
 
-## 🎯 Propuesta Única de Valor (UVP)
+## 🎯 Propuesta de Valor y Alcance
 
-El endeudamiento descontrolado en cuotas ocurre porque las personas toman decisiones de compra evaluando únicamente el saldo actual, sin dimensionar **cómo afectará esa nueva cuota a su liquidez durante los próximos 3, 6, 12 o 24 meses**.
-
-**FinanSY resuelve este dolor de raíz:**
-1. **Antes de comprar:** Simula el costo total (contado vs. cuotas con/sin interés) y entrega un **Semáforo de Impacto en tiempo real** que evalúa si la cuota compromete tu margen libre o fondo de reserva.
-2. **Durante el plazo:** Centraliza el **seguimiento de cuotas activas**, proyectando el **calendario exacto de vencimientos** y cuándo se liberará tu capacidad financiera.
-
----
-
-## 🧮 Jerarquía y Módulos del Sistema
-
-```
-                         ┌───────────────────────────────────────────────┐
-                         │      FINANSY — FLUJO CORE DE DECISIÓN        │
-                         └───────────────────────────────────────────────┘
-                                                 │
-                   ┌─────────────────────────────┴─────────────────────────────┐
-                   ▼                                                           ▼
-       [ MÓDULO PRINCIPAL ]                                        [ GESTOR DE CRÉDITO ]
-  🧮 Simulador & Semáforo de Impacto                          💳 Gestor de Cuotas & Tarjetas
-  - Contado vs. Cuotas (1 a 36)                              - Cupo Total / Usado / Disponible
-  - Tasas de interés y recargo total                         - Tracking de cuotas en curso (ej: 4/12)
-  - Protección de margen intocable                           - Alertas de sobreendeudamiento
-  - Veredicto visual: 🟢 🟡 🔴                               - Control de fechas de corte y pago
-                   │                                                           │
-                   └─────────────────────────────┬─────────────────────────────┘
-                                                 ▼
-                                     [ PROYECCIÓN DE FLUJO ]
-                                📅 Calendario & Alivio de Liquidez
-                                - Proyección mes a mes de cuotas por vencer
-                                - Fecha estimada de liberación de presupuesto
-                                - Carga de endeudamiento sobre ingresos netos
-                                                 │
-                                                 ▼
-                                     [ MÓDULOS DE SOPORTE ]
-                                🛡️ Margen Disponible & Fondo de Reserva
-                                🎯 Metas de Ahorro / Liquidación de Saldos
-                                🧾 Digitalizador Auxiliar de Comprobantes
-```
+El sistema es una herramienta preventiva de apoyo a la toma de decisiones financieras antes de realizar compras a plazos.
+- **Antes de comprar (Modo Quick Check):** Simula el costo total financiero, amortización e interés, y emite un veredicto semafórico instantáneo sin exigencia de registros previos.
+- **Durante el plazo (Calendario & Cuotas):** Seguimiento de compras activas y vencimientos por fecha de corte.
+- **Proyección futura (Curva de Alivio):** Gráfico de recuperación de liquidez libre a 12 meses conforme expiran los compromisos.
 
 ---
 
-### 1. 🧮 Módulo Principal — Simulador de Compra & Semáforo de Impacto
-* **Pantalla Inicial & Núcleo Operativo:** Diseñado para utilizarse en el punto de decisión de compra (tienda física o e-commerce).
-* **Dos Modos de Simulación Adaptables:**
-  * ⚡ **Modo Rápido (Quick Check):** Evalúa la viabilidad en segundos ingresando únicamente tu ingreso estimado y el valor de la compra, sin requerir haber configurado tarjetas ni gastos previamente.
-  * 🔗 **Modo Integrado (Perfil Completo):** Cruza la simulación contra tus gastos fijos, cuotas activas y cupos reales almacenados en `store.js`.
-* **Motor de Amortización Francesa & Costos Operacionales:**
-  $$\text{Cuota Base} = \begin{cases} \frac{M}{n} & \text{si } i = 0 \\ M \cdot \frac{i(1+i)^n}{(1+i)^n - 1} & \text{si } i > 0 \end{cases}$$
-  $$\text{Cuota Real Mensual} = \text{Cuota Base} + \text{Comisión Mantención} + \frac{\text{Impuesto Timbres}}{n}$$
-* **Umbrales Matemáticos Cuantitativos del Semáforo:**
+## 🧮 Reglas Financieras y Fórmulas
 
-| Modo | 🟢 Verde (Compra Segura) | 🟡 Amarillo (Precaución / Ajuste) | 🔴 Rojo (Alto Riesgo) |
-| :--- | :--- | :--- | :--- |
-| **⚡ Quick Check** | Cuota $\le 10\%$ del ingreso estimado | Cuota entre $10\%$ y $20\%$ del ingreso | Cuota $> 20\%$ del ingreso estimado |
-| **🔗 Integrado** | $\text{DTI}_{\text{post}} \le 35\%$ y Consumo Margen $\le 50\%$ | $35\% < \text{DTI}_{\text{post}} \le 50\%$ o Consumo Margen $50\%-85\%$ | $\text{DTI}_{\text{post}} > 50\%$, Consumo $> 85\%$ o Cupo Excedido |
+### 1. Amortización de Cuota Fija (Sistema Francés)
 
-* **Acción en un Clic:** Botón para consolidar la simulación directamente como un compromiso activo en tu plan de pagos.
+$$\text{Cuota Base} = \begin{cases} \frac{M}{n} & \text{si } i = 0 \\ M \cdot \frac{i(1+i)^n}{(1+i)^n - 1} & \text{si } i > 0 \end{cases}$$
 
----
+Donde:
+* $M$: Monto total financiado.
+* $i$: Tasa de interés periódica mensual decimal ($\text{Tasa Mensual } / 100$).
+* $n$: Número total de cuotas.
 
-### 2. 💳 Módulo Secundario — Gestor de Cuotas y Tarjetas de Crédito
-* **Control de Líneas de Crédito:** Monitoreo del cupo total, cupo utilizado por compras pendientes y cupo disponible real.
-* **Seguimiento de Cuotas en Curso:** Visualiza compras vigentes con indicador de progreso (ejemplo: *Notebook Dell — Cuota 4 de 12 restantes*).
-* **Fechas Clave:** Recordatorio preventivo de días de facturación/corte y días límite de pago para evitar intereses por mora.
+### 2. Cuota Final y Costos Totales
 
----
+$$\text{Cuota Final Mensual} = \text{Cuota Base} + \text{Costos Fijos Mensuales}$$
+$$\text{Costo Total Financiero} = \text{Cuota Final Mensual} \cdot n$$
+$$\text{Sobrecosto Total} = \text{Costo Total Financiero} - M$$
 
-### 3. 📅 Módulo de Proyección — Calendario y Flujo Futuro
-* **Calendario de Pagos:** Proyección cronológica de las obligaciones del mes en curso y próximos periodos.
-* **Curva de Alivio Financiero:** Muestra exactamente en qué mes finalizan tus cuotas vigentes y cuándo tu flujo de caja vuelve a expandirse.
-* **Porcentaje de Compromiso:** Métrica en tiempo real del ratio `(Gastos Fijos + Cuotas) / Ingreso Neto`.
+### 3. Criterios del Semáforo de Viabilidad
+
+$$\text{Impacto (\%)} = \left( \frac{\text{Cuota Final Mensual}}{\text{Ingreso Mensual Estimado}} \right) \cdot 100$$
+
+* 🟢 **Verde (`green`):** $\text{Impacto} \le 15\%$ (Bajo riesgo / Compra viable).
+* 🟡 **Amarillo (`yellow`):** $15\% < \text{Impacto} \le 30\%$ (Precaución / Carga media).
+* 🔴 **Rojo (`red`):** $\text{Impacto} > 30\%$ (Alto riesgo de sobreendeudamiento).
 
 ---
 
-### 4. 🛡️ Módulos de Soporte (Margen, Metas y Asistencia)
-* **Margen Disponible & Fondo de Reserva:** Monitoreo simplificado del colchón de liquidez para emergencias.
-* **Metas de Ahorro:** Planificación de compras a mediano plazo para privilegiar el pago al contado sobre el crédito.
-* **Digitalizador Auxiliar de Boletas (OCR):** Extracción rápida de montos desde fotos de comprobantes para simular o cargar gastos sin digitación manual.
+## 🏗️ Arquitectura del Proyecto
 
----
-
-## 🏗️ Arquitectura de Módulos `js/`
-
-El código está estructurado bajo una arquitectura modular desacoplada en JavaScript Vanilla (ES6+), orientada a eventos y estado centralizado reactivo:
-
-```plaintext
-js/
-├── store.js            # 🗄️ ESTADO CENTRAL & PERSISTENCIA LOCAL
-│                       # Administra ingresos, tarjetas, compromisos en cuotas,
-│                       # gastos fijos y suscripciones de cambio de estado.
-│
-├── calculator.js       # 🧮 MOTOR DE SIMULACIÓN (CORE)
-│                       # Cálculo de amortización en cuotas, intereses,
-│                       # evaluación de margen de seguridad y semáforo de impacto.
-│
-├── cards.js            # 💳 GESTIÓN DE TARJETAS Y CUOTAS ACTIVAS
-│                       # Control de cupos (usado/disponible), ciclos de corte
-│                       # y listado de compras en cuotas en curso.
-│
-├── dashboard.js        # 📊 PROYECCIÓN DE FLUJO Y CALENDARIO
-│                       # Gráficos de compromiso, calendario mensual de pagos
-│                       # y cálculo de la tasa de endeudamiento.
-│
-├── app.js              # 🎛️ ORQUESTADOR & NAVEGACIÓN
-│                       # Enrutador de pestañas (priorizando Simulador),
-│                       # gestión de modales, alertas y ciclo de vida de la app.
-│
-├── jarra.js            # 🛡️ MARGEN & FONDO DE RESERVA (SOPORTE)
-│                       # Indicador visual del colchón de emergencia y reserva.
-│
-├── goals.js            # 🎯 PLANIFICACIÓN DE METAS (SOPORTE)
-│                       # Gestión de objetivos de ahorro previo a compras.
-│
-└── receipt-scanner.js  # 🧾 DIGITALIZADOR OCR AUXILIAR
-                        # Procesamiento y extracción de datos de comprobantes.
+```text
+src/
+├── components/
+│   └── NavigationTabs.tsx          # Contenedor modular con carga diferida (React.lazy + Suspense)
+├── features/
+│   ├── simulator/                  # Tab 1: Núcleo preventivo y semáforo de viabilidad
+│   │   ├── SimulatorView.tsx
+│   │   ├── QuickCheckCard.tsx
+│   │   └── AmortizationTable.tsx
+│   ├── calendar/                   # Tab 2: Calendario y cuotas activas
+│   │   └── CalendarView.tsx
+│   └── liquidity/                  # Tab 3: Curva de alivio financiero y margen disponible
+│       └── LiquidityView.tsx
+├── types/
+│   └── finance.ts                  # Modelado estricto de tipos de dominio
+├── utils/
+│   └── amortization.ts             # Motor de cálculo financiero
+├── context/
+│   └── InstallmentsContext.tsx     # Estado global persistente
+├── App.tsx                         # Entry point con HeroUIProvider
+└── main.tsx
 ```
 
 ---
 
-## 🔒 Privacidad Absoluta & Enfoque Local-First
-
-* **Cero Telemetría:** No recopilamos credenciales bancarias ni información personal.
-* **Almacenamiento en el Dispositivo:** Toda la información vive exclusivamente en el `localStorage` de tu navegador.
-* **Offline-First (PWA):** Instálalo en tu smartphone o laptop; funciona 100% sin conexión a internet.
-
----
-
-## 🚀 Instalación y Uso Rápido
-
-No requiere Node.js para funcionar en producción, solo un navegador web.
+## 🚀 Ejecución Local
 
 ```bash
-# Opción A: Servidor local simple con Python
-python -m http.server 8080
+# 1. Instalar dependencias
+npm install
 
-# Opción B: Con Node.js
-npx serve .
+# 2. Iniciar servidor de desarrollo
+npm run dev
+
+# 3. Compilar para producción
+npm run build
 ```
-
-Abre en tu navegador: `http://localhost:8080` (La aplicación se abrirá directamente en el **Simulador de Compra**).
-
----
-
-## 📄 Licencia
-
-Distribuido bajo la Licencia MIT.
