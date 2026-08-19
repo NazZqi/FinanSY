@@ -12,7 +12,8 @@ export const NavigationTabs: React.FC = () => {
 
   return (
     <div className="w-full space-y-6">
-      <div className="flex justify-center px-4">
+      {/* Barra de Pestañas Centrada y Armonizada */}
+      <div className="flex justify-center w-full">
         <Tabs
           selectedKey={selectedTab}
           onSelectionChange={(key) => setSelectedTab(key as string)}
@@ -20,17 +21,18 @@ export const NavigationTabs: React.FC = () => {
           color="primary"
           variant="bordered"
           classNames={{
-            tabList: 'bg-background/80 backdrop-blur-xl border border-default-200/80 p-1.5 rounded-2xl shadow-lg',
-            cursor: 'bg-primary shadow-lg shadow-primary/30 rounded-xl',
-            tab: 'h-11 px-4 sm:px-6 text-xs sm:text-sm font-bold transition-all',
-            tabContent: 'group-data-[selected=true]:text-primary-foreground font-semibold',
+            base: 'w-full flex justify-center',
+            tabList: 'bg-default-100/50 backdrop-blur-xl border border-default-200/70 p-1 rounded-2xl shadow-sm gap-1 w-full sm:w-auto max-w-full overflow-x-auto',
+            cursor: 'bg-primary/90 shadow-md shadow-primary/25 rounded-xl',
+            tab: 'h-10 px-3 sm:px-6 text-xs sm:text-sm font-semibold transition-all data-[selected=true]:font-bold',
+            tabContent: 'group-data-[selected=true]:text-primary-foreground',
           }}
         >
           <Tab
             key="simulator"
             title={
               <div className="flex items-center gap-2">
-                <Calculator className="w-4 h-4" />
+                <Calculator className="w-4 h-4 shrink-0" />
                 <span>Simulador de Cuotas</span>
               </div>
             }
@@ -39,7 +41,7 @@ export const NavigationTabs: React.FC = () => {
             key="calendar"
             title={
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 shrink-0" />
                 <span>Calendario & Cuotas</span>
               </div>
             }
@@ -48,7 +50,7 @@ export const NavigationTabs: React.FC = () => {
             key="liquidity"
             title={
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
+                <TrendingUp className="w-4 h-4 shrink-0" />
                 <span>Curva de Alivio</span>
               </div>
             }
