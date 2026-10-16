@@ -53,6 +53,23 @@ export const App: React.FC = () => {
               <p className="text-[11px]">
                 Fórmulas de amortización francesa de cuota fija • Criterio de semáforo prudencial
               </p>
+              <p className="text-[11px] max-w-2xl mx-auto">
+                <strong>Aviso:</strong> FinanSY es una herramienta informativa y referencial. No
+                constituye asesoría financiera, legal ni oferta de crédito. Los resultados son
+                estimaciones y pueden diferir del Costo Total del Crédito informado por la entidad
+                financiera.
+              </p>
+              <details className="text-[11px] max-w-2xl mx-auto text-left">
+                <summary className="cursor-pointer text-center text-default-300 font-medium">
+                  Privacidad
+                </summary>
+                <p className="mt-1">
+                  FinanSY no tiene servidores ni cuentas. Los datos que ingresas (ingresos, compras y
+                  cuotas) se guardan solo en este navegador mediante almacenamiento local, no se
+                  envían a terceros y no se usan cookies ni analítica. Puedes borrarlos limpiando los
+                  datos del sitio en tu navegador.
+                </p>
+              </details>
             </div>
           </footer>
         </div>
