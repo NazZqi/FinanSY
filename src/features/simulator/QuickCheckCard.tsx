@@ -43,7 +43,7 @@ export const QuickCheckCard: React.FC<QuickCheckCardProps> = ({
           chipColor: 'danger' as const,
           icon: <AlertOctagon className="w-5 h-5 text-rose-400" />,
           title: 'Alto Riesgo de Sobreendeudamiento',
-          desc: `La cuota absorbe el ${formatPercent(result.impactoIngresoPorcentaje)} de tu ingreso (> 30%). No recomendada sin renegociar plazo o ahorrar previamente.`,
+          desc: `La cuota absorbe el ${formatPercent(result.impactoIngresoPorcentaje)} de tu ingreso (> 30%). Considera renegociar el plazo o ahorrar previamente.`,
           borderColor: 'border-rose-500/30',
           bgColor: 'bg-rose-950/20',
         };
@@ -106,7 +106,7 @@ export const QuickCheckCard: React.FC<QuickCheckCardProps> = ({
               size="md"
               className="font-bold self-start sm:self-auto shrink-0"
             >
-              {result.estadoSemaforo === 'green' ? '🟢 Recomendado' : result.estadoSemaforo === 'yellow' ? '🟡 Precaución' : '🔴 Alto Riesgo'}
+              {result.estadoSemaforo === 'green' ? '🟢 Riesgo Bajo' : result.estadoSemaforo === 'yellow' ? '🟡 Precaución' : '🔴 Alto Riesgo'}
             </Chip>
           </div>
 
@@ -146,7 +146,7 @@ export const QuickCheckCard: React.FC<QuickCheckCardProps> = ({
             </div>
 
             <div className="p-3 rounded-xl bg-default-100/60 border border-default-200/50">
-              <div className="text-[11px] text-default-400 font-medium">Costo Total</div>
+              <div className="text-[11px] text-default-400 font-medium">Costo Total Estimado</div>
               <div className="text-lg font-black text-foreground mt-0.5 font-mono">
                 {formatCurrency(result.costoTotalFinanciero)}
               </div>
@@ -168,6 +168,11 @@ export const QuickCheckCard: React.FC<QuickCheckCardProps> = ({
             </div>
           </div>
         </div>
+
+        <p className="text-[10px] text-default-400 leading-snug">
+          Simulación referencial. No constituye asesoría financiera ni reemplaza el Costo Total del
+          Crédito informado por la entidad que otorga el crédito.
+        </p>
 
         {/* Acciones */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-default-200/40">

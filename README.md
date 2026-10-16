@@ -80,6 +80,14 @@ src/
 
 ---
 
+## ⚖️ Aviso Legal y Privacidad
+
+- **No es asesoría financiera.** FinanSY es una herramienta informativa y referencial; no ofrece créditos ni reemplaza el Costo Total del Crédito informado por la entidad financiera.
+- **Privacidad:** no hay backend, cuentas, cookies ni analítica. Los datos se guardan solo en el `localStorage` del navegador y no se envían a terceros. Las fuentas tipográficas se sirven localmente (`@fontsource`).
+- **Licencia:** MIT (ver archivo `LICENSE`).
+
+---
+
 ## 🚀 Ejecución Local
 
 ```bash
