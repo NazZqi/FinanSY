@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Simulador</h1>
+<p class="lead">Tres preguntas, respuesta al instante. No necesitas cuenta.</p>
+{% if !error.is_empty() %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+
+<div class="grid three">
+  <section class="card">
+    <h2>¿Cuánto aporto al mes?</h2>
+    <form method="get" action="/simular" class="form">
+      <input type="hidden" name="modo" value="cuota">
+      <label>Meta <input name="meta" inputmode="numeric" placeholder="1.500.000" value="{% if modo == "cuota" %}{{ form.meta }}{% endif %}"></label>
+      <label>Ya ahorrado <input name="ahorrado" inputmode="numeric" placeholder="0" value="{% if modo == "cuota" %}{{ form.ahorrado }}{% endif %}"></label>
+      <label>Fecha de la meta <input type="date" name="fecha" value="{% if modo == "cuota" %}{{ form.fecha }}{% endif %}"></label>
+      <label>Personas <input name="personas" inputmode="numeric" placeholder="1" value="{% if modo == "cuota" %}{{ form.personas }}{% endif %}"></label>
+      <label>Interés anual del ahorro (%) <input name="tasa" inputmode="decimal" placeholder="0" value="{% if modo == "cuota" %}{{ form.tasa }}{% endif %}"></label>
+      <button class="btn">Calcular</button>
+    </form>
+    {% if let Some(r) = cuota %}
+    <div class="result">
+      <p class="big">{{ r.monthly }}</p>
+      <p>al mes durante {{ r.months }} meses{% if r.people > 1 %}: <strong>{{ r.per_person }}</strong> por persona entre {{ r.people }}{% endif %}.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>¿Cuándo llego a la meta?</h2>
+    <form method="get" action="/simular" class="form">
+      <input type="hidden" name="modo" value="fecha">
+      <label>Meta <input name="meta" inputmode="numeric" placeholder="600.000" value="{% if modo == "fecha" %}{{ form.meta }}{% endif %}"></label>
+      <label>Ya ahorrado <input name="ahorrado" inputmode="numeric" placeholder="0" value="{% if modo == "fecha" %}{{ form.ahorrado }}{% endif %}"></label>
+      <label>Aporte mensual <input name="aporte" inputmode="numeric" placeholder="50.000" value="{% if modo == "fecha" %}{{ form.aporte }}{% endif %}"></label>
+      <label>Interés anual del ahorro (%) <input name="tasa" inputmode="decimal" placeholder="0" value="{% if modo == "fecha" %}{{ form.tasa }}{% endif %}"></label>
+      <button class="btn">Calcular</button>
+    </form>
+    {% if let Some(r) = fecha %}
+    <div class="result">
+      <p class="big">{{ r.months }} meses</p>
+      <p>Llegas a la meta hacia {{ r.date }}.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>¿Ahorrar o pagar en cuotas?</h2>
+    <form method="get" action="/simular" class="form">
+      <input type="hidden" name="modo" value="cuotas">
+      <label>Precio <input name="precio" inputmode="numeric" placeholder="1.000.000" value="{% if modo == "cuotas" %}{{ form.precio }}{% endif %}"></label>
+      <label>Número de cuotas <input name="n" inputmode="numeric" placeholder="12" value="{% if modo == "cuotas" %}{{ form.n }}{% endif %}"></label>
+      <label>Interés mensual de las cuotas (%) <input name="tasa_cuota" inputmode="decimal" placeholder="1,5" value="{% if modo == "cuotas" %}{{ form.tasa_cuota }}{% endif %}"></label>
+      <label>Costos fijos por cuota <input name="costos" inputmode="numeric" placeholder="0" value="{% if modo == "cuotas" %}{{ form.costos }}{% endif %}"></label>
+      <label>Interés anual del ahorro (%) <input name="tasa" inputmode="decimal" placeholder="0" value="{% if modo == "cuotas" %}{{ form.tasa }}{% endif %}"></label>
+      <button class="btn">Comparar</button>
+    </form>
+    {% if let Some(r) = cuotas %}
+    <div class="result">
+      <p>En cuotas pagas <strong>{{ r.cuota }}</strong> al mes y <strong>{{ r.total }}</strong> en total.</p>
+      <p class="big">{{ r.sobrecosto }}</p>
+      <p>más que el precio. Si ahorras esa misma cuota, juntas el precio en <strong>{{ r.months_saving }}</strong>.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

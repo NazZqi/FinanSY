@@ -1,0 +1,7 @@
+<div id="preview" class="preview" aria-live="polite">
+{% if ok %}
+  <p>Cuota del jarrón: <strong>{{ group_monthly }}</strong> al mes durante {{ months }} meses{% if per_member != group_monthly %} · <strong>{{ per_member }}</strong> por persona{% endif %}.</p>
+{% else %}
+  <p class="muted">{{ message }}</p>
+{% endif %}
+</div>

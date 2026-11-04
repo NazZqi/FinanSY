@@ -1,0 +1,26 @@
+<section class="card" id="panel"{% if panel.group %} hx-get="/jarrones/{{ panel.jar_id }}/panel" hx-trigger="every 20s" hx-swap="outerHTML"{% endif %}>
+  <p class="big">{{ panel.total }}</p>
+  <p class="muted">de {{ panel.goal }} · faltan {{ panel.missing }}</p>
+  <div class="bar big" role="progressbar" aria-label="Avance del jarrón" aria-valuenow="{{ panel.pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ panel.pct }}%"></span></div>
+  <p>{{ panel.pct }}% de la meta</p>
+  {% if panel.group %}
+  <h2>Ranking <span class="muted">· cuota de {{ panel.share }} por persona</span></h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Persona</th><th>Aportado</th><th>Cuota</th><th>Racha</th></tr></thead>
+    <tbody>
+    {% for m in panel.members %}
+    <tr{% if !m.active %} class="muted"{% endif %}>
+      <td>{% if m.active %}{{ m.position }}{% else %}–{% endif %}</td>
+      <td>{{ m.name }}{% if !m.active %} (salió){% endif %}</td>
+      <td>{{ m.total }}</td>
+      <td>{% if m.active %}<span class="mini-bar" aria-hidden="true"><span style="width: {{ m.share_pct }}%"></span></span> {{ m.share_pct }}%{% else %}–{% endif %}</td>
+      <td>{% if m.streak > 0 %}{{ m.streak }} sem.{% else %}–{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="muted small">La racha cuenta semanas seguidas con al menos un aporte. Se actualiza solo cada 20 segundos.</p>
+  {% endif %}
+</section>

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow">
+  <h1>Nuevo jarrón</h1>
+  <form method="post" action="/jarrones" class="form">
+    <fieldset class="choices">
+      <legend>Tipo</legend>
+      <label><input type="radio" name="kind" value="grupal" checked> Grupal: una meta con amigos</label>
+      <label><input type="radio" name="kind" value="individual"> Individual: solo para ti</label>
+    </fieldset>
+    <label>Nombre
+      <input name="name" required maxlength="60" placeholder="Viaje al sur">
+    </label>
+    <label>Categoría
+      <select name="category">
+        <option value="viaje">Viaje</option>
+        <option value="arriendo">Arriendo</option>
+        <option value="celular">Celular</option>
+        <option value="auto">Auto</option>
+        <option value="otro">Otro</option>
+      </select>
+    </label>
+    <label>Meta en pesos
+      <input name="goal" required inputmode="numeric" placeholder="1.500.000">
+    </label>
+    <label>Fecha de la meta <span class="muted">(opcional)</span>
+      <input type="date" name="target_date">
+    </label>
+    <label>Interés anual de tu cuenta de ahorro <span class="muted">(opcional, %)</span>
+      <input name="rate" inputmode="decimal" placeholder="0">
+    </label>
+    <button class="btn">Crear jarrón</button>
+  </form>
+</section>
+{% endblock %}

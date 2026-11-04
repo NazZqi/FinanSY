@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"...","swap":true}]}'>
+<title>{{ title }} · FinanSY</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/htmx.min.js" defer></script>
+</head>
+<body hx-boost="true">
+<header class="top">
+  <a class="logo" href="/">FinanSY</a>
+  <nav>
+    <a href="/simular">Simulador</a>
+    {% if let Some(h) = header %}
+    <a href="/jarrones">Mis jarrones</a>
+    <a href="/avisos">Avisos{% if h.unread > 0 %} <span class="badge" aria-label="{{ h.unread }} sin leer">{{ h.unread }}</span>{% endif %}</a>
+    <form method="post" action="/salir"><button class="link" title="Salir de la cuenta de {{ h.name }}">Salir</button></form>
+    {% else %}
+    <a class="btn small" href="/entrar" hx-boost="false">Entrar</a>
+    {% endif %}
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>
+  <p>FinanSY no mueve dinero: solo registra lo que cada uno ahorra. · <a href="/privacidad">Privacidad</a></p>
+</footer>
+</body>
+</html>

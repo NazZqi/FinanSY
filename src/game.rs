@@ -52,10 +52,11 @@ pub struct Standing {
 }
 
 /// Ordena por % de la cuota cumplida, luego por total aportado y luego por nombre.
-pub fn rank(standings: &mut [Standing]) {
+pub fn rank<T>(items: &mut [T], standing: impl Fn(&T) -> &Standing) {
     // Compara total/cuota en enteros (producto cruzado) para no depender de f64.
     let ratio = |s: &Standing| (i128::from(s.total), i128::from(s.share.max(1)));
-    standings.sort_by(|a, b| {
+    items.sort_by(|x, y| {
+        let (a, b) = (standing(x), standing(y));
         let ((ta, sa), (tb, sb)) = (ratio(a), ratio(b));
         (tb * sa).cmp(&(ta * sb)).then(b.total.cmp(&a.total)).then(a.name.cmp(&b.name))
     });
@@ -135,7 +136,7 @@ mod tests {
     fn ranking_por_porcentaje_y_total() {
         let s = |name: &str, total, share| Standing { name: name.into(), total, share };
         let mut list = vec![s("Ana", 100, 400), s("Beto", 300, 400), s("Caro", 300, 400), s("Dani", 50, 100)];
-        rank(&mut list);
+        rank(&mut list, |s| s);
         let names: Vec<_> = list.iter().map(|x| x.name.as_str()).collect();
         assert_eq!(names, ["Beto", "Caro", "Dani", "Ana"]);
     }

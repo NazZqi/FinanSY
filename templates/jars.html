@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row-between">
+  <h1>Mis jarrones</h1>
+  <a class="btn" href="/jarrones/nuevo">Nuevo jarrón</a>
+</div>
+{% if jars.is_empty() %}
+<section class="card">
+  <p>Todavía no tienes jarrones. Crea uno para tu próxima meta, o pide a un amigo el enlace de su jarrón grupal.</p>
+</section>
+{% else %}
+<div class="grid">
+  {% for j in jars %}
+  <a class="card jar-card" href="/jarrones/{{ j.id }}">
+    <p class="eyebrow">{{ j.kind }} · {{ j.category }}{% if j.members > 1 %} · {{ j.members }} personas{% endif %}</p>
+    <h2>{{ j.name }}</h2>
+    <div class="bar" role="progressbar" aria-label="Avance de {{ j.name }}" aria-valuenow="{{ j.pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ j.pct }}%"></span></div>
+    <p><strong>{{ j.total }}</strong> de {{ j.goal }} · {{ j.pct }}%</p>
+    {% if j.reminder %}<p class="tag">Te toca aportar este mes</p>{% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

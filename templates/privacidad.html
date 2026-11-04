@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow prose">
+  <h1>Privacidad</h1>
+  <p>FinanSY es una app hecha entre amigos para registrar ahorros. No mueve dinero, no pide datos bancarios y no vende ni comparte datos con terceros.</p>
+  <h2>Qué guardamos</h2>
+  <ul>
+    <li>Tu nombre y foto de perfil de Google, para mostrarlos al grupo.</li>
+    <li>Los jarrones que creas o a los que te unes, y los aportes, retos y avisos de cada jarrón.</li>
+  </ul>
+  <p>El inicio de sesión lo hace Supabase Auth con tu cuenta de Google. Supabase guarda tu correo para identificarte; la app no lo muestra a nadie.</p>
+  <h2>Quién lo ve</h2>
+  <p>Solo los miembros de cada jarrón ven sus aportes. Un jarrón individual solo lo ves tú.</p>
+  <h2>Dónde se guarda</h2>
+  <p>En una base de datos de Supabase en São Paulo, Brasil, y en un servidor propio en Chile.</p>
+  <h2>Borrar tus datos</h2>
+  <p>Puedes borrar tus aportes y los jarrones que creaste desde la app. Para borrar tu cuenta completa, escríbele a quien administra FinanSY.</p>
+</section>
+{% endblock %}
