@@ -15,6 +15,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=build /src/target/release/finansy /app/finansy
 COPY static /app/static
+# El checkout del servidor usa umask 007: sin esto el usuario finansy no puede leer los estáticos.
+RUN chmod -R a+rX /app/static
 USER finansy
 ENV STATIC_DIR=/app/static PORT=3000
 EXPOSE 3000
