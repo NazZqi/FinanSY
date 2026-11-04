@@ -287,11 +287,19 @@ pub async fn remove_member(pool: &PgPool, jar: &Jar, by: Uuid, member: Uuid) -> 
     if member == by {
         return Err(bad("No puedes sacarte a ti mismo del jarrón que creaste."));
     }
+    let mut tx = pool.begin().await?;
     sqlx::query("update finansy.jar_members set left_at = now() where jar_id = $1 and user_id = $2 and left_at is null")
         .bind(jar.id)
         .bind(member)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+    // Con el enlace viejo podría volver a unirse: se cambia el código.
+    sqlx::query("update finansy.jars set invite_code = $2 where id = $1 and kind = 'grupal'")
+        .bind(jar.id)
+        .bind(new_invite_code())
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -307,12 +315,25 @@ pub async fn regenerate_invite(pool: &PgPool, jar: &Jar, by: Uuid) -> AppResult<
     Ok(())
 }
 
-pub async fn delete_jar(pool: &PgPool, jar: &Jar, by: Uuid) -> AppResult<()> {
+pub async fn delete_jar(pool: &PgPool, jar: &Jar, by: Uuid, notice: &str) -> AppResult<()> {
     if jar.owner_id != by {
         return Err(AppError::NotFound);
     }
+    let mut tx = pool.begin().await?;
+    // Sin jar_id: el aviso tiene que sobrevivir al borrado en cascada.
+    sqlx::query(
+        "insert into finansy.notifications (user_id, jar_id, body)
+         select user_id, null, $3 from finansy.jar_members
+         where jar_id = $1 and left_at is null and user_id <> $2",
+    )
+    .bind(jar.id)
+    .bind(by)
+    .bind(notice)
+    .execute(&mut *tx)
+    .await?;
     // Miembros, aportes, retos y avisos del jarrón se borran en cascada.
-    sqlx::query("delete from finansy.jars where id = $1 and owner_id = $2").bind(jar.id).bind(by).execute(pool).await?;
+    sqlx::query("delete from finansy.jars where id = $1 and owner_id = $2").bind(jar.id).bind(by).execute(&mut *tx).await?;
+    tx.commit().await?;
     Ok(())
 }
 

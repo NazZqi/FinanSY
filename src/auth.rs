@@ -87,7 +87,15 @@ where
 /// Solo rutas internas: evita redirigir a otro sitio después del login.
 fn safe_next(next: Option<&str>) -> String {
     match next {
-        Some(n) if n.starts_with('/') && !n.starts_with("//") && !n.contains('\\') && !n.contains('|') => n.to_string(),
+        Some(n)
+            if n.starts_with('/')
+                && !n.starts_with("//")
+                && !n.contains('\\')
+                && !n.contains('|')
+                && !n.chars().any(char::is_control) =>
+        {
+            n.to_string()
+        }
         _ => "/jarrones".to_string(),
     }
 }
@@ -202,6 +210,9 @@ mod tests {
         assert_eq!(safe_next(Some("//evil.com")), "/jarrones");
         assert_eq!(safe_next(Some("https://evil.com")), "/jarrones");
         assert_eq!(safe_next(Some("/\\evil.com")), "/jarrones");
+        // El navegador borra tabs y saltos de línea en Location: "/\t/evil.com" termina en "//evil.com".
+        assert_eq!(safe_next(Some("/\t/evil.com")), "/jarrones");
+        assert_eq!(safe_next(Some("/\n/evil.com")), "/jarrones");
         assert_eq!(safe_next(None), "/jarrones");
     }
 

@@ -485,7 +485,8 @@ async fn new_invite(State(st): State<AppState>, user: CurrentUser, Path(id): Pat
 
 async fn delete_jar(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> AppResult<Redirect> {
     let jar = db::require_member(&st.pool, id, user.id).await?;
-    db::delete_jar(&st.pool, &jar, user.id).await?;
+    let notice = format!("{} borró el jarrón «{}» con todos sus aportes", user.name, jar.name);
+    db::delete_jar(&st.pool, &jar, user.id, &notice).await?;
     Ok(Redirect::to("/jarrones"))
 }
 

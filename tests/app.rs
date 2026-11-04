@@ -102,6 +102,38 @@ async fn ex_miembro_recibe_404(pool: PgPool) {
 
 #[sqlx::test(migrations = "./migrations")]
 #[ignore = "necesita Postgres: corre en CI"]
+async fn quien_fue_sacado_no_vuelve_con_el_enlace_viejo(pool: PgPool) {
+    let st = state(pool);
+    let (ana, ana_cookie) = login(&st, "Ana").await;
+    let (beto, beto_cookie) = login(&st, "Beto").await;
+    let jar = group_jar(&st, ana).await;
+    let code = invite_code(&st, jar).await;
+    get_as(&st, &beto_cookie, &format!("/unirse/{code}")).await;
+    post_as(&st, &ana_cookie, &format!("/jarrones/{jar}/miembros/{beto}/sacar"), "", BASE).await;
+
+    assert_eq!(get_as(&st, &beto_cookie, &format!("/unirse/{code}")).await, StatusCode::NOT_FOUND);
+    assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}")).await, StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+#[ignore = "necesita Postgres: corre en CI"]
+async fn borrar_un_jarron_grupal_avisa_a_los_miembros(pool: PgPool) {
+    let st = state(pool);
+    let (ana, ana_cookie) = login(&st, "Ana").await;
+    let (beto, beto_cookie) = login(&st, "Beto").await;
+    let jar = group_jar(&st, ana).await;
+    let code = invite_code(&st, jar).await;
+    get_as(&st, &beto_cookie, &format!("/unirse/{code}")).await;
+
+    let status = post_as(&st, &ana_cookie, &format!("/jarrones/{jar}/borrar"), "", BASE).await;
+    assert_eq!(status, StatusCode::SEE_OTHER);
+    assert_eq!(db::unread_count(&st.pool, beto).await.unwrap(), 1);
+    // Quien borra no recibe aviso, y los avisos ligados al jarrón se van con él.
+    assert_eq!(db::unread_count(&st.pool, ana).await.unwrap(), 0);
+}
+
+#[sqlx::test(migrations = "./migrations")]
+#[ignore = "necesita Postgres: corre en CI"]
 async fn nadie_borra_el_aporte_de_otro(pool: PgPool) {
     let st = state(pool);
     let (ana, ana_cookie) = login(&st, "Ana").await;
