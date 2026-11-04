@@ -3,5 +3,5 @@ Description=Ping diario a FinanSY para que Supabase no pause los proyectos grati
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/curl -fsS -o /dev/null http://127.0.0.1:3104/salud
+ExecStart=-/usr/bin/curl -fsS -o /dev/null http://127.0.0.1:3104/salud
 ExecStart=/usr/bin/curl -fsS -o /dev/null http://127.0.0.1:3103/salud
