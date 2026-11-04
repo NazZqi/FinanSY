@@ -25,3 +25,14 @@ Thumbs.db
 
 # Vercel
 .vercel
+
+# Rust
+/target
+
+# Secrets
+.env
+*.env
+
+# Agent scratch
+.superpowers/
+.secrets/
