@@ -31,3 +31,6 @@ uuid = { version = "1.29.0", features = ["v4", "serde"] }
 # MSVC falla con D8050 al compilar C con -Z7 bajo cargo (ring). Sin debug info en dependencias se evita.
 [profile.dev.package."*"]
 debug = false
+
+[dev-dependencies]
+tower = { version = "0.5.3", features = ["util"] }

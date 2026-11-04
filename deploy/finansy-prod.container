@@ -1,0 +1,15 @@
+[Unit]
+Description=FinanSY (prod)
+RequiresMountsFor=/mnt/datos
+
+[Container]
+ContainerName=finansy-prod
+Image=localhost/finansy:prod
+PublishPort=127.0.0.1:3104:3000
+EnvironmentFile=/mnt/datos/finansy/secrets/prod.env
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=FinanSY (qa)
+RequiresMountsFor=/mnt/datos
+
+[Container]
+ContainerName=finansy-qa
+Image=localhost/finansy:qa
+PublishPort=127.0.0.1:3103:3000
+EnvironmentFile=/mnt/datos/finansy/secrets/qa.env
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

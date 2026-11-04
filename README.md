@@ -1,102 +1,96 @@
-# 💳 FinanSY — Asistente Preventivo de Compras a Plazos
+# FinanSY — Ahorremos juntos
 
-<div align="center">
+App web para ahorrar con amigos. Cada meta es un **jarrón**: individual (solo tuyo) o grupal (una meta común, como un viaje). Todos ven el avance, hay rachas, ranking y retos, y un simulador responde tres preguntas: cuánto aportar al mes, cuándo llegas a la meta y si conviene ahorrar o comprar en cuotas.
 
-![FinanSY Banner](https://img.shields.io/badge/FinanSY-Simulador_de_Cuotas-10B981?style=for-the-badge&logo=shield)
-![Foco](https://img.shields.io/badge/Foco-Amortización_Francesa_%26_Semáforo-0284C7?style=for-the-badge)
-![Tech](https://img.shields.io/badge/React_18-TypeScript_5-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![UI](https://img.shields.io/badge/HeroUI-Tailwind_CSS-8B5CF6?style=for-the-badge)
-![License](https://img.shields.io/badge/Licencia-MIT-green?style=for-the-badge)
+**FinanSY no mueve dinero.** Cada persona registra lo que ahorra y la plata sigue en su banco.
 
-**Herramienta preventiva de apoyo a la toma de decisiones financieras antes de realizar compras a plazos.**  
-Evalúa el impacto en el flujo de caja, calcula el Costo Total Financiero bajo amortización formal y proyecta la recuperación paulatina de liquidez.
+La versión anterior (simulador de compras en cuotas en React) quedó en el tag `v2-cuotas`.
 
-[🎯 Propuesta de Valor](#-propuesta-de-valor) • [🧮 Fórmulas Financieras](#-reglas-financieras-y-fórmulas) • [🏗️ Arquitectura](#%EF%B8%8F-arquitectura-del-proyecto) • [🚀 Ejecución Local](#-ejecución-local)
+## Stack
 
-</div>
+- **Rust**: Axum genera las páginas en el servidor (plantillas Askama) y HTMX las actualiza sin recargar.
+- **Supabase**: Postgres en el schema `finansy`, que no está expuesto en la Data API, y login con Google (Supabase Auth, flujo PKCE hecho en el servidor).
+- **Cinderlink**: contenedor Podman detrás de Caddy y del túnel de Cloudflare.
 
----
-
-## 🎯 Propuesta de Valor y Alcance
-
-El sistema es una herramienta preventiva de apoyo a la toma de decisiones financieras antes de realizar compras a plazos.
-- **Antes de comprar (Modo Quick Check):** Simula el costo total financiero, amortización e interés, y emite un veredicto semafórico instantáneo sin exigencia de registros previos.
-- **Durante el plazo (Calendario & Cuotas):** Seguimiento de compras activas y vencimientos por fecha de corte.
-- **Proyección futura (Curva de Alivio):** Gráfico de recuperación de liquidez libre a 12 meses conforme expiran los compromisos.
-
----
-
-## 🧮 Reglas Financieras y Fórmulas
-
-### 1. Amortización de Cuota Fija (Sistema Francés)
-
-$$\text{Cuota Base} = \begin{cases} \frac{M}{n} & \text{si } i = 0 \\ M \cdot \frac{i(1+i)^n}{(1+i)^n - 1} & \text{si } i > 0 \end{cases}$$
-
-Donde:
-* $M$: Monto total financiado.
-* $i$: Tasa de interés periódica mensual decimal ($\text{Tasa Mensual } / 100$).
-* $n$: Número total de cuotas.
-
-### 2. Cuota Final y Costos Totales
-
-$$\text{Cuota Final Mensual} = \text{Cuota Base} + \text{Costos Fijos Mensuales}$$
-$$\text{Costo Total Financiero} = \text{Cuota Final Mensual} \cdot n$$
-$$\text{Sobrecosto Total} = \text{Costo Total Financiero} - M$$
-
-### 3. Criterios del Semáforo de Viabilidad
-
-$$\text{Impacto (\%)} = \left( \frac{\text{Cuota Final Mensual}}{\text{Ingreso Mensual Estimado}} \right) \cdot 100$$
-
-* 🟢 **Verde (`green`):** $\text{Impacto} \le 15\%$ (Bajo riesgo / Compra viable).
-* 🟡 **Amarillo (`yellow`):** $15\% < \text{Impacto} \le 30\%$ (Precaución / Carga media).
-* 🔴 **Rojo (`red`):** $\text{Impacto} > 30\%$ (Alto riesgo de sobreendeudamiento).
-
----
-
-## 🏗️ Arquitectura del Proyecto
-
-```text
+```
 src/
-├── components/
-│   └── NavigationTabs.tsx          # Contenedor modular con carga diferida (React.lazy + Suspense)
-├── features/
-│   ├── simulator/                  # Tab 1: Núcleo preventivo y semáforo de viabilidad
-│   │   ├── SimulatorView.tsx
-│   │   ├── QuickCheckCard.tsx
-│   │   └── AmortizationTable.tsx
-│   ├── calendar/                   # Tab 2: Calendario y cuotas activas
-│   │   └── CalendarView.tsx
-│   └── liquidity/                  # Tab 3: Curva de alivio financiero y margen disponible
-│       └── LiquidityView.tsx
-├── types/
-│   └── finance.ts                  # Modelado estricto de tipos de dominio
-├── utils/
-│   └── amortization.ts             # Motor de cálculo financiero
-├── context/
-│   └── InstallmentsContext.tsx     # Estado global persistente
-├── App.tsx                         # Entry point con HeroUIProvider
-└── main.tsx
+  main.rs     arranque: variables de entorno, pool, migraciones
+  lib.rs      estado de la app
+  auth.rs     login con Google y sesión en cookie cifrada
+  db.rs       consultas (toda consulta de un jarrón exige ser miembro activo)
+  routes.rs   rutas y validación de formularios
+  views.rs    datos que ven las plantillas
+  sim.rs      simulador (funciones puras)
+  game.rs     rachas, ranking, retos y gráfico (funciones puras)
+templates/    HTML con Askama
+static/       app.css y htmx.min.js
+migrations/   SQL que corre al arrancar
+deploy/       Quadlets, timer y script de despliegue
 ```
 
----
+## Desarrollo local
 
-## ⚖️ Aviso Legal y Privacidad
+Requisitos: Rust estable. En Windows, además, Visual Studio Build Tools con C++.
 
-- **No es asesoría financiera.** FinanSY es una herramienta informativa y referencial; no ofrece créditos ni reemplaza el Costo Total del Crédito informado por la entidad financiera.
-- **Privacidad:** no hay backend, cuentas, cookies ni analítica. Los datos se guardan solo en el `localStorage` del navegador y no se envían a terceros. Las fuentas tipográficas se sirven localmente (`@fontsource`).
-- **Licencia:** MIT (ver archivo `LICENSE`).
+Crea un `.env` (no se commitea) con:
 
----
+| Variable | Qué es |
+|---|---|
+| `DATABASE_URL` | Session pooler de Supabase (puerto 5432), usuario `finansy_app.<ref>` |
+| `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | Llave publicable (`sb_publishable_…`) |
+| `COOKIE_KEY` | 64 bytes aleatorios en hex (128 caracteres) |
+| `BASE_URL` | `http://localhost:3000` en local |
 
-## 🚀 Ejecución Local
-
-```bash
-# 1. Instalar dependencias
-npm install
-
-# 2. Iniciar servidor de desarrollo
-npm run dev
-
-# 3. Compilar para producción
-npm run build
 ```
+cargo run
+```
+
+## Tests
+
+```
+cargo test                          # simulador, juego y login (sin base de datos)
+cargo test -- --include-ignored     # + tests de autorización: necesitan DATABASE_URL de un Postgres propio
+```
+
+El CI de GitHub corre todo contra `postgres:17`.
+
+## Supabase
+
+Dos proyectos: `finansy-prod` y `finansy-qa` (región `sa-east-1`). En cada uno:
+
+1. El rol `finansy_app` es dueño del schema `finansy` y tiene `search_path = finansy`. La app se conecta con ese rol, no con `postgres`.
+2. Auth → Providers → Google activado con el cliente OAuth de Google Cloud.
+3. Auth → URL Configuration: agregar `<BASE_URL>/auth/callback` a las Redirect URLs.
+
+Los proyectos gratis se pausan tras 7 días sin actividad. El timer `finansy-ping` llama a `/salud` una vez al día para evitarlo.
+
+## Despliegue en Cinderlink
+
+| Entorno | URL | Puerto local | Acceso |
+|---|---|---|---|
+| QA | `qa-finansy.cinderlink.cl` | 3103 | Detrás de Authelia |
+| Prod | `finansy.cinderlink.cl` | 3104 | Público, con el login propio de la app |
+
+Una sola vez:
+
+```
+cp deploy/finansy-qa.container deploy/finansy-prod.container ~/.config/containers/systemd/
+cp deploy/finansy-ping.service deploy/finansy-ping.timer ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now finansy-ping.timer
+```
+
+Las variables van en `/mnt/datos/finansy/secrets/{qa,prod}.env` (permisos 600). Nunca en el repo.
+
+Cada versión:
+
+```
+cd /mnt/datos/finansy/src && git pull
+deploy/desplegar.sh qa      # compila y publica en QA
+deploy/desplegar.sh prod    # publica en prod la misma imagen probada en QA
+```
+
+## Licencia
+
+MIT. Ver `LICENSE`.
