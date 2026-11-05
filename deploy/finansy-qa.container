@@ -7,6 +7,9 @@ ContainerName=finansy-qa
 Image=localhost/finansy:qa
 PublishPort=127.0.0.1:3103:3000
 EnvironmentFile=/mnt/datos/finansy/secrets/qa.env
+# Con pasta el contenedor comparte la IP del host: nube.cinderlink.cl (LAN 192.168.1.170) apuntaría a sí mismo.
+# host-gateway lleva el login OIDC hasta Caddy en el host.
+AddHost=nube.cinderlink.cl:host-gateway
 
 [Service]
 Restart=always
