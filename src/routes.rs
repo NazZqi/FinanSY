@@ -5,7 +5,7 @@ use axum::middleware::{self, Next};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use chrono::{Datelike, Duration, Months, NaiveDate};
+use chrono::{Datelike, Duration, Months, NaiveDate, Utc};
 use serde::Deserialize;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
@@ -32,6 +32,7 @@ pub fn router(state: AppState) -> Router {
         .route("/jarrones/{id}", get(jar_page))
         .route("/jarrones/{id}/panel", get(panel))
         .route("/jarrones/{id}/simular", get(preview))
+        .route("/jarrones/{id}/aportar", get(contribute_page))
         .route("/jarrones/{id}/aportes", post(add_contribution))
         .route("/jarrones/{id}/aportes/{cid}/borrar", post(delete_contribution))
         .route("/jarrones/{id}/meta", post(update_goal))
@@ -70,11 +71,67 @@ fn fmt_date(d: NaiveDate) -> String {
     d.format("%d-%m-%Y").to_string()
 }
 
+const MONTHS: [&str; 12] = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+const MONTHS_SHORT: [&str; 12] = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"];
+
 fn month_year(d: NaiveDate) -> String {
-    const MONTHS: [&str; 12] = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-    ];
     format!("{} de {}", MONTHS[d.month0() as usize], d.year())
+}
+
+/// «5 de noviembre de 2026».
+fn long_date(d: NaiveDate) -> String {
+    format!("{} de {} de {}", d.day(), MONTHS[d.month0() as usize], d.year())
+}
+
+/// «12 ene 2027».
+fn short_date(d: NaiveDate) -> String {
+    format!("{} {} {}", d.day(), MONTHS_SHORT[d.month0() as usize], d.year())
+}
+
+/// «Hoy», «Ayer», «Hace 3 días» o, si pasó más de un mes, la fecha corta.
+fn relative_day(d: NaiveDate, today: NaiveDate) -> String {
+    match (today - d).num_days() {
+        0 => "Hoy".into(),
+        1 => "Ayer".into(),
+        n @ 2..=30 => format!("Hace {n} días"),
+        _ => short_date(d),
+    }
+}
+
+/// Iniciales del avatar: primera letra de las dos primeras palabras del nombre.
+fn initials(name: &str) -> String {
+    let s: String = name.split_whitespace().take(2).filter_map(|w| w.chars().next()).flat_map(char::to_uppercase).collect();
+    if s.is_empty() { "?".into() } else { s }
+}
+
+/// Color de avatar (0 a 3) estable por persona.
+fn tone(id: Uuid) -> u8 {
+    (id.as_bytes().iter().map(|b| u32::from(*b)).sum::<u32>() % 4) as u8
+}
+
+/// Parte de `part` en `whole` con un decimal: etiqueta «27,5%» y ancho CSS «27.5».
+fn share_label(part: i64, whole: i64) -> (String, String) {
+    if whole <= 0 || part <= 0 {
+        return ("0%".into(), "0".into());
+    }
+    let tenths = (i128::from(part) * 1000 / i128::from(whole)).min(1000) as i64;
+    let (int, dec) = (tenths / 10, tenths % 10);
+    if dec == 0 { (format!("{int}%"), int.to_string()) } else { (format!("{int},{dec}%"), format!("{int}.{dec}")) }
+}
+
+/// Próximo hito del jarrón (25, 50, 75 o 100 %) y cuánto falta para llegar.
+fn milestone(total: i64, goal: i64, group: bool) -> String {
+    let pct = game::pct(total, goal);
+    match [25u32, 50, 75, 100].into_iter().find(|m| *m > pct) {
+        Some(m) => {
+            let needed = (goal * i64::from(m) + 99) / 100 - total;
+            format!("Próximo hito: llegar al {m}%. Faltan {} para lograrlo.", clp(needed.max(1)))
+        }
+        None if group => "¡Llegaron a la meta! Ahora, a disfrutarla.".into(),
+        None => "¡Llegaste a la meta! Ahora, a disfrutarla.".into(),
+    }
 }
 
 fn category_label(category: &str) -> &'static str {
@@ -113,7 +170,8 @@ fn rate_bp(pct: f64) -> i32 {
 }
 
 async fn header(st: &AppState, user: &CurrentUser) -> AppResult<Option<Header>> {
-    Ok(Some(Header { name: user.name.clone(), unread: db::unread_count(&st.pool, user.id).await? }))
+    let (unread, dates) = tokio::try_join!(db::unread_count(&st.pool, user.id), db::my_contribution_dates(&st.pool, user.id))?;
+    Ok(Some(Header { name: user.name.clone(), initials: initials(&user.name), unread, streak: game::week_streak(&dates, today()) }))
 }
 
 async fn index(MaybeUser(user): MaybeUser) -> AppResult<Response> {
@@ -157,7 +215,15 @@ async fn jars(State(st): State<AppState>, user: CurrentUser) -> Page {
 }
 
 async fn new_jar(State(st): State<AppState>, user: CurrentUser) -> Page {
-    render(NewJarPage { title: "Nuevo jarrón".into(), header: header(&st, &user).await? })
+    let today = today();
+    render(NewJarPage {
+        title: "Nuevo jarrón".into(),
+        header: header(&st, &user).await?,
+        today_long: long_date(today),
+        tomorrow: (today + Duration::days(1)).format("%Y-%m-%d").to_string(),
+        me_name: user.name.split_whitespace().next().unwrap_or("Tú").to_string(),
+        me_initials: initials(&user.name),
+    })
 }
 
 #[derive(Deserialize)]
@@ -216,41 +282,48 @@ async fn load(st: &AppState, jar_id: Uuid, user: Uuid) -> AppResult<Loaded> {
     Ok(Loaded { jar, members, contribs })
 }
 
-fn build_panel(l: &Loaded, today: NaiveDate) -> Panel {
+fn build_panel(l: &Loaded, today: NaiveDate, me: Uuid) -> Panel {
     let goal = l.jar.goal_amount;
     let total = l.total();
     let share = game::share_per_member(goal, l.active_count());
 
-    let mut active: Vec<(Standing, Uuid, u32)> = l
+    let member_row = |m: &Member, active: bool, position: usize| {
+        let items = l.user_items(m.user_id);
+        let member_total: i64 = items.iter().map(|(_, a)| a).sum();
+        let today_total: i64 = items.iter().filter(|(d, _)| *d == today).map(|(_, a)| a).sum();
+        let (last, last_today) = match items.iter().map(|(d, _)| *d).max() {
+            Some(d) if d == today => (format!("+ {} hoy", clp(today_total)), true),
+            Some(d) => (relative_day(d, today), false),
+            None => ("Sin registros".to_string(), false),
+        };
+        let (part_label, part_width) = share_label(member_total, total);
+        MemberRow {
+            name: m.name.clone(),
+            initials: initials(&m.name),
+            tone: tone(m.user_id),
+            mine: m.user_id == me,
+            total: clp(member_total),
+            last,
+            last_today,
+            part_label,
+            part_width,
+            active,
+            position,
+        }
+    };
+
+    let mut active: Vec<(Standing, &Member)> = l
         .members
         .iter()
         .filter(|m| m.left_at.is_none())
-        .map(|m| {
-            let items = l.user_items(m.user_id);
-            let dates: Vec<NaiveDate> = items.iter().map(|(d, _)| *d).collect();
-            let total = items.iter().map(|(_, a)| a).sum();
-            (Standing { name: m.name.clone(), total, share }, m.user_id, game::week_streak(&dates, today))
-        })
+        .map(|m| (Standing { name: m.name.clone(), total: l.user_items(m.user_id).iter().map(|(_, a)| a).sum(), share }, m))
         .collect();
     game::rank(&mut active, |row| &row.0);
 
-    let mut members: Vec<MemberRow> = active
-        .into_iter()
-        .enumerate()
-        .map(|(i, (s, user_id, streak))| MemberRow {
-            user_id,
-            share_pct: game::pct(s.total, s.share),
-            total: clp(s.total),
-            name: s.name,
-            streak,
-            active: true,
-            position: i + 1,
-        })
-        .collect();
+    let mut members: Vec<MemberRow> = active.iter().enumerate().map(|(i, (_, m))| member_row(m, true, i + 1)).collect();
     // Quien salió conserva sus aportes en el total, pero no cuenta para cuota ni ranking.
     for m in l.members.iter().filter(|m| m.left_at.is_some()) {
-        let total = l.user_items(m.user_id).iter().map(|(_, a)| a).sum();
-        members.push(MemberRow { user_id: m.user_id, name: m.name.clone(), total: clp(total), share_pct: 0, streak: 0, active: false, position: 0 });
+        members.push(member_row(m, false, 0));
     }
 
     Panel {
@@ -265,7 +338,28 @@ fn build_panel(l: &Loaded, today: NaiveDate) -> Panel {
     }
 }
 
-async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> Page {
+#[derive(Deserialize)]
+struct JarQuery {
+    /// Monto recién registrado: muestra el aviso «¡Ahorro registrado!».
+    #[serde(default)]
+    registrado: String,
+}
+
+fn contrib_row(c: &Contribution, me: Uuid, today: NaiveDate) -> ContribRow {
+    ContribRow {
+        id: c.id,
+        name: c.name.clone(),
+        initials: initials(&c.name),
+        tone: tone(c.user_id),
+        amount: clp(c.amount),
+        date: fmt_date(c.contributed_on),
+        when: relative_day(c.contributed_on, today),
+        note: c.note.clone().unwrap_or_default(),
+        mine: c.user_id == me,
+    }
+}
+
+async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Query(q): Query<JarQuery>) -> Page {
     let l = load(&st, id, user.id).await?;
     let today = today();
     let jar = &l.jar;
@@ -319,18 +413,8 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         })
         .collect();
 
-    let contributions = l
-        .contribs
-        .iter()
-        .map(|c| ContribRow {
-            id: c.id,
-            name: c.name.clone(),
-            amount: clp(c.amount),
-            date: fmt_date(c.contributed_on),
-            note: c.note.clone().unwrap_or_default(),
-            mine: c.user_id == user.id,
-        })
-        .collect();
+    let contributions = l.contribs.iter().map(|c| contrib_row(c, user.id, today)).collect();
+    let recent = l.contribs.iter().take(3).map(|c| contrib_row(c, user.id, today)).collect();
     let others = l
         .members
         .iter()
@@ -348,7 +432,23 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         owner: jar.owner_id == user.id,
         invite_url: jar.invite_code.as_ref().map(|c| format!("{}/unirse/{c}", st.config.base_url)).unwrap_or_default(),
         reminder: total < goal && !game::contributed_this_month(&my_dates, today),
-        panel: build_panel(&l, today),
+        people: l.active_count(),
+        cover: jar.category == "viaje",
+        today_long: long_date(today),
+        banner: parse_clp(&q.registrado).map(clp),
+        banner_time: Utc::now().with_timezone(&chrono_tz::America::Santiago).format("%H:%M").to_string(),
+        total: clp(total),
+        goal: clp(goal),
+        missing: clp((goal - total).max(0)),
+        pct: game::pct(total, goal),
+        // Los aportes vienen del más reciente al más antiguo.
+        last_mine: l.contribs.iter().find(|c| c.user_id == user.id).map(|c| clp(c.amount)),
+        days_left: jar.target_date.map(|t| (t - today).num_days()).filter(|d| *d > 0),
+        target_long: jar.target_date.map(long_date).unwrap_or_default(),
+        streak: game::week_streak(&my_dates, today),
+        milestone: milestone(total, goal, jar.is_group()),
+        recent,
+        panel: build_panel(&l, today, user.id),
         plan,
         chart,
         contributions,
@@ -362,7 +462,42 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
 
 async fn panel(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> Page {
     let l = load(&st, id, user.id).await?;
-    render(PanelFragment { panel: build_panel(&l, today()) })
+    render(PanelFragment { panel: build_panel(&l, today(), user.id) })
+}
+
+/// «Registrar ahorro»: formulario aparte con el contexto del jarrón y cómo quedará.
+async fn contribute_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> Page {
+    let l = load(&st, id, user.id).await?;
+    let today = today();
+    let jar = &l.jar;
+    let total = l.total();
+    let mine = l.user_items(user.id);
+    let my_total: i64 = mine.iter().map(|(_, a)| a).sum();
+    let my_dates: Vec<NaiveDate> = mine.iter().map(|(d, _)| *d).collect();
+    render(ContributePage {
+        title: format!("Registrar ahorro · {}", jar.name),
+        header: header(&st, &user).await?,
+        jar: JarContext {
+            id: jar.id,
+            name: jar.name.clone(),
+            group: jar.is_group(),
+            people: l.active_count(),
+            cover: jar.category == "viaje",
+            goal: clp(jar.goal_amount),
+            total: clp(total),
+            pct: game::pct(total, jar.goal_amount),
+            target_short: jar.target_date.map(short_date).unwrap_or_default(),
+        },
+        goal_raw: jar.goal_amount,
+        total_raw: total,
+        my_total_raw: my_total,
+        my_total: clp(my_total),
+        initials: initials(&user.name),
+        today: today.format("%Y-%m-%d").to_string(),
+        min_date: (today - Duration::days(366)).format("%Y-%m-%d").to_string(),
+        today_long: long_date(today),
+        streak: game::week_streak(&my_dates, today),
+    })
 }
 
 #[derive(Deserialize)]
@@ -413,7 +548,7 @@ async fn add_contribution(State(st): State<AppState>, user: CurrentUser, Path(id
     }
     let notice = format!("{} aportó {} a «{}»", user.name, clp(amount), jar.name);
     db::add_contribution(&st.pool, jar.id, user.id, amount, date, (!note.is_empty()).then_some(note), &notice).await?;
-    Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
+    Ok(Redirect::to(&format!("/jarrones/{}?registrado={amount}", jar.id)))
 }
 
 async fn delete_contribution(State(st): State<AppState>, user: CurrentUser, Path((id, cid)): Path<(Uuid, Uuid)>) -> AppResult<Redirect> {

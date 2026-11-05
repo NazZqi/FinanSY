@@ -1,0 +1,37 @@
+{# Etapas del flujo del diseño: 1 crear, 2 registrar, 3 ver progreso. #}
+{% macro etapas(paso) %}
+<ol class="steps" aria-label="Etapas">
+  <li class="step{% if paso > 1 %} done{% else if paso == 1 %} current{% endif %}"{% if paso == 1 %} aria-current="step"{% endif %}>
+    <span class="step-dot">{% if paso > 1 %}<img src="/static/img/check-etapa.svg" width="15" height="15" alt="Hecho:">{% else %}01{% endif %}</span>
+    <span class="step-name">Crear un jarrón</span>
+  </li>
+  <li class="step{% if paso > 2 %} done{% else if paso == 2 %} current{% endif %}"{% if paso == 2 %} aria-current="step"{% endif %}>
+    <span class="step-dot">{% if paso > 2 %}<img src="/static/img/check-etapa.svg" width="15" height="15" alt="Hecho:">{% else %}02{% endif %}</span>
+    <span class="step-name">Registrar ahorro</span>
+  </li>
+  <li class="step{% if paso == 3 %} current{% endif %}"{% if paso == 3 %} aria-current="step"{% endif %}>
+    <span class="step-dot">03</span>
+    <span class="step-name">Ver progreso</span>
+  </li>
+</ol>
+{% endmacro %}
+
+{# Aviso fijo: FinanSY solo registra, la plata sigue en el banco. #}
+{% macro aviso_dinero() %}
+<div class="money-note">
+  <img src="/static/img/shield-aviso.svg" width="21" height="21" alt="">
+  <div>
+    <p class="money-note-title">Aquí registras, no mueves dinero.</p>
+    <p>FinanSY no mueve dinero. Cada persona registra lo que ahorra y su plata sigue en su banco.</p>
+  </div>
+</div>
+{% endmacro %}
+
+{# Portada del jarrón: foto del diseño para los viajes y una portada lisa para lo demás. #}
+{% macro portada(foto, alto) %}
+{% if foto %}
+<img class="cover" src="/static/img/portada-sur.jpg" alt="" style="height: {{ alto }}px">
+{% else %}
+<div class="cover cover-plain" style="height: {{ alto }}px" aria-hidden="true"><img src="/static/img/amphora-oscuro.svg" width="22" height="22" alt=""></div>
+{% endif %}
+{% endmacro %}

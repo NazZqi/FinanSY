@@ -5,7 +5,10 @@ use uuid::Uuid;
 
 pub struct Header {
     pub name: String,
+    pub initials: String,
     pub unread: i64,
+    /// Semanas seguidas con al menos un aporte, en cualquier jarrón.
+    pub streak: u32,
 }
 
 #[derive(Template)]
@@ -55,14 +58,56 @@ pub struct JarsPage {
 pub struct NewJarPage {
     pub title: String,
     pub header: Option<Header>,
+    pub today_long: String,
+    pub tomorrow: String,
+    pub me_name: String,
+    pub me_initials: String,
+}
+
+/// Resumen del jarrón para la columna de contexto de «Registrar ahorro».
+pub struct JarContext {
+    pub id: Uuid,
+    pub name: String,
+    pub group: bool,
+    pub people: usize,
+    /// Los jarrones de viaje usan la foto de portada del diseño; el resto, una portada lisa.
+    pub cover: bool,
+    pub goal: String,
+    pub total: String,
+    pub pct: u32,
+    pub target_short: String,
+}
+
+#[derive(Template)]
+#[template(path = "aportar.html")]
+pub struct ContributePage {
+    pub title: String,
+    pub header: Option<Header>,
+    pub jar: JarContext,
+    pub goal_raw: i64,
+    pub total_raw: i64,
+    pub my_total_raw: i64,
+    pub my_total: String,
+    pub initials: String,
+    pub today: String,
+    pub min_date: String,
+    pub today_long: String,
+    pub streak: u32,
 }
 
 pub struct MemberRow {
-    pub user_id: Uuid,
     pub name: String,
+    pub initials: String,
+    /// Color del avatar (0 a 3), estable por persona.
+    pub tone: u8,
+    pub mine: bool,
     pub total: String,
-    pub share_pct: u32,
-    pub streak: u32,
+    /// Último registro: «+ $80.000 hoy», «Hace 2 días», «Sin registros».
+    pub last: String,
+    pub last_today: bool,
+    /// Parte del total juntado: etiqueta «27,5%» y ancho CSS «27.5».
+    pub part_label: String,
+    pub part_width: String,
     pub active: bool,
     pub position: usize,
 }
@@ -87,8 +132,12 @@ pub struct PanelFragment {
 pub struct ContribRow {
     pub id: Uuid,
     pub name: String,
+    pub initials: String,
+    pub tone: u8,
     pub amount: String,
     pub date: String,
+    /// «Hoy», «Ayer», «Hace 3 días» o la fecha corta.
+    pub when: String,
     pub note: String,
     pub mine: bool,
 }
@@ -141,6 +190,22 @@ pub struct JarPage {
     pub owner: bool,
     pub invite_url: String,
     pub reminder: bool,
+    pub people: usize,
+    pub cover: bool,
+    pub today_long: String,
+    /// Monto recién registrado (para el aviso de confirmación) y la hora.
+    pub banner: Option<String>,
+    pub banner_time: String,
+    pub total: String,
+    pub goal: String,
+    pub missing: String,
+    pub pct: u32,
+    pub last_mine: Option<String>,
+    pub days_left: Option<i64>,
+    pub target_long: String,
+    pub streak: u32,
+    pub milestone: String,
+    pub recent: Vec<ContribRow>,
     pub panel: Panel,
     pub plan: PlanView,
     pub chart: Chart,
