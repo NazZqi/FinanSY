@@ -2,35 +2,35 @@
 {% block content %}
 <section class="card narrow prose">
   <h1>Política de privacidad</h1>
-  <p class="muted small">Última actualización: 4 de noviembre de 2026.</p>
+  <p class="muted small">Última actualización: 5 de noviembre de 2026.</p>
   <p>FinanSY (finansy.cinderlink.cl) es una app hecha entre amigos para registrar lo que ahorran, solos o en grupo. No mueve dinero, no pide datos bancarios y no vende ni comparte datos con terceros.</p>
 
-  <h2>Datos de tu cuenta de Google</h2>
-  <p>Para entrar usas tu cuenta de Google. FinanSY solo pide los permisos básicos <code>openid</code>, <code>email</code> y <code>profile</code>, y con ellos recibe:</p>
+  <h2>Datos de tu cuenta de Nextcloud</h2>
+  <p>Para entrar usas tu cuenta del Nextcloud que administra quien opera FinanSY. FinanSY pide solo los permisos básicos <code>openid</code>, <code>profile</code> y <code>email</code>, y con ellos recibe:</p>
   <ul>
-    <li>Tu nombre y tu foto de perfil.</li>
-    <li>Tu correo electrónico.</li>
+    <li>Tu nombre para mostrarlo.</li>
     <li>Un identificador de cuenta.</li>
+    <li>Tu correo electrónico, solo en el momento de entrar, y únicamente si tu cuenta no tiene nombre (usamos la parte antes de la @).</li>
   </ul>
-  <p>No pide acceso a Gmail, Drive, Contactos, Calendario ni a ningún otro dato de Google.</p>
+  <p>El correo no se guarda en la base de datos ni se muestra a nadie.</p>
 
   <h2>Para qué los usamos</h2>
   <ul>
-    <li>El nombre y la foto se muestran a los miembros de los jarrones donde participas. Si tu cuenta no tiene nombre, usamos la parte de tu correo antes de la @.</li>
+    <li>El nombre se muestra a los miembros de los jarrones donde participas.</li>
     <li>El identificador sirve para saber qué jarrones y aportes son tuyos.</li>
-    <li>El correo solo lo usa Supabase Auth para identificar tu cuenta. La app no lo guarda en sus tablas ni lo muestra a nadie.</li>
   </ul>
-  <p>Los datos de Google no se usan para publicidad, no se venden y no se usan para entrenar modelos de inteligencia artificial.</p>
+  <p>Estos datos no se usan para publicidad, no se venden y no se usan para entrenar modelos de inteligencia artificial.</p>
 
   <h2>Lo que tú registras</h2>
   <p>Los jarrones que creas o a los que te unes, sus metas y fechas, tus aportes (monto, fecha y nota), los retos y los avisos de cada jarrón. Son registros manuales: FinanSY no se conecta a ningún banco.</p>
 
   <h2>Quién lo ve</h2>
-  <p>Solo los miembros de cada jarrón ven su meta, sus aportes y los nombres y fotos de quienes participan. Un jarrón individual solo lo ves tú.</p>
+  <p>Solo los miembros de cada jarrón ven su meta, sus aportes y los nombres de quienes participan. Un jarrón individual solo lo ves tú.</p>
 
   <h2>Dónde se guarda y quién lo procesa</h2>
   <ul>
-    <li>Supabase: base de datos e inicio de sesión, en São Paulo, Brasil.</li>
+    <li>Supabase: base de datos, en São Paulo, Brasil.</li>
+    <li>Nextcloud: el servidor donde está tu cuenta y que comprueba tu identidad al entrar.</li>
     <li>Un servidor propio en Chile, que ejecuta la app.</li>
     <li>Cloudflare: transporta el tráfico cifrado (HTTPS) hasta el servidor.</li>
   </ul>

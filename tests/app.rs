@@ -20,8 +20,9 @@ fn state(pool: PgPool) -> AppState {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let config = Config {
         base_url: BASE.into(),
-        supabase_url: "http://supabase.invalid".into(),
-        supabase_key: "test".into(),
+        nextcloud_url: "http://nextcloud.invalid".into(),
+        nextcloud_client_id: "test".into(),
+        nextcloud_client_secret: "test".into(),
         static_dir: "static".into(),
     };
     AppState { pool, config: Arc::new(config), key: Key::generate(), http: reqwest::Client::new() }

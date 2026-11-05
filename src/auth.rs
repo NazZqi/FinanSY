@@ -1,7 +1,8 @@
-//! Login con Google vía Supabase Auth (flujo PKCE hecho en el servidor) y sesión propia en cookie cifrada.
-//! No se guardan ni refrescan los tokens de Supabase: solo sirven para saber quién es la persona.
+//! Login con Nextcloud vía OpenID Connect (app "OIDC Identity Provider", flujo PKCE hecho en el servidor)
+//! y sesión propia en cookie cifrada. No se guardan los tokens de Nextcloud: solo sirven para saber quién es la persona.
 
 use axum::extract::{FromRef, FromRequestParts, Query, State};
+use axum::http::header::CONTENT_TYPE;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, Key, PrivateCookieJar, SameSite};
@@ -20,6 +21,9 @@ use crate::error::{AppResult, bad};
 const SESSION: &str = "finansy_sesion";
 const PKCE: &str = "finansy_pkce";
 const SESSION_DAYS: i64 = 30;
+const MSG_FALLO: &str = "No se pudo iniciar sesión con Nextcloud. Vuelve a intentarlo.";
+/// Espacio de nombres fijo: el mismo `sub` de Nextcloud siempre da el mismo UUID de perfil.
+const PERFIL_NS: Uuid = Uuid::from_u128(0xc6c43768_c554_4087_8a14_13a474f6cc2e);
 
 #[derive(Debug, Clone)]
 pub struct CurrentUser {
@@ -47,6 +51,11 @@ fn parse_session(value: &str) -> Option<CurrentUser> {
     let name = parts.next()?.to_string();
     let age = Utc::now().timestamp() - issued;
     (0..SESSION_DAYS * 86_400).contains(&age).then_some(CurrentUser { id, name })
+}
+
+/// UUID de perfil estable a partir del identificador de usuario de Nextcloud.
+fn perfil_id(sub: &str) -> Uuid {
+    Uuid::new_v5(&PERFIL_NS, sub.as_bytes())
 }
 
 impl<S> FromRequestParts<S> for CurrentUser
@@ -105,19 +114,37 @@ pub struct NextQuery {
     next: Option<String>,
 }
 
+/// Endpoints que Nextcloud anuncia en su documento de descubrimiento OpenID Connect.
+#[derive(Deserialize)]
+struct Discovery {
+    authorization_endpoint: String,
+    token_endpoint: String,
+    userinfo_endpoint: String,
+}
+
+async fn discovery(st: &AppState) -> AppResult<Discovery> {
+    let url = format!("{}/.well-known/openid-configuration", st.config.nextcloud_url);
+    Ok(st.http.get(url).send().await?.error_for_status()?.json().await?)
+}
+
 pub async fn entrar(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<NextQuery>) -> AppResult<Response> {
     let verifier = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 32]>());
     let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
+    let state_token = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 16]>());
     let next = safe_next(q.next.as_deref());
+    let disc = discovery(&st).await?;
 
-    let mut url = Url::parse(&format!("{}/auth/v1/authorize", st.config.supabase_url))?;
+    let mut url = Url::parse(&disc.authorization_endpoint)?;
     url.query_pairs_mut()
-        .append_pair("provider", "google")
-        .append_pair("redirect_to", &format!("{}/auth/callback", st.config.base_url))
+        .append_pair("response_type", "code")
+        .append_pair("client_id", &st.config.nextcloud_client_id)
+        .append_pair("redirect_uri", &format!("{}/auth/callback", st.config.base_url))
+        .append_pair("scope", "openid profile email")
+        .append_pair("state", &state_token)
         .append_pair("code_challenge", &challenge)
-        .append_pair("code_challenge_method", "s256");
+        .append_pair("code_challenge_method", "S256");
 
-    let cookie = Cookie::build((PKCE, format!("{verifier}|{next}")))
+    let cookie = Cookie::build((PKCE, format!("{verifier}|{state_token}|{next}")))
         .path("/auth")
         .http_only(true)
         .secure(st.config.base_url.starts_with("https://"))
@@ -130,56 +157,77 @@ pub async fn entrar(State(st): State<AppState>, jar: PrivateCookieJar, Query(q):
 #[derive(Deserialize)]
 pub struct CallbackQuery {
     code: Option<String>,
+    state: Option<String>,
+    error: Option<String>,
     error_description: Option<String>,
 }
 
 #[derive(Deserialize)]
 struct TokenResponse {
-    user: SupabaseUser,
+    access_token: String,
 }
 
 #[derive(Deserialize)]
-struct SupabaseUser {
-    id: Uuid,
-    email: Option<String>,
-    #[serde(default)]
-    user_metadata: UserMetadata,
-}
-
-#[derive(Deserialize, Default)]
-struct UserMetadata {
-    full_name: Option<String>,
+struct UserInfo {
+    sub: String,
     name: Option<String>,
-    avatar_url: Option<String>,
-    picture: Option<String>,
+    preferred_username: Option<String>,
+    email: Option<String>,
 }
 
 pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<CallbackQuery>) -> AppResult<Response> {
     let Some(code) = q.code else {
-        tracing::warn!(error = ?q.error_description, "login rechazado por Supabase");
-        return Err(bad("No se pudo iniciar sesión con Google. Vuelve a intentarlo."));
+        tracing::warn!(error = ?q.error, description = ?q.error_description, "login rechazado por Nextcloud");
+        return Err(bad(MSG_FALLO));
     };
-    let Some((verifier, next)) = jar.get(PKCE).and_then(|c| c.value().split_once('|').map(|(v, n)| (v.to_string(), n.to_string()))) else {
+    let Some((verifier, state_esperado, next)) = jar.get(PKCE).and_then(|c| {
+        let mut partes = c.value().splitn(3, '|');
+        Some((partes.next()?.to_string(), partes.next()?.to_string(), partes.next()?.to_string()))
+    }) else {
         return Err(bad("El inicio de sesión expiró. Vuelve a intentarlo."));
     };
+    if q.state.as_deref() != Some(state_esperado.as_str()) {
+        tracing::warn!("state de OIDC no coincide");
+        return Err(bad(MSG_FALLO));
+    }
 
+    let disc = discovery(&st).await?;
+    let body = url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("grant_type", "authorization_code")
+        .append_pair("code", &code)
+        .append_pair("redirect_uri", &format!("{}/auth/callback", st.config.base_url))
+        .append_pair("code_verifier", &verifier)
+        .finish();
     let response = st
         .http
-        .post(format!("{}/auth/v1/token?grant_type=pkce", st.config.supabase_url))
-        .header("apikey", &st.config.supabase_key)
-        .json(&serde_json::json!({ "auth_code": code, "code_verifier": verifier }))
+        .post(&disc.token_endpoint)
+        .basic_auth(&st.config.nextcloud_client_id, Some(&st.config.nextcloud_client_secret))
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(body)
         .send()
         .await?;
     if !response.status().is_success() {
-        tracing::warn!(status = %response.status(), "Supabase rechazó el intercambio PKCE");
-        return Err(bad("No se pudo iniciar sesión con Google. Vuelve a intentarlo."));
+        tracing::warn!(status = %response.status(), "Nextcloud rechazó el intercambio del código");
+        return Err(bad(MSG_FALLO));
     }
     let token: TokenResponse = response.json().await?;
-    let meta = token.user.user_metadata;
-    let email_name = token.user.email.as_deref().and_then(|e| e.split('@').next()).map(str::to_string);
-    let name: String = meta
-        .full_name
-        .or(meta.name)
+    let info: UserInfo = st
+        .http
+        .get(&disc.userinfo_endpoint)
+        .bearer_auth(&token.access_token)
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+    if info.sub.is_empty() {
+        return Err(bad(MSG_FALLO));
+    }
+
+    let email_name = info.email.as_deref().and_then(|e| e.split('@').next()).map(str::to_string);
+    let name: String = info
+        .name
+        .or(info.preferred_username)
         .or(email_name)
         .map(|n| n.trim().to_string())
         .filter(|n| !n.is_empty())
@@ -187,12 +235,12 @@ pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q
         .chars()
         .take(80)
         .collect();
-    let avatar = meta.avatar_url.or(meta.picture).filter(|u| u.starts_with("https://") && u.len() <= 500);
 
-    db::upsert_profile(&st.pool, token.user.id, &name, avatar.as_deref()).await?;
+    let id = perfil_id(&info.sub);
+    db::upsert_profile(&st.pool, id, &name, None).await?;
     let jar = jar
         .remove(Cookie::build(PKCE).path("/auth"))
-        .add(session_cookie(token.user.id, &name, st.config.base_url.starts_with("https://")));
+        .add(session_cookie(id, &name, st.config.base_url.starts_with("https://")));
     Ok((jar, Redirect::to(&safe_next(Some(&next)))).into_response())
 }
 
@@ -223,5 +271,11 @@ mod tests {
         assert!(parse_session(&format!("{id}|{now}|Ana|Pérez")).is_some_and(|u| u.name == "Ana|Pérez"));
         assert!(parse_session(&format!("{id}|{}|Ana", now - 31 * 86_400)).is_none());
         assert!(parse_session("no-es-uuid|1|Ana").is_none());
+    }
+
+    #[test]
+    fn perfil_id_es_estable_por_usuario() {
+        assert_eq!(perfil_id("42"), perfil_id("42"));
+        assert_ne!(perfil_id("42"), perfil_id("43"));
     }
 }

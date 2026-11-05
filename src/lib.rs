@@ -16,8 +16,10 @@ use sqlx::PgPool;
 pub struct Config {
     /// Origen público sin barra final, por ejemplo `https://finansy.cinderlink.cl`.
     pub base_url: String,
-    pub supabase_url: String,
-    pub supabase_key: String,
+    /// Nextcloud del servidor, sin barra final, por ejemplo `https://nube.example.cl`.
+    pub nextcloud_url: String,
+    pub nextcloud_client_id: String,
+    pub nextcloud_client_secret: String,
     pub static_dir: String,
 }
 

@@ -22,8 +22,9 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config {
         base_url: env("BASE_URL")?.trim_end_matches('/').to_string(),
-        supabase_url: env("SUPABASE_URL")?.trim_end_matches('/').to_string(),
-        supabase_key: env("SUPABASE_PUBLISHABLE_KEY")?,
+        nextcloud_url: env("NEXTCLOUD_URL")?.trim_end_matches('/').to_string(),
+        nextcloud_client_id: env("NEXTCLOUD_CLIENT_ID")?,
+        nextcloud_client_secret: env("NEXTCLOUD_CLIENT_SECRET")?,
         static_dir: std::env::var("STATIC_DIR").unwrap_or_else(|_| "static".to_string()),
     };
     let http = reqwest::Client::builder().timeout(std::time::Duration::from_secs(10)).build()?;
