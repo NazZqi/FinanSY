@@ -45,6 +45,7 @@ footer { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 24
 :focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
 
 .hero { padding: 32px 0; max-width: 720px; }
+.hero-art { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
 .hero h1 { font-size: 3rem; }
 .lead { font-size: 1.15rem; }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; }
