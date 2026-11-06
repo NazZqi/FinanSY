@@ -292,6 +292,14 @@
       <div id="preview" class="preview" aria-live="polite"><p class="muted small-text">Cambia la meta, la fecha o el plan para ver la nueva cuota.</p></div>
       {% if owner %}<button class="btn-primary">Guardar{% if group %} y avisar al grupo{% endif %}</button>{% endif %}
     </form>
+
+    <h3>Tu cuenta de ahorro</h3>
+    <form method="post" action="/jarrones/{{ jar_id }}/interes" class="stack">
+      <div class="field"><label for="g-rate">Interés anual de tu cuenta <span class="optional">(%)</span></label><input id="g-rate" name="rate" inputmode="decimal" value="{{ rate_input }}" placeholder="0"></div>
+      <p class="muted small-text">Es solo tuyo: tu plata sigue en tu banco. Tu cuota y tu ritmo lo toman en cuenta{% if group %}; cada persona del grupo pone el suyo{% endif %}.</p>
+      <button class="btn-secondary">Guardar interés</button>
+    </form>
+
     {% if owner %}
       <h3>Foto del jarrón</h3>
       <form method="post" action="/jarrones/{{ jar_id }}/imagen/subir" enctype="multipart/form-data" class="stack" hx-boost="false">

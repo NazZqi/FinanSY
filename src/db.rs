@@ -61,6 +61,8 @@ pub struct Member {
     pub user_id: Uuid,
     pub name: String,
     pub left_at: Option<DateTime<Utc>>,
+    /// Interés anual de la cuenta de ahorro de esta persona, en puntos básicos.
+    pub savings_rate_bp: i32,
 }
 
 #[derive(Debug, FromRow)]
@@ -143,9 +145,11 @@ pub async fn create_jar(pool: &PgPool, owner: Uuid, new: &NewJar<'_>) -> AppResu
     .bind(new.step_bp)
     .fetch_one(&mut *tx)
     .await?;
-    sqlx::query("insert into finansy.jar_members (jar_id, user_id) values ($1, $2)")
+    // La tasa del formulario es la de quien crea el jarrón: cada miembro tiene la suya.
+    sqlx::query("insert into finansy.jar_members (jar_id, user_id, savings_rate_bp) values ($1, $2, $3)")
         .bind(id)
         .bind(owner)
+        .bind(new.rate_bp)
         .execute(&mut *tx)
         .await?;
     if let Some(amount) = new.first_amount {
@@ -196,13 +200,24 @@ pub async fn require_member(pool: &PgPool, jar_id: Uuid, user: Uuid) -> AppResul
 
 pub async fn members(pool: &PgPool, jar_id: Uuid) -> AppResult<Vec<Member>> {
     Ok(sqlx::query_as(
-        "select m.user_id, p.name, m.left_at from finansy.jar_members m
+        "select m.user_id, p.name, m.left_at, m.savings_rate_bp from finansy.jar_members m
          join finansy.profiles p on p.id = m.user_id
          where m.jar_id = $1 order by m.joined_at",
     )
     .bind(jar_id)
     .fetch_all(pool)
     .await?)
+}
+
+/// Interés anual de la cuenta de ahorro de `user` en este jarrón. Solo toca su propia fila.
+pub async fn set_member_rate(pool: &PgPool, jar_id: Uuid, user: Uuid, rate_bp: i32) -> AppResult<()> {
+    sqlx::query("update finansy.jar_members set savings_rate_bp = $3 where jar_id = $1 and user_id = $2 and left_at is null")
+        .bind(jar_id)
+        .bind(user)
+        .bind(rate_bp)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 pub async fn contributions(pool: &PgPool, jar_id: Uuid) -> AppResult<Vec<Contribution>> {

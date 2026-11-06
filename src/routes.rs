@@ -39,6 +39,7 @@ pub fn router(state: AppState) -> Router {
         .route("/jarrones/{id}/aportes/{cid}/borrar", post(delete_contribution))
         .route("/jarrones/{id}/meta", post(update_goal))
         .route("/jarrones/{id}/prioridad", post(set_priority))
+        .route("/jarrones/{id}/interes", post(set_rate))
         .route("/jarrones/{id}/imagen", get(image))
         .route("/jarrones/{id}/imagen/subir", post(upload_image).layer(DefaultBodyLimit::max(MAX_UPLOAD)))
         .route("/jarrones/{id}/imagen/quitar", post(remove_image))
@@ -474,6 +475,15 @@ impl Loaded {
     fn user_items(&self, user: Uuid) -> Vec<(NaiveDate, i64)> {
         self.contribs.iter().filter(|c| c.user_id == user).map(|c| (c.contributed_on, c.amount)).collect()
     }
+
+    /// Cada miembro activo: quién es, cuánto lleva y el interés de su cuenta.
+    fn parts(&self) -> Vec<(Uuid, i64, i32)> {
+        self.members
+            .iter()
+            .filter(|m| m.left_at.is_none())
+            .map(|m| (m.user_id, self.user_items(m.user_id).iter().map(|(_, a)| a).sum(), m.savings_rate_bp))
+            .collect()
+    }
 }
 
 async fn load(st: &AppState, jar_id: Uuid, user: Uuid) -> AppResult<Loaded> {
@@ -572,15 +582,19 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
 
     let freq = jar.freq();
     let kind = jar.plan();
-    let plan_for = |goal: i64, saved: i64| {
-        jar.target_date.and_then(|t| calc_plan(today, t, &PlanParams { goal, saved, rate_bp: jar.savings_rate_bp, freq, kind, step_bp: jar.plan_step_bp }))
+    let my_rate = l.members.iter().find(|m| m.user_id == user.id).map_or(0, |m| m.savings_rate_bp);
+    // Cada persona ahorra en su banco con su propio interés: el plan de cada una usa su tasa.
+    let plan_for = |saved: i64, rate_bp: i32| {
+        jar.target_date.and_then(|t| calc_plan(today, t, &PlanParams { goal: share, saved, rate_bp, freq, kind, step_bp: jar.plan_step_bp }))
     };
-    let group_calc = plan_for(goal, total);
-    let my_calc = plan_for(share, my_total);
+    // Lo del jarrón es la suma de lo que necesita cada miembro activo.
+    let group_now: i64 = l.parts().iter().filter_map(|(_, saved, rate)| plan_for(*saved, *rate)).map(|c| c.now).sum();
+    let my_calc = plan_for(my_total, my_rate);
+    let date_passed = jar.target_date.is_some() && my_calc.is_none();
     let (my_now, periods_left, upcoming) = my_calc.map_or((0, 0, vec![]), |c| (c.now, c.periods, c.upcoming));
     let plan = PlanView {
         has_date: jar.target_date.is_some(),
-        date_passed: jar.target_date.is_some() && group_calc.is_none(),
+        date_passed,
         target: jar.target_date.map(fmt_date).unwrap_or_default(),
         periods_left,
         unit: freq.unit(true),
@@ -588,7 +602,7 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         this_period: freq.this_period(),
         kind_label: kind_label(kind, jar.plan_step_bp, freq),
         free: kind == PlanKind::Free,
-        group_now: clp(group_calc.map_or(0, |c| c.now)),
+        group_now: clp(group_now),
         my_now: clp(my_now),
         upcoming,
     };
@@ -598,7 +612,7 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         saved: my_total,
         required: my_now,
         target: jar.target_date,
-        rate_bp: jar.savings_rate_bp,
+        rate_bp: my_rate,
         freq,
         today,
     });
@@ -680,6 +694,7 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         frequency_input: freq.as_str(),
         kind_input: kind.as_str(),
         step_input: (jar.plan_step_bp / 100).to_string(),
+        rate_input: (f64::from(my_rate) / 100.0).to_string().replace('.', ","),
         chart,
         contributions,
         challenges,
@@ -742,7 +757,9 @@ struct PreviewQuery {
 }
 
 /// Cuota de este período y las siguientes para una meta y una fecha, sin guardar nada.
-fn preview_fragment(q: &PreviewQuery, saved: i64, savings_bp: i32, people: i64) -> PreviewFragment {
+/// `parts` trae lo ahorrado y el interés de cada miembro; `mine` es la posición de quien mira.
+/// La meta se reparte en partes iguales y cada parte usa el interés de su dueño.
+fn preview_fragment(q: &PreviewQuery, parts: &[(i64, i32)], mine: usize) -> PreviewFragment {
     let fail = |message: &str| PreviewFragment {
         ok: false,
         message: message.into(),
@@ -765,36 +782,58 @@ fn preview_fragment(q: &PreviewQuery, saved: i64, savings_bp: i32, people: i64) 
     if let Err(message) = check_goal_date(date, today()) {
         return fail(message);
     }
-    let params = PlanParams { goal, saved, rate_bp: savings_bp, freq, kind, step_bp };
-    let Some(calc) = calc_plan(today(), date, &params) else {
+    let share = game::share_per_member(goal, parts.len());
+    let calcs: Vec<PlanCalc> = parts
+        .iter()
+        .filter_map(|(saved, rate_bp)| calc_plan(today(), date, &PlanParams { goal: share, saved: *saved, rate_bp: *rate_bp, freq, kind, step_bp }))
+        .collect();
+    let group_now: i64 = calcs.iter().map(|c| c.now).sum();
+    let Some(my_calc) = calcs.into_iter().nth(mine) else {
         return fail("La fecha debe ser futura.");
     };
-    let per_member = if people > 1 { clp((calc.now + people - 1) / people) } else { String::new() };
+    let per_member = if parts.len() > 1 { clp(my_calc.now) } else { String::new() };
     PreviewFragment {
         ok: true,
         message: String::new(),
-        periods: calc.periods,
+        periods: my_calc.periods,
         unit: freq.unit(true),
         unit_one: freq.unit(false),
         this_period: freq.this_period(),
         free: kind == PlanKind::Free,
-        now: clp(calc.now),
+        now: clp(group_now),
         per_member,
-        upcoming: calc.upcoming,
+        upcoming: my_calc.upcoming,
     }
 }
 
 /// Simular juntos: la cuota con otra meta, fecha o plan, sin guardar nada.
 async fn preview(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Query(q): Query<PreviewQuery>) -> Page {
     let l = load(&st, id, user.id).await?;
-    render(preview_fragment(&q, l.total(), l.jar.savings_rate_bp, l.active_count() as i64))
+    let parts = l.parts();
+    let mine = parts.iter().position(|(uid, _, _)| *uid == user.id).unwrap_or(0);
+    let parts: Vec<(i64, i32)> = parts.iter().map(|(_, saved, rate)| (*saved, *rate)).collect();
+    render(preview_fragment(&q, &parts, mine))
 }
 
 /// Vista previa al crear un jarrón: se ajusta con el primer aporte que se escriba.
 async fn plan_preview(Query(q): Query<PreviewQuery>) -> Page {
     let rate = parse_pct(&q.rate).map_or(0, rate_bp);
     let saved = parse_clp(&q.first).unwrap_or(0);
-    render(preview_fragment(&q, saved, rate, 1))
+    render(preview_fragment(&q, &[(saved, rate)], 0))
+}
+
+#[derive(Deserialize)]
+struct RateForm {
+    #[serde(default)]
+    rate: String,
+}
+
+/// Interés de la cuenta de ahorro propia: cada miembro cambia solo el suyo.
+async fn set_rate(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Form(f): Form<RateForm>) -> AppResult<Redirect> {
+    let jar = db::require_member(&st.pool, id, user.id).await?;
+    let rate = parse_pct(&f.rate).ok_or_else(|| bad("El interés debe estar entre 0 y 100 %."))?;
+    db::set_member_rate(&st.pool, jar.id, user.id, rate_bp(rate)).await?;
+    Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
 }
 
 #[derive(Deserialize)]

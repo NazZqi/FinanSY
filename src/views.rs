@@ -252,6 +252,8 @@ pub struct JarPage {
     pub frequency_input: &'static str,
     pub kind_input: &'static str,
     pub step_input: String,
+    /// Interés anual de la cuenta de quien mira, como lo escribe una persona ("3,9").
+    pub rate_input: String,
     pub chart: Chart,
     pub contributions: Vec<ContribRow>,
     pub challenges: Vec<ChallengeRow>,

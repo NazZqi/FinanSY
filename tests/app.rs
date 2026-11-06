@@ -323,3 +323,34 @@ async fn crear_con_plan_y_primer_aporte(pool: PgPool) {
     let req = Request::get(format!("/simular/plan?goal=1000000&target_date={date}&frequency=semanal&plan_kind=decreciente&step=10&first=100000")).body(Body::empty()).unwrap();
     assert_eq!(finansy::app(st.clone()).oneshot(req).await.unwrap().status(), StatusCode::OK);
 }
+
+#[sqlx::test(migrations = "./migrations")]
+#[ignore = "necesita Postgres: corre en CI"]
+async fn el_interes_es_de_cada_miembro(pool: PgPool) {
+    let st = state(pool);
+    let (ana, ana_cookie) = login(&st, "Ana").await;
+    let (beto, beto_cookie) = login(&st, "Beto").await;
+    let jar = group_jar(&st, ana).await;
+    join_as(&st, &beto_cookie, jar).await;
+    let uri = format!("/jarrones/{jar}/interes");
+
+    assert_eq!(post_as(&st, &beto_cookie, &uri, "rate=3,9", BASE).await, StatusCode::SEE_OTHER);
+    assert_eq!(post_as(&st, &beto_cookie, &uri, "rate=150", BASE).await, StatusCode::BAD_REQUEST);
+    let rate = |user: Uuid| {
+        let pool = st.pool.clone();
+        async move {
+            sqlx::query_scalar::<_, i32>("select savings_rate_bp from finansy.jar_members where jar_id = $1 and user_id = $2")
+                .bind(jar)
+                .bind(user)
+                .fetch_one(&pool)
+                .await
+                .unwrap()
+        }
+    };
+    assert_eq!(rate(beto).await, 390);
+    assert_eq!(rate(ana).await, 0);
+    // La página del jarrón y la simulación calculan con la tasa de cada uno.
+    assert_eq!(get_as(&st, &ana_cookie, &format!("/jarrones/{jar}")).await, StatusCode::OK);
+    let date = finansy::today() + chrono::Duration::days(200);
+    assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}/simular?goal=1000000&target_date={date}")).await, StatusCode::OK);
+}
