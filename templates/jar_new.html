@@ -2,7 +2,8 @@
 {% block content %}
 <section class="card narrow">
   <h1>Nuevo jarrón</h1>
-  <form method="post" action="/jarrones" class="form">
+  <form method="post" action="/jarrones" class="form"
+        hx-get="/simular/plan" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
     <fieldset class="choices">
       <legend>Tipo</legend>
       <label><input type="radio" name="kind" value="grupal" checked> Grupal: una meta con amigos</label>
@@ -23,12 +24,39 @@
     <label>Meta en pesos
       <input name="goal" required inputmode="numeric" placeholder="1.500.000">
     </label>
-    <label>Fecha de la meta <span class="muted">(opcional)</span>
+    <label>Fecha de la meta <span class="muted">(opcional, pero necesaria para calcular la cuota)</span>
       <input type="date" name="target_date">
     </label>
     <label>Interés anual de tu cuenta de ahorro <span class="muted">(opcional, %)</span>
       <input name="rate" inputmode="decimal" placeholder="0">
     </label>
+
+    <fieldset class="choices stack">
+      <legend>Cómo vas a ahorrar</legend>
+      <label>Cada cuánto
+        <select name="frequency">
+          <option value="mensual" selected>Cada mes (a principio de mes)</option>
+          <option value="semanal">Cada semana</option>
+          <option value="diario">Todos los días</option>
+        </select>
+      </label>
+      <label>Tipo de plan
+        <select name="plan_kind">
+          <option value="constante" selected>Cuotas iguales</option>
+          <option value="decreciente">Parto con más y voy bajando</option>
+          <option value="creciente">Parto con menos y voy subiendo</option>
+          <option value="libre">Libre: más un período y menos otro</option>
+        </select>
+      </label>
+      <label>Cambio por período <span class="muted">(%, solo si baja o sube)</span>
+        <input name="step" inputmode="decimal" value="10">
+      </label>
+      <label>Primer aporte <span class="muted">(opcional: se anota hoy y ajusta lo que falta)</span>
+        <input name="first" inputmode="numeric" placeholder="100.000">
+      </label>
+    </fieldset>
+
+    <div id="preview" class="preview" aria-live="polite"><p class="muted">Escribe la meta y la fecha para ver cuánto aportar.</p></div>
     <button class="btn">Crear jarrón</button>
   </form>
 </section>

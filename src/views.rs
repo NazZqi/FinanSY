@@ -40,6 +40,12 @@ pub struct JarCard {
     pub pct: u32,
     pub members: i64,
     pub reminder: bool,
+    pub reminder_period: &'static str,
+    pub priority: i16,
+    /// Dirección de la foto; vacío si no tiene.
+    pub image: String,
+    pub emoji: &'static str,
+    pub owner: bool,
 }
 
 #[derive(Template)]
@@ -70,18 +76,14 @@ pub struct MemberRow {
 pub struct Panel {
     pub jar_id: Uuid,
     pub group: bool,
+    /// Unidad de la racha en plural: "días", "semanas" o "meses".
+    pub streak_unit: &'static str,
     pub total: String,
     pub goal: String,
     pub missing: String,
     pub pct: u32,
     pub share: String,
     pub members: Vec<MemberRow>,
-}
-
-#[derive(Template)]
-#[template(path = "panel_fragment.html")]
-pub struct PanelFragment {
-    pub panel: Panel,
 }
 
 pub struct ContribRow {
@@ -107,13 +109,42 @@ pub struct ChallengeRow {
     pub members: Vec<ChallengeMember>,
 }
 
+/// Una cuota futura del plan: "noviembre de 2026" → "$120.000".
+pub struct UpcomingRow {
+    pub label: String,
+    pub amount: String,
+}
+
 pub struct PlanView {
     pub has_date: bool,
     pub date_passed: bool,
     pub target: String,
-    pub months_left: u32,
-    pub group_monthly: String,
-    pub my_monthly: String,
+    pub periods_left: u32,
+    /// Unidad en plural y en singular: "meses" / "mes".
+    pub unit: &'static str,
+    pub unit_one: &'static str,
+    pub this_period: &'static str,
+    pub kind_label: String,
+    pub free: bool,
+    pub group_now: String,
+    pub my_now: String,
+    pub upcoming: Vec<UpcomingRow>,
+}
+
+pub struct PaceOption {
+    pub label: &'static str,
+    pub amount: String,
+    pub arrival: String,
+}
+
+pub struct PaceView {
+    pub has_pace: bool,
+    pub message: String,
+    pub avg: String,
+    pub unit_one: &'static str,
+    pub arrival: String,
+    pub verdict: String,
+    pub options: Vec<PaceOption>,
 }
 
 pub struct Chart {
@@ -143,6 +174,14 @@ pub struct JarPage {
     pub reminder: bool,
     pub panel: Panel,
     pub plan: PlanView,
+    pub pace: PaceView,
+    /// Dirección de la foto; vacío si no tiene.
+    pub image: String,
+    pub emoji: &'static str,
+    pub reminder_period: &'static str,
+    pub frequency_input: &'static str,
+    pub kind_input: &'static str,
+    pub step_input: String,
     pub chart: Chart,
     pub contributions: Vec<ContribRow>,
     pub challenges: Vec<ChallengeRow>,
@@ -155,11 +194,17 @@ pub struct JarPage {
 #[derive(Template)]
 #[template(path = "preview.html")]
 pub struct PreviewFragment {
-    pub message: String,
-    pub group_monthly: String,
-    pub per_member: String,
-    pub months: u32,
     pub ok: bool,
+    pub message: String,
+    pub periods: u32,
+    pub unit: &'static str,
+    pub unit_one: &'static str,
+    pub this_period: &'static str,
+    pub free: bool,
+    pub now: String,
+    /// Cuota por persona; vacío si no hay grupo o coincide con la del jarrón.
+    pub per_member: String,
+    pub upcoming: Vec<UpcomingRow>,
 }
 
 pub struct CuotaResult {

@@ -6,6 +6,7 @@ use sqlx::{FromRow, PgConnection, PgPool};
 use uuid::Uuid;
 
 use crate::error::{AppError, AppResult, bad};
+use crate::sim::{Frequency, PlanKind};
 
 #[derive(Debug, Clone, FromRow)]
 pub struct Jar {
@@ -18,11 +19,24 @@ pub struct Jar {
     pub savings_rate_bp: i32,
     pub invite_code: Option<String>,
     pub owner_id: Uuid,
+    pub frequency: String,
+    pub plan_kind: String,
+    pub plan_step_bp: i32,
+    pub image_at: Option<DateTime<Utc>>,
 }
 
 impl Jar {
     pub fn is_group(&self) -> bool {
         self.kind == "grupal"
+    }
+
+    // La base ya valida ambos valores con CHECK: el valor por defecto nunca se usa.
+    pub fn freq(&self) -> Frequency {
+        Frequency::parse(&self.frequency).unwrap_or(Frequency::Monthly)
+    }
+
+    pub fn plan(&self) -> PlanKind {
+        PlanKind::parse(&self.plan_kind).unwrap_or(PlanKind::Constant)
     }
 }
 
@@ -36,6 +50,10 @@ pub struct JarSummary {
     pub total: i64,
     pub members: i64,
     pub my_last_on: Option<NaiveDate>,
+    pub frequency: String,
+    pub priority: Option<i16>,
+    pub image_at: Option<DateTime<Utc>>,
+    pub is_owner: bool,
 }
 
 #[derive(Debug, FromRow)]
@@ -78,6 +96,12 @@ pub struct NewJar<'a> {
     pub goal: i64,
     pub target_date: Option<NaiveDate>,
     pub rate_bp: i32,
+    pub frequency: &'a str,
+    pub plan_kind: &'a str,
+    pub step_bp: i32,
+    /// Primer aporte opcional, con fecha de hoy.
+    pub first_amount: Option<i64>,
+    pub today: NaiveDate,
 }
 
 /// 32 símbolos sin letras confundibles (i, l, o, 0): 10 caracteres ≈ 50 bits.
@@ -103,8 +127,8 @@ pub async fn create_jar(pool: &PgPool, owner: Uuid, new: &NewJar<'_>) -> AppResu
     let invite = (new.kind == "grupal").then(new_invite_code);
     let mut tx = pool.begin().await?;
     let (id,): (Uuid,) = sqlx::query_as(
-        "insert into finansy.jars (kind, name, category, goal_amount, target_date, savings_rate_bp, invite_code, owner_id)
-         values ($1, $2, $3, $4, $5, $6, $7, $8) returning id",
+        "insert into finansy.jars (kind, name, category, goal_amount, target_date, savings_rate_bp, invite_code, owner_id, frequency, plan_kind, plan_step_bp)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) returning id",
     )
     .bind(new.kind)
     .bind(new.name)
@@ -114,6 +138,9 @@ pub async fn create_jar(pool: &PgPool, owner: Uuid, new: &NewJar<'_>) -> AppResu
     .bind(new.rate_bp)
     .bind(invite)
     .bind(owner)
+    .bind(new.frequency)
+    .bind(new.plan_kind)
+    .bind(new.step_bp)
     .fetch_one(&mut *tx)
     .await?;
     sqlx::query("insert into finansy.jar_members (jar_id, user_id) values ($1, $2)")
@@ -121,6 +148,15 @@ pub async fn create_jar(pool: &PgPool, owner: Uuid, new: &NewJar<'_>) -> AppResu
         .bind(owner)
         .execute(&mut *tx)
         .await?;
+    if let Some(amount) = new.first_amount {
+        sqlx::query("insert into finansy.contributions (jar_id, user_id, amount, contributed_on) values ($1, $2, $3, $4)")
+            .bind(id)
+            .bind(owner)
+            .bind(amount)
+            .bind(new.today)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
     Ok(id)
 }
@@ -130,11 +166,12 @@ pub async fn list_jars(pool: &PgPool, user: Uuid) -> AppResult<Vec<JarSummary>> 
         "select j.id, j.name, j.kind, j.category, j.goal_amount,
                 coalesce((select sum(c.amount) from finansy.contributions c where c.jar_id = j.id), 0)::bigint as total,
                 (select count(*) from finansy.jar_members m2 where m2.jar_id = j.id and m2.left_at is null) as members,
-                (select max(c.contributed_on) from finansy.contributions c where c.jar_id = j.id and c.user_id = $1) as my_last_on
+                (select max(c.contributed_on) from finansy.contributions c where c.jar_id = j.id and c.user_id = $1) as my_last_on,
+                j.frequency, m.priority, j.image_at, (j.owner_id = $1) as is_owner
          from finansy.jars j
          join finansy.jar_members m on m.jar_id = j.id
          where m.user_id = $1 and m.left_at is null
-         order by j.created_at desc",
+         order by m.priority nulls last, j.created_at desc",
     )
     .bind(user)
     .fetch_all(pool)
@@ -144,7 +181,8 @@ pub async fn list_jars(pool: &PgPool, user: Uuid) -> AppResult<Vec<JarSummary>> 
 /// El jarrón solo si `user` es miembro activo. Si no, 404: no se revela que existe.
 pub async fn require_member(pool: &PgPool, jar_id: Uuid, user: Uuid) -> AppResult<Jar> {
     sqlx::query_as(
-        "select j.id, j.kind, j.name, j.category, j.goal_amount, j.target_date, j.savings_rate_bp, j.invite_code, j.owner_id
+        "select j.id, j.kind, j.name, j.category, j.goal_amount, j.target_date, j.savings_rate_bp, j.invite_code, j.owner_id,
+                j.frequency, j.plan_kind, j.plan_step_bp, j.image_at
          from finansy.jars j
          join finansy.jar_members m on m.jar_id = j.id
          where j.id = $1 and m.user_id = $2 and m.left_at is null",
@@ -230,17 +268,82 @@ pub async fn delete_contribution(pool: &PgPool, jar_id: Uuid, user: Uuid, id: Uu
     Ok(())
 }
 
-pub async fn update_goal(pool: &PgPool, jar_id: Uuid, user: Uuid, goal: i64, target: Option<NaiveDate>, notice: &str) -> AppResult<()> {
+/// Meta, fecha y plan del jarrón. Solo quien lo creó: para los demás el jarrón no cambia.
+pub struct PlanChange<'a> {
+    pub goal: i64,
+    pub target_date: Option<NaiveDate>,
+    pub frequency: &'a str,
+    pub plan_kind: &'a str,
+    pub step_bp: i32,
+}
+
+pub async fn update_plan(pool: &PgPool, jar: &Jar, by: Uuid, change: &PlanChange<'_>, notice: &str) -> AppResult<()> {
+    if jar.owner_id != by {
+        return Err(AppError::NotFound);
+    }
     let mut tx = pool.begin().await?;
-    sqlx::query("update finansy.jars set goal_amount = $2, target_date = $3 where id = $1")
-        .bind(jar_id)
-        .bind(goal)
-        .bind(target)
-        .execute(&mut *tx)
-        .await?;
-    notify_others(&mut tx, jar_id, user, notice).await?;
+    sqlx::query(
+        "update finansy.jars set goal_amount = $2, target_date = $3, frequency = $4, plan_kind = $5, plan_step_bp = $6
+         where id = $1 and owner_id = $7",
+    )
+    .bind(jar.id)
+    .bind(change.goal)
+    .bind(change.target_date)
+    .bind(change.frequency)
+    .bind(change.plan_kind)
+    .bind(change.step_bp)
+    .bind(by)
+    .execute(&mut *tx)
+    .await?;
+    notify_others(&mut tx, jar.id, by, notice).await?;
     tx.commit().await?;
     Ok(())
+}
+
+/// Prioridad personal del jarrón (1 = la más importante); `None` la quita. Solo toca la fila de `user`.
+pub async fn set_priority(pool: &PgPool, jar_id: Uuid, user: Uuid, priority: Option<i16>) -> AppResult<()> {
+    sqlx::query("update finansy.jar_members set priority = $3 where jar_id = $1 and user_id = $2 and left_at is null")
+        .bind(jar_id)
+        .bind(user)
+        .bind(priority)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Guarda la foto (ya recodificada a JPEG). Solo quien creó el jarrón.
+pub async fn set_image(pool: &PgPool, jar: &Jar, by: Uuid, data: &[u8]) -> AppResult<()> {
+    if jar.owner_id != by {
+        return Err(AppError::NotFound);
+    }
+    let mut tx = pool.begin().await?;
+    sqlx::query(
+        "insert into finansy.jar_images (jar_id, data) values ($1, $2)
+         on conflict (jar_id) do update set data = excluded.data",
+    )
+    .bind(jar.id)
+    .bind(data)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query("update finansy.jars set image_at = now() where id = $1").bind(jar.id).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+pub async fn clear_image(pool: &PgPool, jar: &Jar, by: Uuid) -> AppResult<()> {
+    if jar.owner_id != by {
+        return Err(AppError::NotFound);
+    }
+    let mut tx = pool.begin().await?;
+    sqlx::query("delete from finansy.jar_images where jar_id = $1").bind(jar.id).execute(&mut *tx).await?;
+    sqlx::query("update finansy.jars set image_at = null where id = $1").bind(jar.id).execute(&mut *tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+pub async fn get_image(pool: &PgPool, jar_id: Uuid) -> AppResult<Vec<u8>> {
+    let row: Option<(Vec<u8>,)> = sqlx::query_as("select data from finansy.jar_images where jar_id = $1").bind(jar_id).fetch_optional(pool).await?;
+    row.map(|(data,)| data).ok_or(AppError::NotFound)
 }
 
 /// Une a `user` al jarrón grupal del código. Si ya había salido, vuelve a entrar.

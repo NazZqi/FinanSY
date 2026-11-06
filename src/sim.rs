@@ -1,7 +1,108 @@
 //! Simulador de ahorro: funciones puras, sin base de datos.
 //! Montos en pesos chilenos enteros; las tasas se calculan en f64 y se redondean al final.
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Duration, Months, NaiveDate};
+
+/// Cada cuánto aporta quien ahorra. Mensual es lo más común: se ahorra a principio de mes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Frequency {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+impl Frequency {
+    pub fn parse(input: &str) -> Option<Self> {
+        match input {
+            "diario" => Some(Self::Daily),
+            "semanal" => Some(Self::Weekly),
+            "mensual" => Some(Self::Monthly),
+            _ => None,
+        }
+    }
+
+    /// Valor guardado en la base de datos.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Daily => "diario",
+            Self::Weekly => "semanal",
+            Self::Monthly => "mensual",
+        }
+    }
+
+    fn per_year(self) -> f64 {
+        match self {
+            Self::Daily => 365.0,
+            Self::Weekly => 52.0,
+            Self::Monthly => 12.0,
+        }
+    }
+
+    /// Unidad en singular o plural: "mes" / "meses".
+    pub fn unit(self, plural: bool) -> &'static str {
+        match (self, plural) {
+            (Self::Daily, false) => "día",
+            (Self::Daily, true) => "días",
+            (Self::Weekly, false) => "semana",
+            (Self::Weekly, true) => "semanas",
+            (Self::Monthly, false) => "mes",
+            (Self::Monthly, true) => "meses",
+        }
+    }
+
+    pub fn this_period(self) -> &'static str {
+        match self {
+            Self::Daily => "hoy",
+            Self::Weekly => "esta semana",
+            Self::Monthly => "este mes",
+        }
+    }
+
+    /// 50 años en esta unidad: el tope antes de responder "no alcanza".
+    pub fn max_periods(self) -> u32 {
+        (self.per_year() * 50.0) as u32
+    }
+}
+
+/// Forma de las cuotas: iguales, bajando, subiendo o a gusto (se recalculan con lo que falta).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlanKind {
+    Constant,
+    Decreasing,
+    Increasing,
+    Free,
+}
+
+impl PlanKind {
+    pub fn parse(input: &str) -> Option<Self> {
+        match input {
+            "constante" => Some(Self::Constant),
+            "decreciente" => Some(Self::Decreasing),
+            "creciente" => Some(Self::Increasing),
+            "libre" => Some(Self::Free),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Constant => "constante",
+            Self::Decreasing => "decreciente",
+            Self::Increasing => "creciente",
+            Self::Free => "libre",
+        }
+    }
+
+    /// Razón entre una cuota y la siguiente: 1 = igual, 0,9 = baja 10 %, 1,1 = sube 10 %.
+    pub fn growth(self, step_bp: i32) -> f64 {
+        let step = f64::from(step_bp) / 10_000.0;
+        match self {
+            Self::Constant | Self::Free => 1.0,
+            Self::Decreasing => 1.0 - step,
+            Self::Increasing => 1.0 + step,
+        }
+    }
+}
 
 /// Tope de meses que el simulador recorre antes de responder "no alcanza".
 pub const MAX_MONTHS: u32 = 600;
@@ -9,6 +110,11 @@ pub const MAX_MONTHS: u32 = 600;
 /// Tasa mensual efectiva equivalente a una tasa anual expresada en puntos básicos (450 = 4,5 %).
 pub fn monthly_rate(annual_bp: i32) -> f64 {
     (1.0 + f64::from(annual_bp) / 10_000.0).powf(1.0 / 12.0) - 1.0
+}
+
+/// Tasa efectiva por período (día, semana o mes) para una tasa anual en puntos básicos.
+pub fn period_rate(annual_bp: i32, freq: Frequency) -> f64 {
+    (1.0 + f64::from(annual_bp) / 10_000.0).powf(1.0 / freq.per_year()) - 1.0
 }
 
 /// Aporte mensual para llegar a `goal` en `months` meses partiendo de `saved`, con tasa mensual `r`.
@@ -24,20 +130,25 @@ pub fn monthly_payment(goal: i64, saved: i64, months: u32, r: f64) -> i64 {
     payment.ceil() as i64
 }
 
-/// Meses que toma llegar a `goal` aportando `payment` al mes. `None` si pasa de `MAX_MONTHS`.
-pub fn months_to_goal(goal: i64, saved: i64, payment: i64, r: f64) -> Option<u32> {
+/// Períodos que toma llegar a `goal` aportando `payment` en cada uno. `None` si pasa de `max`.
+pub fn periods_to_goal(goal: i64, saved: i64, payment: i64, r: f64, max: u32) -> Option<u32> {
     if saved >= goal {
         return Some(0);
     }
     let mut balance = saved as f64;
-    for month in 1..=MAX_MONTHS {
+    for period in 1..=max {
         balance = balance * (1.0 + r) + payment as f64;
-        // Medio peso de holgura para no perder un mes por redondeo.
+        // Medio peso de holgura para no perder un período por redondeo.
         if balance + 0.5 >= goal as f64 {
-            return Some(month);
+            return Some(period);
         }
     }
     None
+}
+
+/// Meses que toma llegar a `goal` aportando `payment` al mes. `None` si pasa de `MAX_MONTHS`.
+pub fn months_to_goal(goal: i64, saved: i64, payment: i64, r: f64) -> Option<u32> {
+    periods_to_goal(goal, saved, payment, r, MAX_MONTHS)
 }
 
 /// Meses calendario que quedan entre `today` y `target`. `None` si la fecha ya pasó.
@@ -48,6 +159,61 @@ pub fn months_until(today: NaiveDate, target: NaiveDate) -> Option<u32> {
     }
     let months = (target.year() - today.year()) * 12 + target.month() as i32 - today.month() as i32;
     Some(months.max(1) as u32)
+}
+
+/// Períodos que quedan entre `today` y `target`. `None` si la fecha ya pasó.
+pub fn periods_until(today: NaiveDate, target: NaiveDate, freq: Frequency) -> Option<u32> {
+    if target <= today {
+        return None;
+    }
+    let days = (target - today).num_days();
+    match freq {
+        Frequency::Monthly => months_until(today, target),
+        Frequency::Weekly => Some(((days + 6) / 7) as u32),
+        Frequency::Daily => Some(days as u32),
+    }
+}
+
+/// Períodos transcurridos entre `first` y `today`, contando el período de `first` y el actual (mínimo 1).
+pub fn periods_between(first: NaiveDate, today: NaiveDate, freq: Frequency) -> u32 {
+    let days = (today - first).num_days().max(0);
+    match freq {
+        Frequency::Monthly => ((today.year() - first.year()) * 12 + today.month() as i32 - first.month() as i32 + 1).max(1) as u32,
+        Frequency::Weekly => (days / 7 + 1) as u32,
+        Frequency::Daily => (days + 1) as u32,
+    }
+}
+
+/// Fecha que resulta de sumar `n` períodos a `date`.
+pub fn add_periods(date: NaiveDate, n: u32, freq: Frequency) -> NaiveDate {
+    match freq {
+        Frequency::Monthly => date.checked_add_months(Months::new(n)).unwrap_or(date),
+        Frequency::Weekly => date + Duration::weeks(i64::from(n)),
+        Frequency::Daily => date + Duration::days(i64::from(n)),
+    }
+}
+
+/// Cuota del período actual para llegar a `goal` en `n` períodos, con cuotas que cambian por la razón `g`
+/// (1 = iguales). Con `g = 1` coincide con `monthly_payment`. Redondea hacia arriba.
+pub fn first_payment(goal: i64, saved: i64, n: u32, r: f64, g: f64) -> i64 {
+    let n = n.max(1);
+    let growth = (1.0 + r).powi(n as i32);
+    let missing = goal as f64 - saved as f64 * growth;
+    if missing <= 0.0 {
+        return 0;
+    }
+    // Valor futuro de una cuota inicial de 1: suma de g^(k-1)·(1+r)^(n-k).
+    let factor = if ((1.0 + r) - g).abs() < 1e-12 {
+        f64::from(n) * (1.0 + r).powi(n as i32 - 1)
+    } else {
+        (growth - g.powi(n as i32)) / ((1.0 + r) - g)
+    };
+    (missing / factor).ceil() as i64
+}
+
+/// Cuota del período `k` (0 = el actual) para una cuota inicial `first` y razón `g`.
+pub fn payment_at(first: i64, g: f64, k: u32) -> i64 {
+    (first as f64 * g.powi(k as i32)).ceil() as i64
 }
 
 #[derive(Debug, PartialEq)]
@@ -182,6 +348,74 @@ mod tests {
         assert_eq!(months_to_goal(600_000, 100_000, 50_000, 0.0), Some(10));
         assert_eq!(months_to_goal(600_000, 0, 0, 0.0), None);
         assert_eq!(months_to_goal(10_000_000_000, 0, 1, 0.0), None);
+    }
+
+    #[test]
+    fn cuota_inicial_con_razon_uno_iguala_la_constante() {
+        for bp in [0, 600] {
+            let r = monthly_rate(bp);
+            assert_eq!(first_payment(1_500_000, 200_000, 10, r, 1.0), monthly_payment(1_500_000, 200_000, 10, r));
+        }
+    }
+
+    #[test]
+    fn plan_decreciente_parte_mas_alto_y_llega_a_la_meta() {
+        for bp in [0, 600] {
+            let r = monthly_rate(bp);
+            let constant = first_payment(1_000_000, 0, 10, r, 1.0);
+            let first = first_payment(1_000_000, 0, 10, r, 0.9);
+            assert!(first > constant, "{first} > {constant}");
+            let mut balance = 0.0;
+            for k in 0..10 {
+                balance = balance * (1.0 + r) + payment_at(first, 0.9, k) as f64;
+            }
+            assert!((1_000_000.0..1_000_100.0).contains(&balance), "saldo final {balance}");
+        }
+    }
+
+    #[test]
+    fn plan_creciente_parte_mas_bajo() {
+        let r = monthly_rate(0);
+        assert!(first_payment(1_000_000, 0, 10, r, 1.1) < first_payment(1_000_000, 0, 10, r, 1.0));
+    }
+
+    #[test]
+    fn razon_igual_a_la_tasa_no_divide_por_cero() {
+        let r = 0.01;
+        let p = first_payment(1_000_000, 0, 12, r, 1.0 + r);
+        assert!(p > 0 && p < 1_000_000);
+    }
+
+    #[test]
+    fn periodos_hasta_una_fecha_segun_frecuencia() {
+        let today = d(2026, 11, 3);
+        assert_eq!(periods_until(today, d(2026, 11, 10), Frequency::Weekly), Some(1));
+        assert_eq!(periods_until(today, d(2026, 11, 11), Frequency::Weekly), Some(2));
+        assert_eq!(periods_until(today, d(2026, 11, 13), Frequency::Daily), Some(10));
+        assert_eq!(periods_until(today, d(2027, 7, 15), Frequency::Monthly), Some(8));
+        assert_eq!(periods_until(today, today, Frequency::Daily), None);
+    }
+
+    #[test]
+    fn periodos_transcurridos_incluyen_el_primero_y_el_actual() {
+        assert_eq!(periods_between(d(2026, 11, 20), d(2026, 11, 25), Frequency::Monthly), 1);
+        assert_eq!(periods_between(d(2026, 10, 31), d(2027, 1, 2), Frequency::Monthly), 4);
+        assert_eq!(periods_between(d(2026, 11, 3), d(2026, 11, 3), Frequency::Weekly), 1);
+        assert_eq!(periods_between(d(2026, 11, 3), d(2026, 11, 17), Frequency::Weekly), 3);
+        assert_eq!(periods_between(d(2026, 11, 3), d(2026, 11, 5), Frequency::Daily), 3);
+    }
+
+    #[test]
+    fn sumar_periodos() {
+        assert_eq!(add_periods(d(2026, 1, 31), 1, Frequency::Monthly), d(2026, 2, 28));
+        assert_eq!(add_periods(d(2026, 11, 3), 2, Frequency::Weekly), d(2026, 11, 17));
+        assert_eq!(add_periods(d(2026, 11, 3), 30, Frequency::Daily), d(2026, 12, 3));
+    }
+
+    #[test]
+    fn diario_necesita_un_tope_mayor_que_el_mensual() {
+        assert_eq!(periods_to_goal(1_000_000, 0, 1_000, 0.0, 600), None);
+        assert_eq!(periods_to_goal(1_000_000, 0, 1_000, 0.0, Frequency::Daily.max_periods()), Some(1_000));
     }
 
     #[test]

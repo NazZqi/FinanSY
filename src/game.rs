@@ -2,27 +2,46 @@
 
 use std::collections::HashSet;
 
-use chrono::{Datelike, Duration, IsoWeek, NaiveDate};
+use chrono::{Datelike, Duration, Months, NaiveDate};
 
-/// Semanas ISO seguidas con al menos un aporte. Cuenta desde la semana actual,
-/// o desde la anterior si en esta todavía no hay aporte.
-pub fn week_streak(dates: &[NaiveDate], today: NaiveDate) -> u32 {
-    let weeks: HashSet<IsoWeek> = dates.iter().map(|d| d.iso_week()).collect();
+use crate::sim::Frequency;
+
+/// Identifica el día, la semana ISO o el mes calendario al que pertenece `d`.
+fn period_key(d: NaiveDate, freq: Frequency) -> (i32, u32) {
+    match freq {
+        Frequency::Daily => (d.year(), d.ordinal()),
+        Frequency::Weekly => (d.iso_week().year(), d.iso_week().week()),
+        Frequency::Monthly => (d.year(), d.month()),
+    }
+}
+
+fn previous_period(d: NaiveDate, freq: Frequency) -> NaiveDate {
+    match freq {
+        Frequency::Daily => d - Duration::days(1),
+        Frequency::Weekly => d - Duration::days(7),
+        Frequency::Monthly => d.checked_sub_months(Months::new(1)).unwrap_or(d - Duration::days(31)),
+    }
+}
+
+/// Períodos seguidos (días, semanas o meses según `freq`) con al menos un aporte. Cuenta desde el
+/// período actual, o desde el anterior si en este todavía no hay aporte.
+pub fn streak(dates: &[NaiveDate], today: NaiveDate, freq: Frequency) -> u32 {
+    let periods: HashSet<(i32, u32)> = dates.iter().map(|d| period_key(*d, freq)).collect();
     let mut cursor = today;
-    if !weeks.contains(&cursor.iso_week()) {
-        cursor -= Duration::days(7);
+    if !periods.contains(&period_key(cursor, freq)) {
+        cursor = previous_period(cursor, freq);
     }
     let mut streak = 0;
-    while weeks.contains(&cursor.iso_week()) {
+    while periods.contains(&period_key(cursor, freq)) {
         streak += 1;
-        cursor -= Duration::days(7);
+        cursor = previous_period(cursor, freq);
     }
     streak
 }
 
-/// ¿Hay un aporte en el mes calendario de `today`?
-pub fn contributed_this_month(dates: &[NaiveDate], today: NaiveDate) -> bool {
-    dates.iter().any(|d| d.year() == today.year() && d.month() == today.month())
+/// ¿Hay un aporte en el período (día, semana o mes) de `today`?
+pub fn contributed_this_period(dates: &[NaiveDate], today: NaiveDate, freq: Frequency) -> bool {
+    dates.iter().any(|d| period_key(*d, freq) == period_key(today, freq))
 }
 
 /// Suma de aportes entre `from` y `to`, ambos incluidos.
@@ -93,28 +112,45 @@ mod tests {
     fn racha_cruza_el_cambio_de_anio() {
         // 2026 tiene semana ISO 53: 22-dic es S52, 29-dic es S53 y 5-ene-2027 es S1.
         let dates = [d(2026, 12, 22), d(2026, 12, 29), d(2027, 1, 5)];
-        assert_eq!(week_streak(&dates, d(2027, 1, 6)), 3);
+        assert_eq!(streak(&dates, d(2027, 1, 6), Frequency::Weekly), 3);
     }
 
     #[test]
     fn racha_sigue_viva_si_esta_semana_aun_no_aporta() {
         let dates = [d(2026, 12, 22), d(2026, 12, 29)];
-        assert_eq!(week_streak(&dates, d(2027, 1, 6)), 2);
+        assert_eq!(streak(&dates, d(2027, 1, 6), Frequency::Weekly), 2);
     }
 
     #[test]
     fn racha_se_corta_con_una_semana_sin_aportes() {
         let dates = [d(2026, 12, 8), d(2026, 12, 29)];
-        assert_eq!(week_streak(&dates, d(2026, 12, 30)), 1);
-        assert_eq!(week_streak(&[d(2026, 12, 8)], d(2026, 12, 30)), 0);
-        assert_eq!(week_streak(&[], d(2026, 12, 30)), 0);
+        assert_eq!(streak(&dates, d(2026, 12, 30), Frequency::Weekly), 1);
+        assert_eq!(streak(&[d(2026, 12, 8)], d(2026, 12, 30), Frequency::Weekly), 0);
+        assert_eq!(streak(&[], d(2026, 12, 30), Frequency::Weekly), 0);
+    }
+
+    #[test]
+    fn racha_mensual_cruza_el_anio_y_se_corta() {
+        let dates = [d(2026, 11, 2), d(2026, 12, 1), d(2027, 1, 4)];
+        assert_eq!(streak(&dates, d(2027, 1, 20), Frequency::Monthly), 3);
+        // Enero sin aporte todavía: sigue viva desde diciembre. Febrero sin aporte la corta.
+        assert_eq!(streak(&dates[..2], d(2027, 1, 20), Frequency::Monthly), 2);
+        assert_eq!(streak(&dates[..2], d(2027, 2, 3), Frequency::Monthly), 0);
+        assert_eq!(streak(&[d(2026, 1, 31)], d(2026, 3, 31), Frequency::Monthly), 0);
+    }
+
+    #[test]
+    fn racha_diaria() {
+        let dates = [d(2026, 12, 30), d(2026, 12, 31), d(2027, 1, 1)];
+        assert_eq!(streak(&dates, d(2027, 1, 1), Frequency::Daily), 3);
+        assert_eq!(streak(&dates, d(2027, 1, 3), Frequency::Daily), 0);
     }
 
     #[test]
     fn aporte_del_mes() {
-        assert!(!contributed_this_month(&[d(2026, 10, 31)], d(2026, 11, 3)));
-        assert!(contributed_this_month(&[d(2026, 11, 1)], d(2026, 11, 3)));
-        assert!(!contributed_this_month(&[d(2025, 11, 10)], d(2026, 11, 3)));
+        assert!(!contributed_this_period(&[d(2026, 10, 31)], d(2026, 11, 3), Frequency::Monthly));
+        assert!(contributed_this_period(&[d(2026, 11, 1)], d(2026, 11, 3), Frequency::Monthly));
+        assert!(!contributed_this_period(&[d(2025, 11, 10)], d(2026, 11, 3), Frequency::Monthly));
     }
 
     #[test]

@@ -11,13 +11,55 @@
 {% else %}
 <div class="grid">
   {% for j in jars %}
-  <a class="card jar-card" href="/jarrones/{{ j.id }}">
-    <p class="eyebrow">{{ j.kind }} · {{ j.category }}{% if j.members > 1 %} · {{ j.members }} personas{% endif %}</p>
-    <h2>{{ j.name }}</h2>
+  <article class="card jar-card">
+    <div class="jar-top">
+      {% if !j.image.is_empty() %}
+      <img class="jar-thumb" src="{{ j.image }}" alt="" width="56" height="56" loading="lazy">
+      {% else %}
+      <span class="jar-emoji small" aria-hidden="true">{{ j.emoji }}</span>
+      {% endif %}
+      <div class="jar-title">
+        <p class="eyebrow">{{ j.kind }} · {{ j.category }}{% if j.members > 1 %} · {{ j.members }} personas{% endif %}</p>
+        <h2><a class="stretched" href="/jarrones/{{ j.id }}">{{ j.name }}</a></h2>
+      </div>
+      {% if j.priority > 0 %}<span class="rank" title="Tu prioridad para este jarrón">#{{ j.priority }}</span>{% endif %}
+      <button class="icon-btn" popovertarget="del-{{ j.id }}" aria-label="{% if j.owner %}Borrar{% else %}Salir de{% endif %} «{{ j.name }}»" title="{% if j.owner %}Borrar{% else %}Salir{% endif %}">×</button>
+    </div>
     <div class="bar" role="progressbar" aria-label="Avance de {{ j.name }}" aria-valuenow="{{ j.pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ j.pct }}%"></span></div>
     <p><strong>{{ j.total }}</strong> de {{ j.goal }} · {{ j.pct }}%</p>
-    {% if j.reminder %}<p class="tag">Te toca aportar este mes</p>{% endif %}
-  </a>
+    {% if j.reminder %}<p class="tag">Te toca aportar {{ j.reminder_period }}</p>{% endif %}
+    <form method="post" action="/jarrones/{{ j.id }}/prioridad" class="prio">
+      <label>Prioridad
+        <select name="priority">
+          <option value="">–</option>
+          <option value="1"{% if j.priority == 1 %} selected{% endif %}>1 (la más importante)</option>
+          <option value="2"{% if j.priority == 2 %} selected{% endif %}>2</option>
+          <option value="3"{% if j.priority == 3 %} selected{% endif %}>3</option>
+          <option value="4"{% if j.priority == 4 %} selected{% endif %}>4</option>
+          <option value="5"{% if j.priority == 5 %} selected{% endif %}>5</option>
+        </select>
+      </label>
+      <button class="link small">Guardar</button>
+    </form>
+
+    <div id="del-{{ j.id }}" popover class="modal">
+      {% if j.owner %}
+      <h3>¿Borrar «{{ j.name }}»?</h3>
+      <p>Se borran el jarrón, sus aportes, retos y avisos.{% if j.members > 1 %} Las demás personas reciben un aviso.{% endif %} No se puede deshacer.</p>
+      <div class="actions">
+        <form method="post" action="/jarrones/{{ j.id }}/borrar"><button class="btn danger">Sí, borrar</button></form>
+        <button type="button" class="btn ghost" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
+      </div>
+      {% else %}
+      <h3>¿Salir de «{{ j.name }}»?</h3>
+      <p>Tus aportes quedan en el historial del grupo y ya no podrás ver el jarrón, salvo que te inviten de nuevo.</p>
+      <div class="actions">
+        <form method="post" action="/jarrones/{{ j.id }}/salir"><button class="btn danger">Sí, salir</button></form>
+        <button type="button" class="btn ghost" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
+      </div>
+      {% endif %}
+    </div>
+  </article>
   {% endfor %}
 </div>
 {% endif %}

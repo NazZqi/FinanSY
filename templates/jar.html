@@ -1,10 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-<p class="eyebrow">{% if group %}Grupal{% else %}Individual{% endif %} · {{ category }}</p>
-<h1>{{ name }}</h1>
+<div class="jar-head">
+  {% if !image.is_empty() %}
+  <img class="jar-photo" src="{{ image }}" alt="Foto de {{ name }}" width="96" height="96">
+  {% else %}
+  <span class="jar-emoji" aria-hidden="true">{{ emoji }}</span>
+  {% endif %}
+  <div>
+    <p class="eyebrow">{% if group %}Grupal{% else %}Individual{% endif %} · {{ category }}</p>
+    <h1>{{ name }}</h1>
+  </div>
+</div>
 
 {% if reminder %}
-<p class="notice">Te toca aportar este mes. Anota tu aporte abajo cuando ahorres.</p>
+<p class="notice">Te toca aportar {{ reminder_period }}. Anota tu aporte abajo cuando ahorres.</p>
 {% endif %}
 
 <div class="layout">
@@ -22,7 +31,7 @@
     <p class="muted small">Solo es un registro: la plata sigue en tu banco.</p>
   </section>
 
-  <section class="card">
+  <section class="card" id="chart">
     <h2>Ahorro acumulado</h2>
     {% if chart.has_data %}
     <svg class="chart" viewBox="0 0 600 200" role="img" aria-label="Ahorro acumulado entre el {{ chart.from }} y el {{ chart.to }}">
@@ -35,7 +44,7 @@
     {% endif %}
   </section>
 
-  <section class="card">
+  <section class="card" id="history">
     <h2>Historial</h2>
     {% if contributions.is_empty() %}
     <p class="muted">Todavía no hay aportes.</p>
@@ -55,30 +64,63 @@
 </div>
 
 <div class="col">
-  <section class="card">
-    <h2>Cuota mensual</h2>
+  <section class="card" id="plan">
+    <h2>Plan de aportes</h2>
+    <p class="muted small">{{ plan.kind_label }}</p>
     {% if plan.has_date %}
       {% if plan.date_passed %}
-      <p>La fecha de la meta ({{ plan.target }}) ya pasó. Elige una nueva abajo.</p>
+      <p>La fecha de la meta ({{ plan.target }}) ya pasó. {% if owner %}Elige una nueva en Opciones.{% else %}Quien creó el jarrón puede elegir una nueva.{% endif %}</p>
       {% else %}
-      <p>Faltan <strong>{{ plan.months_left }}</strong> meses para el {{ plan.target }}.</p>
-      <p>El jarrón necesita <strong>{{ plan.group_monthly }}</strong> al mes.</p>
-      {% if group %}<p>Tu parte: <strong>{{ plan.my_monthly }}</strong> al mes.</p>{% endif %}
+      <p>Faltan <strong>{{ plan.periods_left }}</strong> {{ plan.unit }} para el {{ plan.target }}.</p>
+      {% if plan.free %}
+        {% if group %}
+        <p>El jarrón necesita en promedio <strong>{{ plan.group_now }}</strong> por {{ plan.unit_one }}.</p>
+        <p>Tu parte: <strong>{{ plan.my_now }}</strong> por {{ plan.unit_one }}.</p>
+        {% else %}
+        <p>Para llegar a tiempo necesitas en promedio <strong>{{ plan.my_now }}</strong> por {{ plan.unit_one }}. Si un período pones más, lo que falta baja solo.</p>
+        {% endif %}
+      {% else %}
+        {% if group %}
+        <p>El jarrón necesita <strong>{{ plan.group_now }}</strong> {{ plan.this_period }}.</p>
+        <p>Tu parte {{ plan.this_period }}: <strong>{{ plan.my_now }}</strong>.</p>
+        {% else %}
+        <p>Tu aporte {{ plan.this_period }}: <strong>{{ plan.my_now }}</strong>.</p>
+        {% endif %}
+      {% endif %}
+      {% if !plan.upcoming.is_empty() %}
+      <p class="small">Tus próximas cuotas:</p>
+      <ul class="plain small">
+        {% for u in plan.upcoming %}
+        <li>{{ u.label }}{% if !u.amount.is_empty() %}: <strong>{{ u.amount }}</strong>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <p class="muted small">La cuota se recalcula con lo que ya ahorraste: si un período aportas más o menos, lo que falta se ajusta.</p>
       {% endif %}
     {% else %}
     <p class="muted">Ponle fecha a la meta para calcular la cuota.</p>
     {% endif %}
   </section>
 
-  <section class="card">
-    <h2>{% if group %}Simular juntos{% else %}Cambiar la meta{% endif %}</h2>
-    <form method="post" action="/jarrones/{{ jar_id }}/meta" class="form"
-          hx-get="/jarrones/{{ jar_id }}/simular" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
-      <label>Meta en pesos <input name="goal" required inputmode="numeric" value="{{ goal_input }}"></label>
-      <label>Fecha <input type="date" name="target_date" value="{{ date_input }}"></label>
-      <div id="preview" class="preview" aria-live="polite"><p class="muted">Cambia la meta o la fecha para ver la nueva cuota.</p></div>
-      <button class="btn">Guardar{% if group %} y avisar al grupo{% endif %}</button>
-    </form>
+  <section class="card" id="pace">
+    <h2>Tu ritmo</h2>
+    {% if pace.has_pace %}
+    <p>Aportas en promedio <strong>{{ pace.avg }}</strong> por {{ pace.unit_one }}.</p>
+    <p>Con ese ritmo llegas a {% if group %}tu parte de la meta{% else %}la meta{% endif %}: <strong>{{ pace.arrival }}</strong>{% if !pace.verdict.is_empty() %} · {{ pace.verdict }}{% endif %}.</p>
+    <h3>¿Quieres llegar antes?</h3>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Si aportas por {{ pace.unit_one }}</th><th>Llegas</th></tr></thead>
+      <tbody>
+        {% for o in pace.options %}
+        <tr><td><strong>{{ o.amount }}</strong> <span class="muted small">{{ o.label }}</span></td><td>{{ o.arrival }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="muted">{{ pace.message }}</p>
+    {% endif %}
   </section>
 
   {% if group %}
@@ -123,7 +165,46 @@
 
   <section class="card">
     <h2>Opciones</h2>
+
+    <h3>{% if owner %}Meta y plan{% else %}Simular juntos{% endif %}</h3>
+    {% if !owner %}
+    <p class="muted small">Solo quien creó el jarrón puede cambiar la meta y el plan. Aquí puedes simular cómo cambiaría la cuota.</p>
+    {% endif %}
+    <form{% if owner %} method="post" action="/jarrones/{{ jar_id }}/meta"{% endif %} class="form"
+          hx-get="/jarrones/{{ jar_id }}/simular" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
+      <label>Meta en pesos <input name="goal" required inputmode="numeric" value="{{ goal_input }}"></label>
+      <label>Fecha <input type="date" name="target_date" value="{{ date_input }}"></label>
+      <label>Cada cuánto ahorras
+        <select name="frequency">
+          <option value="mensual"{% if frequency_input == "mensual" %} selected{% endif %}>Cada mes (a principio de mes)</option>
+          <option value="semanal"{% if frequency_input == "semanal" %} selected{% endif %}>Cada semana</option>
+          <option value="diario"{% if frequency_input == "diario" %} selected{% endif %}>Todos los días</option>
+        </select>
+      </label>
+      <label>Tipo de plan
+        <select name="plan_kind">
+          <option value="constante"{% if kind_input == "constante" %} selected{% endif %}>Cuotas iguales</option>
+          <option value="decreciente"{% if kind_input == "decreciente" %} selected{% endif %}>Parto con más y voy bajando</option>
+          <option value="creciente"{% if kind_input == "creciente" %} selected{% endif %}>Parto con menos y voy subiendo</option>
+          <option value="libre"{% if kind_input == "libre" %} selected{% endif %}>Libre: más un período y menos otro</option>
+        </select>
+      </label>
+      <label>Cambio por período <span class="muted">(%, solo si baja o sube)</span> <input name="step" inputmode="decimal" value="{{ step_input }}"></label>
+      <div id="preview" class="preview" aria-live="polite"><p class="muted">Cambia la meta, la fecha o el plan para ver la nueva cuota.</p></div>
+      {% if owner %}<button class="btn">Guardar{% if group %} y avisar al grupo{% endif %}</button>{% endif %}
+    </form>
+
     {% if owner %}
+      <h3>Foto del jarrón</h3>
+      <form method="post" action="/jarrones/{{ jar_id }}/imagen/subir" enctype="multipart/form-data" class="form" hx-boost="false">
+        <label>Elige una foto <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+        <button class="btn">Subir foto</button>
+      </form>
+      {% if !image.is_empty() %}
+      <form method="post" action="/jarrones/{{ jar_id }}/imagen/quitar"><button class="link danger">Quitar la foto</button></form>
+      {% endif %}
+      <p class="muted small">JPG, PNG o WebP de hasta 8 MB. Se reduce y se le quitan los datos de ubicación.</p>
+
       {% if group && !others.is_empty() %}
       <h3>Sacar a alguien</h3>
       <ul class="plain">

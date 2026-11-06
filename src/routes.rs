@@ -1,11 +1,11 @@
 use askama::Template;
-use axum::extract::{Path, Query, Request, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path, Query, Request, State};
 use axum::http::{Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Form, Router};
-use chrono::{Datelike, Duration, Months, NaiveDate};
+use chrono::{DateTime, Datelike, Duration, Months, NaiveDate, Utc};
 use serde::Deserialize;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
@@ -15,11 +15,14 @@ use crate::auth::{self, CurrentUser, MaybeUser};
 use crate::db::{self, Contribution, Jar, Member};
 use crate::error::{AppResult, bad};
 use crate::game::{self, Standing};
-use crate::sim::{self, clp, parse_clp, parse_pct};
+use crate::sim::{self, Frequency, PlanKind, clp, parse_clp, parse_pct};
 use crate::views::*;
 use crate::{AppState, today};
 
 type Page = AppResult<Html<String>>;
+
+/// Tope del archivo de la foto. Se reduce a 640 px antes de guardarla.
+const MAX_UPLOAD: usize = 8 * 1024 * 1024;
 
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -30,11 +33,14 @@ pub fn router(state: AppState) -> Router {
         .route("/jarrones", get(jars).post(create_jar))
         .route("/jarrones/nuevo", get(new_jar))
         .route("/jarrones/{id}", get(jar_page))
-        .route("/jarrones/{id}/panel", get(panel))
         .route("/jarrones/{id}/simular", get(preview))
         .route("/jarrones/{id}/aportes", post(add_contribution))
         .route("/jarrones/{id}/aportes/{cid}/borrar", post(delete_contribution))
         .route("/jarrones/{id}/meta", post(update_goal))
+        .route("/jarrones/{id}/prioridad", post(set_priority))
+        .route("/jarrones/{id}/imagen", get(image))
+        .route("/jarrones/{id}/imagen/subir", post(upload_image).layer(DefaultBodyLimit::max(MAX_UPLOAD)))
+        .route("/jarrones/{id}/imagen/quitar", post(remove_image))
         .route("/jarrones/{id}/retos", post(create_challenge))
         .route("/jarrones/{id}/salir", post(leave))
         .route("/jarrones/{id}/miembros/{uid}/sacar", post(remove_member))
@@ -42,6 +48,7 @@ pub fn router(state: AppState) -> Router {
         .route("/jarrones/{id}/borrar", post(delete_jar))
         .route("/unirse/{code}", get(join))
         .route("/simular", get(simulator))
+        .route("/simular/plan", get(plan_preview))
         .route("/avisos", get(notifications))
         .route("/privacidad", get(privacy))
         .route("/salud", get(health))
@@ -85,6 +92,144 @@ fn category_label(category: &str) -> &'static str {
         "auto" => "Auto",
         _ => "Otro",
     }
+}
+
+fn category_emoji(category: &str) -> &'static str {
+    match category {
+        "viaje" => "✈️",
+        "arriendo" => "🏠",
+        "celular" => "📱",
+        "auto" => "🚗",
+        _ => "🫙",
+    }
+}
+
+/// Dirección de la foto del jarrón; el `v` cambia al subir otra y evita servir la vieja desde la caché.
+fn image_url(jar: Uuid, image_at: Option<DateTime<Utc>>) -> String {
+    image_at.map(|t| format!("/jarrones/{jar}/imagen?v={}", t.timestamp())).unwrap_or_default()
+}
+
+/// "noviembre de 2026" para planes mensuales; fecha completa para semanales y diarios.
+fn period_label(date: NaiveDate, freq: Frequency) -> String {
+    if freq == Frequency::Monthly { month_year(date) } else { fmt_date(date) }
+}
+
+fn kind_label(kind: PlanKind, step_bp: i32, freq: Frequency) -> String {
+    let pct = (f64::from(step_bp) / 100.0).to_string().replace('.', ",");
+    match kind {
+        PlanKind::Constant => "Cuotas iguales".into(),
+        PlanKind::Decreasing => format!("Cuotas que bajan {pct} % cada {}", freq.unit(false)),
+        PlanKind::Increasing => format!("Cuotas que suben {pct} % cada {}", freq.unit(false)),
+        PlanKind::Free => "Plan libre: aportas lo que puedas".into(),
+    }
+}
+
+/// Frecuencia, tipo de plan y cambio por período de un formulario. Vacío = valor por defecto
+/// (mensual, cuotas iguales, 10 % si el plan sube o baja).
+fn parse_plan_fields(frequency: &str, kind: &str, step: &str) -> Result<(Frequency, PlanKind, i32), &'static str> {
+    let freq = if frequency.is_empty() { Frequency::Monthly } else { Frequency::parse(frequency).ok_or("Elige cada cuánto ahorras.")? };
+    let kind = if kind.is_empty() { PlanKind::Constant } else { PlanKind::parse(kind).ok_or("Elige el tipo de plan.")? };
+    let step_bp = match kind {
+        PlanKind::Decreasing | PlanKind::Increasing => {
+            let pct = if step.trim().is_empty() { 10.0 } else { parse_pct(step).ok_or("El cambio por período debe estar entre 0 y 50 %.")? };
+            if pct > 50.0 {
+                return Err("El cambio por período debe estar entre 0 y 50 %.");
+            }
+            rate_bp(pct)
+        }
+        _ => 0,
+    };
+    Ok((freq, kind, step_bp))
+}
+
+struct PlanParams {
+    goal: i64,
+    saved: i64,
+    rate_bp: i32,
+    freq: Frequency,
+    kind: PlanKind,
+    step_bp: i32,
+}
+
+struct PlanCalc {
+    periods: u32,
+    now: i64,
+    upcoming: Vec<UpcomingRow>,
+}
+
+/// Cuota de este período y las que siguen para llegar a la meta en `target`. `None` si la fecha no es futura.
+/// Se recalcula con lo ya ahorrado: si alguien aportó de más o de menos, lo que falta se ajusta solo.
+fn calc_plan(today: NaiveDate, target: NaiveDate, p: &PlanParams) -> Option<PlanCalc> {
+    let periods = sim::periods_until(today, target, p.freq)?;
+    let g = p.kind.growth(p.step_bp);
+    let now = sim::first_payment(p.goal, p.saved, periods, sim::period_rate(p.rate_bp, p.freq), g);
+    let mut upcoming = Vec::new();
+    // Con cuotas iguales o libres no hay nada que listar: todas valen lo mismo.
+    if now > 0 && g != 1.0 {
+        let row = |k: u32| UpcomingRow { label: period_label(sim::add_periods(today, k, p.freq), p.freq), amount: clp(sim::payment_at(now, g, k)) };
+        upcoming.extend((0..periods.min(5)).map(row));
+        if periods > 5 {
+            upcoming.push(UpcomingRow { label: "…".into(), amount: String::new() });
+            upcoming.push(row(periods - 1));
+        }
+    }
+    Some(PlanCalc { periods, now, upcoming })
+}
+
+struct PaceInput<'a> {
+    items: &'a [(NaiveDate, i64)],
+    goal: i64,
+    saved: i64,
+    /// Cuota del plan para este período; 0 si no hay fecha meta.
+    required: i64,
+    target: Option<NaiveDate>,
+    rate_bp: i32,
+    freq: Frequency,
+    today: NaiveDate,
+}
+
+/// Ritmo real de quien ahorra: promedio por período, fecha en que llegaría y qué pasa si aporta más.
+fn build_pace(i: &PaceInput) -> PaceView {
+    let unit_one = i.freq.unit(false);
+    let none = |message: &str| PaceView {
+        has_pace: false,
+        message: message.into(),
+        avg: String::new(),
+        unit_one,
+        arrival: String::new(),
+        verdict: String::new(),
+        options: vec![],
+    };
+    if i.saved >= i.goal {
+        return none("Ya completaste tu parte de la meta.");
+    }
+    let Some(first) = i.items.iter().map(|(d, _)| *d).min() else {
+        return none("Registra tu primer aporte y aquí verás tu ritmo y cuándo llegarías a la meta.");
+    };
+    let avg = (i.saved / i64::from(sim::periods_between(first, i.today, i.freq))).max(1);
+    let r = sim::period_rate(i.rate_bp, i.freq);
+    let arrival_of = |payment: i64| match sim::periods_to_goal(i.goal, i.saved, payment, r, i.freq.max_periods()) {
+        Some(n) => (Some(n), period_label(sim::add_periods(i.today, n, i.freq), i.freq)),
+        None => (None, "más de 50 años".to_string()),
+    };
+    let (periods, arrival) = arrival_of(avg);
+    let unit = |n: u32| i.freq.unit(n != 1);
+    let verdict = match (periods, i.target.and_then(|t| sim::periods_until(i.today, t, i.freq))) {
+        (Some(n), Some(t)) if n < t => format!("{} {} antes de tu meta", t - n, unit(t - n)),
+        (Some(n), Some(t)) if n == t => "justo a tiempo".to_string(),
+        (Some(n), Some(t)) => format!("{} {} después de tu meta", n - t, unit(n - t)),
+        (None, Some(_)) => "no llegas a tiempo".to_string(),
+        _ => String::new(),
+    };
+    let base = if i.required > 0 { i.required } else { avg };
+    let options = [("Cuota de tu plan", 100), ("25 % más", 125), ("50 % más", 150), ("El doble", 200)]
+        .into_iter()
+        .map(|(label, pct)| {
+            let amount = (base * pct + 99) / 100;
+            PaceOption { label, amount: clp(amount), arrival: arrival_of(amount).1 }
+        })
+        .collect();
+    PaceView { has_pace: true, message: String::new(), avg: clp(avg), unit_one, arrival, verdict, options }
 }
 
 fn clean(input: &str, max: usize) -> Option<String> {
@@ -141,16 +286,24 @@ async fn jars(State(st): State<AppState>, user: CurrentUser) -> Page {
     let jars = db::list_jars(&st.pool, user.id)
         .await?
         .into_iter()
-        .map(|j| JarCard {
-            reminder: j.total < j.goal_amount && !j.my_last_on.is_some_and(|d| game::contributed_this_month(&[d], today)),
-            pct: game::pct(j.total, j.goal_amount),
-            total: clp(j.total),
-            goal: clp(j.goal_amount),
-            kind: if j.kind == "grupal" { "Grupal" } else { "Individual" },
-            category: category_label(&j.category),
-            members: j.members,
-            id: j.id,
-            name: j.name,
+        .map(|j| {
+            let freq = Frequency::parse(&j.frequency).unwrap_or(Frequency::Monthly);
+            JarCard {
+                reminder: j.total < j.goal_amount && !j.my_last_on.is_some_and(|d| game::contributed_this_period(&[d], today, freq)),
+                reminder_period: freq.this_period(),
+                pct: game::pct(j.total, j.goal_amount),
+                total: clp(j.total),
+                goal: clp(j.goal_amount),
+                kind: if j.kind == "grupal" { "Grupal" } else { "Individual" },
+                category: category_label(&j.category),
+                members: j.members,
+                priority: j.priority.unwrap_or(0),
+                image: image_url(j.id, j.image_at),
+                emoji: category_emoji(&j.category),
+                owner: j.is_owner,
+                id: j.id,
+                name: j.name,
+            }
         })
         .collect();
     render(JarsPage { title: "Mis jarrones".into(), header: header(&st, &user).await?, jars })
@@ -170,6 +323,14 @@ struct NewJarForm {
     target_date: String,
     #[serde(default)]
     rate: String,
+    #[serde(default)]
+    frequency: String,
+    #[serde(default)]
+    plan_kind: String,
+    #[serde(default)]
+    step: String,
+    #[serde(default)]
+    first: String,
 }
 
 async fn create_jar(State(st): State<AppState>, user: CurrentUser, Form(f): Form<NewJarForm>) -> AppResult<Redirect> {
@@ -185,7 +346,24 @@ async fn create_jar(State(st): State<AppState>, user: CurrentUser, Form(f): Form
     let goal = parse_clp(&f.goal).ok_or_else(|| bad("La meta debe ser un monto mayor que cero."))?;
     let target_date = parse_optional_future_date(&f.target_date)?;
     let rate = parse_pct(&f.rate).ok_or_else(|| bad("La tasa de ahorro debe estar entre 0 y 100 %."))?;
-    let new = db::NewJar { kind, name: &name, category, goal, target_date, rate_bp: rate_bp(rate) };
+    let (freq, plan, step_bp) = parse_plan_fields(&f.frequency, &f.plan_kind, &f.step).map_err(bad)?;
+    let first_amount = match f.first.trim() {
+        "" => None,
+        first => Some(parse_clp(first).ok_or_else(|| bad("El primer aporte debe ser un monto mayor que cero."))?),
+    };
+    let new = db::NewJar {
+        kind,
+        name: &name,
+        category,
+        goal,
+        target_date,
+        rate_bp: rate_bp(rate),
+        frequency: freq.as_str(),
+        plan_kind: plan.as_str(),
+        step_bp,
+        first_amount,
+        today: today(),
+    };
     let id = db::create_jar(&st.pool, user.id, &new).await?;
     Ok(Redirect::to(&format!("/jarrones/{id}")))
 }
@@ -221,6 +399,7 @@ fn build_panel(l: &Loaded, today: NaiveDate) -> Panel {
     let total = l.total();
     let share = game::share_per_member(goal, l.active_count());
 
+    let freq = l.jar.freq();
     let mut active: Vec<(Standing, Uuid, u32)> = l
         .members
         .iter()
@@ -229,7 +408,7 @@ fn build_panel(l: &Loaded, today: NaiveDate) -> Panel {
             let items = l.user_items(m.user_id);
             let dates: Vec<NaiveDate> = items.iter().map(|(d, _)| *d).collect();
             let total = items.iter().map(|(_, a)| a).sum();
-            (Standing { name: m.name.clone(), total, share }, m.user_id, game::week_streak(&dates, today))
+            (Standing { name: m.name.clone(), total, share }, m.user_id, game::streak(&dates, today, freq))
         })
         .collect();
     game::rank(&mut active, |row| &row.0);
@@ -256,6 +435,7 @@ fn build_panel(l: &Loaded, today: NaiveDate) -> Panel {
     Panel {
         jar_id: l.jar.id,
         group: l.jar.is_group(),
+        streak_unit: freq.unit(true),
         total: clp(total),
         goal: clp(goal),
         missing: clp((goal - total).max(0)),
@@ -276,16 +456,38 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
     let my_dates: Vec<NaiveDate> = mine.iter().map(|(d, _)| *d).collect();
     let share = game::share_per_member(goal, l.active_count());
 
-    let r = sim::monthly_rate(jar.savings_rate_bp);
-    let months = jar.target_date.and_then(|t| sim::months_until(today, t));
+    let freq = jar.freq();
+    let kind = jar.plan();
+    let plan_for = |goal: i64, saved: i64| {
+        jar.target_date.and_then(|t| calc_plan(today, t, &PlanParams { goal, saved, rate_bp: jar.savings_rate_bp, freq, kind, step_bp: jar.plan_step_bp }))
+    };
+    let group_calc = plan_for(goal, total);
+    let my_calc = plan_for(share, my_total);
+    let (my_now, periods_left, upcoming) = my_calc.map_or((0, 0, vec![]), |c| (c.now, c.periods, c.upcoming));
     let plan = PlanView {
         has_date: jar.target_date.is_some(),
-        date_passed: jar.target_date.is_some() && months.is_none(),
+        date_passed: jar.target_date.is_some() && group_calc.is_none(),
         target: jar.target_date.map(fmt_date).unwrap_or_default(),
-        months_left: months.unwrap_or(0),
-        group_monthly: clp(months.map_or(0, |m| sim::monthly_payment(goal, total, m, r))),
-        my_monthly: clp(months.map_or(0, |m| sim::monthly_payment(share, my_total, m, r))),
+        periods_left,
+        unit: freq.unit(true),
+        unit_one: freq.unit(false),
+        this_period: freq.this_period(),
+        kind_label: kind_label(kind, jar.plan_step_bp, freq),
+        free: kind == PlanKind::Free,
+        group_now: clp(group_calc.map_or(0, |c| c.now)),
+        my_now: clp(my_now),
+        upcoming,
     };
+    let pace = build_pace(&PaceInput {
+        items: &mine,
+        goal: share,
+        saved: my_total,
+        required: my_now,
+        target: jar.target_date,
+        rate_bp: jar.savings_rate_bp,
+        freq,
+        today,
+    });
 
     let items: Vec<(NaiveDate, i64)> = l.contribs.iter().map(|c| (c.contributed_on, c.amount)).collect();
     let start = items.iter().map(|(d, _)| *d).min().unwrap_or(today);
@@ -347,9 +549,16 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         group: jar.is_group(),
         owner: jar.owner_id == user.id,
         invite_url: jar.invite_code.as_ref().map(|c| format!("{}/unirse/{c}", st.config.base_url)).unwrap_or_default(),
-        reminder: total < goal && !game::contributed_this_month(&my_dates, today),
+        reminder: total < goal && !game::contributed_this_period(&my_dates, today, freq),
+        reminder_period: freq.this_period(),
         panel: build_panel(&l, today),
         plan,
+        pace,
+        image: image_url(jar.id, jar.image_at),
+        emoji: category_emoji(&jar.category),
+        frequency_input: freq.as_str(),
+        kind_input: kind.as_str(),
+        step_input: (jar.plan_step_bp / 100).to_string(),
         chart,
         contributions,
         challenges,
@@ -360,35 +569,70 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
     })
 }
 
-async fn panel(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> Page {
-    let l = load(&st, id, user.id).await?;
-    render(PanelFragment { panel: build_panel(&l, today()) })
-}
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
+#[serde(default)]
 struct PreviewQuery {
-    #[serde(default)]
     goal: String,
-    #[serde(default)]
     target_date: String,
+    frequency: String,
+    plan_kind: String,
+    step: String,
+    /// Solo al crear: interés anual y primer aporte.
+    rate: String,
+    first: String,
 }
 
-/// Simular juntos: la cuota con otra meta o fecha, sin guardar nada.
+/// Cuota de este período y las siguientes para una meta y una fecha, sin guardar nada.
+fn preview_fragment(q: &PreviewQuery, saved: i64, savings_bp: i32, people: i64) -> PreviewFragment {
+    let fail = |message: &str| PreviewFragment {
+        ok: false,
+        message: message.into(),
+        periods: 0,
+        unit: "meses",
+        unit_one: "mes",
+        this_period: "este mes",
+        free: false,
+        now: String::new(),
+        per_member: String::new(),
+        upcoming: vec![],
+    };
+    let (Some(goal), Some(date)) = (parse_clp(&q.goal), parse_date(&q.target_date)) else {
+        return fail("Escribe una meta y una fecha para ver cuánto aportar.");
+    };
+    let (freq, kind, step_bp) = match parse_plan_fields(&q.frequency, &q.plan_kind, &q.step) {
+        Ok(fields) => fields,
+        Err(message) => return fail(message),
+    };
+    let params = PlanParams { goal, saved, rate_bp: savings_bp, freq, kind, step_bp };
+    let Some(calc) = calc_plan(today(), date, &params) else {
+        return fail("La fecha debe ser futura.");
+    };
+    let per_member = if people > 1 { clp((calc.now + people - 1) / people) } else { String::new() };
+    PreviewFragment {
+        ok: true,
+        message: String::new(),
+        periods: calc.periods,
+        unit: freq.unit(true),
+        unit_one: freq.unit(false),
+        this_period: freq.this_period(),
+        free: kind == PlanKind::Free,
+        now: clp(calc.now),
+        per_member,
+        upcoming: calc.upcoming,
+    }
+}
+
+/// Simular juntos: la cuota con otra meta, fecha o plan, sin guardar nada.
 async fn preview(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Query(q): Query<PreviewQuery>) -> Page {
     let l = load(&st, id, user.id).await?;
-    let fail = |message: &str| PreviewFragment { message: message.into(), group_monthly: String::new(), per_member: String::new(), months: 0, ok: false };
-    let fragment = match (parse_clp(&q.goal), parse_date(&q.target_date)) {
-        (Some(goal), Some(date)) => match sim::months_until(today(), date) {
-            Some(months) => {
-                let group = sim::monthly_payment(goal, l.total(), months, sim::monthly_rate(l.jar.savings_rate_bp));
-                let people = l.active_count().max(1) as i64;
-                PreviewFragment { message: String::new(), group_monthly: clp(group), per_member: clp((group + people - 1) / people), months, ok: true }
-            }
-            None => fail("La fecha debe ser futura."),
-        },
-        _ => fail("Escribe una meta y una fecha para ver la nueva cuota."),
-    };
-    render(fragment)
+    render(preview_fragment(&q, l.total(), l.jar.savings_rate_bp, l.active_count() as i64))
+}
+
+/// Vista previa al crear un jarrón: se ajusta con el primer aporte que se escriba.
+async fn plan_preview(Query(q): Query<PreviewQuery>) -> Page {
+    let rate = parse_pct(&q.rate).map_or(0, rate_bp);
+    let saved = parse_clp(&q.first).unwrap_or(0);
+    render(preview_fragment(&q, saved, rate, 1))
 }
 
 #[derive(Deserialize)]
@@ -427,16 +671,101 @@ struct GoalForm {
     goal: String,
     #[serde(default)]
     target_date: String,
+    #[serde(default)]
+    frequency: String,
+    #[serde(default)]
+    plan_kind: String,
+    #[serde(default)]
+    step: String,
 }
 
+/// Solo quien creó el jarrón cambia la meta y el plan; los demás solo pueden simular.
 async fn update_goal(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Form(f): Form<GoalForm>) -> AppResult<Redirect> {
     let jar = db::require_member(&st.pool, id, user.id).await?;
+    if jar.owner_id != user.id {
+        return Err(crate::error::AppError::NotFound);
+    }
     let goal = parse_clp(&f.goal).ok_or_else(|| bad("La meta debe ser un monto mayor que cero."))?;
     let target = parse_optional_future_date(&f.target_date)?;
+    let (freq, kind, step_bp) = parse_plan_fields(&f.frequency, &f.plan_kind, &f.step).map_err(bad)?;
     let when = target.map(|d| format!(" para el {}", fmt_date(d))).unwrap_or_default();
     let notice = format!("{} cambió la meta de «{}» a {}{when}", user.name, jar.name, clp(goal));
-    db::update_goal(&st.pool, jar.id, user.id, goal, target, &notice).await?;
+    let change = db::PlanChange { goal, target_date: target, frequency: freq.as_str(), plan_kind: kind.as_str(), step_bp };
+    db::update_plan(&st.pool, &jar, user.id, &change, &notice).await?;
     Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
+}
+
+#[derive(Deserialize)]
+struct PriorityForm {
+    #[serde(default)]
+    priority: String,
+}
+
+/// Prioridad personal en «Mis jarrones»: cada miembro ordena los suyos.
+async fn set_priority(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, Form(f): Form<PriorityForm>) -> AppResult<Redirect> {
+    let jar = db::require_member(&st.pool, id, user.id).await?;
+    let priority = match f.priority.trim() {
+        "" => None,
+        p => Some(p.parse::<i16>().ok().filter(|n| (1..=99).contains(n)).ok_or_else(|| bad("La prioridad debe ser un número entre 1 y 99."))?),
+    };
+    db::set_priority(&st.pool, jar.id, user.id, priority).await?;
+    Ok(Redirect::to("/jarrones"))
+}
+
+/// Decodifica la foto con límites, la gira según el EXIF, la reduce a 640 px y la guarda como JPEG.
+/// Recodificar quita EXIF y GPS, y descarta lo que no sea una imagen real.
+fn shrink_image(data: &[u8]) -> Option<Vec<u8>> {
+    use image::{DynamicImage, ImageDecoder, ImageReader, Limits};
+    let mut decoder = ImageReader::new(std::io::Cursor::new(data)).with_guessed_format().ok()?.into_decoder().ok()?;
+    let mut limits = Limits::default();
+    limits.max_image_width = Some(10_000);
+    limits.max_image_height = Some(10_000);
+    limits.max_alloc = Some(512 * 1024 * 1024);
+    decoder.set_limits(limits).ok()?;
+    let orientation = decoder.orientation().ok();
+    let mut img = DynamicImage::from_decoder(decoder).ok()?;
+    if let Some(orientation) = orientation {
+        img.apply_orientation(orientation);
+    }
+    let rgb = img.thumbnail(640, 640).to_rgb8();
+    let mut out = Vec::new();
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 82).encode_image(&rgb).ok()?;
+    (out.len() <= 1_048_576).then_some(out)
+}
+
+async fn upload_image(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>, mut form: Multipart) -> AppResult<Redirect> {
+    let jar = db::require_member(&st.pool, id, user.id).await?;
+    if jar.owner_id != user.id {
+        return Err(crate::error::AppError::NotFound);
+    }
+    let too_big = || bad("No se pudo leer la foto. Elige una de hasta 8 MB.");
+    let mut photo = None;
+    while let Some(field) = form.next_field().await.map_err(|_| too_big())? {
+        if field.name() == Some("photo") {
+            photo = Some(field.bytes().await.map_err(|_| too_big())?);
+        }
+    }
+    let photo = photo.filter(|b| !b.is_empty()).ok_or_else(|| bad("Elige una foto para subir."))?;
+    let jpeg = tokio::task::spawn_blocking(move || shrink_image(&photo)).await?.ok_or_else(|| bad("Ese archivo no es una foto válida. Usa JPG, PNG o WebP."))?;
+    db::set_image(&st.pool, &jar, user.id, &jpeg).await?;
+    Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
+}
+
+async fn remove_image(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> AppResult<Redirect> {
+    let jar = db::require_member(&st.pool, id, user.id).await?;
+    db::clear_image(&st.pool, &jar, user.id).await?;
+    Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
+}
+
+async fn image(State(st): State<AppState>, user: CurrentUser, Path(id): Path<Uuid>) -> AppResult<Response> {
+    let jar = db::require_member(&st.pool, id, user.id).await?;
+    let data = db::get_image(&st.pool, jar.id).await?;
+    let headers = [
+        (header::CONTENT_TYPE, "image/jpeg"),
+        (header::CACHE_CONTROL, "private, max-age=31536000, immutable"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+    ];
+    Ok((headers, data).into_response())
 }
 
 #[derive(Deserialize)]
@@ -603,4 +932,35 @@ async fn notifications(State(st): State<AppState>, user: CurrentUser) -> Page {
         .collect();
     db::mark_read(&st.pool, user.id).await?;
     render(AvisosPage { title: "Avisos".into(), header: header(&st, &user).await?, avisos })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn la_foto_se_reduce_y_se_recodifica_a_jpeg() {
+        let mut png = Vec::new();
+        image::DynamicImage::new_rgba8(2000, 1000).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();
+        let jpeg = shrink_image(&png).expect("un PNG válido se acepta");
+        assert_eq!(&jpeg[..2], [0xFF, 0xD8], "debe ser JPEG");
+        let small = image::load_from_memory(&jpeg).unwrap();
+        assert_eq!((small.width(), small.height()), (640, 320));
+    }
+
+    #[test]
+    fn lo_que_no_es_imagen_se_rechaza() {
+        assert!(shrink_image(b"esto no es una imagen").is_none());
+        assert!(shrink_image(b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>").is_none());
+        assert!(shrink_image(&[]).is_none());
+    }
+
+    #[test]
+    fn campos_de_plan_con_valores_por_defecto() {
+        assert_eq!(parse_plan_fields("", "", ""), Ok((Frequency::Monthly, PlanKind::Constant, 0)));
+        assert_eq!(parse_plan_fields("semanal", "decreciente", ""), Ok((Frequency::Weekly, PlanKind::Decreasing, 1000)));
+        assert_eq!(parse_plan_fields("diario", "creciente", "7,5"), Ok((Frequency::Daily, PlanKind::Increasing, 750)));
+        assert!(parse_plan_fields("anual", "", "").is_err());
+        assert!(parse_plan_fields("", "decreciente", "60").is_err());
+    }
 }
