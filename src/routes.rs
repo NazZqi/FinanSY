@@ -717,10 +717,11 @@ async fn set_priority(State(st): State<AppState>, user: CurrentUser, Path(id): P
 fn shrink_image(data: &[u8]) -> Option<Vec<u8>> {
     use image::{DynamicImage, ImageDecoder, ImageReader, Limits};
     let mut decoder = ImageReader::new(std::io::Cursor::new(data)).with_guessed_format().ok()?.into_decoder().ok()?;
+    // 8192 px admite fotos de celular de 50 MP; 192 MB alcanza para decodificarlas en RGB.
     let mut limits = Limits::default();
-    limits.max_image_width = Some(10_000);
-    limits.max_image_height = Some(10_000);
-    limits.max_alloc = Some(512 * 1024 * 1024);
+    limits.max_image_width = Some(8192);
+    limits.max_image_height = Some(8192);
+    limits.max_alloc = Some(192 * 1024 * 1024);
     decoder.set_limits(limits).ok()?;
     let orientation = decoder.orientation().ok();
     let mut img = DynamicImage::from_decoder(decoder).ok()?;
@@ -746,6 +747,9 @@ async fn upload_image(State(st): State<AppState>, user: CurrentUser, Path(id): P
         }
     }
     let photo = photo.filter(|b| !b.is_empty()).ok_or_else(|| bad("Elige una foto para subir."))?;
+    // Una foto a la vez en todo el servidor: varias subidas juntas no agotan la memoria.
+    static DECODES: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
+    let _turn = DECODES.acquire().await?;
     let jpeg = tokio::task::spawn_blocking(move || shrink_image(&photo)).await?.ok_or_else(|| bad("Ese archivo no es una foto válida. Usa JPG, PNG o WebP."))?;
     db::set_image(&st.pool, &jar, user.id, &jpeg).await?;
     Ok(Redirect::to(&format!("/jarrones/{}", jar.id)))
