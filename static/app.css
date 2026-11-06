@@ -25,9 +25,12 @@
   --line: #dee4da;
   --primary: #175a45;
   /* Verde para textos y enlaces; en modo oscuro es más claro que el de los botones. */
-  --primary-ink: #175a45;
-  --ink: #203d35;
-  --muted: #718078;
+  --theme-primary-ink: #175a45;
+  --primary-ink: var(--theme-primary-ink);
+  --theme-ink: #203d35;
+  --ink: var(--theme-ink);
+  --theme-muted: #718078;
+  --muted: var(--theme-muted);
   --soft: #edf3e9;
   --soft-line: #cadac4;
   --step-line: #b8c5b7;
@@ -53,12 +56,13 @@
   font-optical-sizing: none;
   font-variation-settings: "opsz" 14;
   color: var(--ink);
-  background: var(--bg);
+  /* El cielo de la portada va detrás de todo (.site-bg); este es su color de base. */
+  background: #0d0f26;
   color-scheme: light dark;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; line-height: normal; background: var(--bg); }
+body { margin: 0; line-height: normal; }
 img { display: block; flex-shrink: 0; }
 h1, h2, h3 { margin: 0; font-weight: 400; color: var(--ink); }
 p { margin: 0; }
@@ -418,13 +422,9 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .hero h1 { font-size: 48px; letter-spacing: -2px; }
 
 /* Portada: fondo animado (ASCII Magic «mountain-sunrise») a todo el ancho, contenido encima. */
-.sec-home { position: relative; min-height: 100svh; background: #0d0f26; }
+.sec-home { position: relative; min-height: 100svh; }
 .sec-home main { max-width: none; padding: 0; gap: 0; }
-.home { flex: 1; position: relative; isolation: isolate; overflow: hidden; display: flex;
-  /* Mientras carga la pieza (o si no carga), el mismo cielo en degradado. */
-  background: linear-gradient(180deg, #1b1f4d 0%, #3f3a7a 30%, #8a4f86 55%, #d9637a 70%, #272452 85%, #0d0f26 100%); }
-.home-bg { position: absolute; inset: 0; z-index: -2; }
-.home-bg ascii-art { position: absolute; left: 50%; top: 50%; max-width: none; transform: translate(-50%, -50%); transform-origin: center; }
+.home { flex: 1; position: relative; isolation: isolate; overflow: hidden; display: flex; }
 .home::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
     linear-gradient(90deg, rgba(13, 15, 38, 0.86) 0%, rgba(13, 15, 38, 0.66) 45%, rgba(13, 15, 38, 0.18) 75%, rgba(13, 15, 38, 0) 100%),
@@ -444,12 +444,24 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 /* Pie sobre el fondo animado: deja espacio abajo y usa colores claros. */
 .sec-home .home-inner { padding-bottom: 104px; }
 .sec-home .foot { position: absolute; left: 0; right: 0; bottom: 0; }
-.sec-home .foot-note { color: var(--deep-muted); }
-.sec-home .foot-note img { filter: brightness(2.2); }
-.sec-home .foot-link { color: var(--lime); }
+.foot-note img { filter: brightness(2.2); }
 .prose { line-height: 1.6; }
 .prose h2 { margin-top: 20px; }
 .prose p, .prose li { font-size: 15px; }
+
+/* ── Fondo de todas las pantallas: el mismo cielo animado de la portada ── */
+.site-bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; pointer-events: none;
+  /* Mientras carga la pieza (o si no carga), el mismo cielo en degradado. */
+  background: linear-gradient(180deg, #1b1f4d 0%, #3f3a7a 30%, #8a4f86 55%, #d9637a 70%, #272452 85%, #0d0f26 100%); }
+.site-bg ascii-art { position: absolute; left: 50%; top: 50%; max-width: none; transform: translate(-50%, -50%); transform-origin: center; }
+/* Fuera de la portada se oscurece un poco para que el contenido se lea encima. */
+.site-bg::after { content: ""; position: absolute; inset: 0; background: rgba(13, 15, 38, 0.5); }
+.sec-home .site-bg::after { display: none; }
+/* Lo que va directo sobre el fondo (títulos, migas, pie) va claro, como en la portada;
+   dentro de tarjetas y barras vuelven los colores del tema claro u oscuro. */
+main, .foot { --ink: #fff; --muted: #d6d2e8; --primary-ink: var(--lime); color: var(--ink); }
+.panel, .card, .steps, .modal, .pill, .tag, .notice, .confirm, .nav { --ink: var(--theme-ink); --muted: var(--theme-muted); --primary-ink: var(--theme-primary-ink); color: var(--ink); }
+main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-shadow: 0 1px 14px rgba(13, 15, 38, 0.6); }
 
 /* ── Jarrones: foto, prioridad, ventana de advertencia, plan y ritmo ── */
 .jar-card { position: relative; display: flex; flex-direction: column; gap: 12px; }
@@ -543,9 +555,9 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
     --surface: #15211c;
     --line: #26362f;
     --primary: #1f7a5c;
-    --primary-ink: #7fcfa6;
-    --ink: #e3ece6;
-    --muted: #93a59b;
+    --theme-primary-ink: #7fcfa6;
+    --theme-ink: #e3ece6;
+    --theme-muted: #93a59b;
     --soft: #1b2b24;
     --soft-line: #2c4337;
     --step-line: #3a4b43;
