@@ -66,6 +66,8 @@ pub struct NewJarPage {
     pub header: Option<Header>,
     pub today_long: String,
     pub tomorrow: String,
+    /// Última fecha de meta permitida (hoy + 50 años).
+    pub max_date: String,
     pub me_name: String,
     pub me_initials: String,
 }
@@ -257,6 +259,7 @@ pub struct JarPage {
     pub today: String,
     pub goal_input: String,
     pub date_input: String,
+    pub max_date: String,
 }
 
 #[derive(Template)]

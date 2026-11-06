@@ -303,15 +303,31 @@ fn parse_date(input: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(input.trim(), "%Y-%m-%d").ok()
 }
 
+/// Años hacia adelante que admite la fecha de una meta.
+const MAX_GOAL_YEARS: i32 = 50;
+
+/// Última fecha de meta permitida, para el `max` de los campos de fecha.
+fn max_goal_date(today: NaiveDate) -> String {
+    format!("{}-12-31", today.year() + MAX_GOAL_YEARS)
+}
+
+/// La fecha de una meta debe ser futura y estar dentro de los próximos 50 años.
+fn check_goal_date(date: NaiveDate, today: NaiveDate) -> Result<(), &'static str> {
+    if date <= today {
+        return Err("La fecha de la meta debe ser futura.");
+    }
+    if date.year() > today.year() + MAX_GOAL_YEARS {
+        return Err("La fecha de la meta puede ser como máximo en 50 años.");
+    }
+    Ok(())
+}
+
 fn parse_optional_future_date(input: &str) -> AppResult<Option<NaiveDate>> {
     if input.trim().is_empty() {
         return Ok(None);
     }
     let date = parse_date(input).ok_or_else(|| bad("La fecha no es válida."))?;
-    let today = today();
-    if date <= today || date.year() > today.year() + 50 {
-        return Err(bad("La fecha de la meta debe ser futura."));
-    }
+    check_goal_date(date, today()).map_err(bad)?;
     Ok(Some(date))
 }
 
@@ -379,6 +395,7 @@ async fn new_jar(State(st): State<AppState>, user: CurrentUser) -> Page {
         header: header(&st, &user).await?,
         today_long: long_date(today),
         tomorrow: (today + Duration::days(1)).format("%Y-%m-%d").to_string(),
+        max_date: max_goal_date(today),
         me_name: user.name.split_whitespace().next().unwrap_or("Tú").to_string(),
         me_initials: initials(&user.name),
     })
@@ -670,6 +687,7 @@ async fn jar_page(State(st): State<AppState>, user: CurrentUser, Path(id): Path<
         today: today.format("%Y-%m-%d").to_string(),
         goal_input: goal.to_string(),
         date_input: jar.target_date.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default(),
+        max_date: max_goal_date(today),
     })
 }
 
@@ -744,6 +762,9 @@ fn preview_fragment(q: &PreviewQuery, saved: i64, savings_bp: i32, people: i64) 
         Ok(fields) => fields,
         Err(message) => return fail(message),
     };
+    if let Err(message) = check_goal_date(date, today()) {
+        return fail(message);
+    }
     let params = PlanParams { goal, saved, rate_bp: savings_bp, freq, kind, step_bp };
     let Some(calc) = calc_plan(today(), date, &params) else {
         return fail("La fecha debe ser futura.");
@@ -1098,6 +1119,16 @@ mod tests {
         assert!(shrink_image(b"esto no es una imagen").is_none());
         assert!(shrink_image(b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>").is_none());
         assert!(shrink_image(&[]).is_none());
+    }
+
+    #[test]
+    fn fecha_de_meta_futura_y_hasta_50_anios() {
+        let today = NaiveDate::from_ymd_opt(2026, 11, 6).unwrap();
+        let d = |y, m, day| NaiveDate::from_ymd_opt(y, m, day).unwrap();
+        assert_eq!(check_goal_date(d(2026, 11, 6), today), Err("La fecha de la meta debe ser futura."));
+        assert_eq!(check_goal_date(d(2076, 12, 31), today), Ok(()));
+        assert_eq!(check_goal_date(d(2088, 12, 12), today), Err("La fecha de la meta puede ser como máximo en 50 años."));
+        assert_eq!(max_goal_date(today), "2076-12-31");
     }
 
     #[test]

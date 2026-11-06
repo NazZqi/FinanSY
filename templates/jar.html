@@ -269,7 +269,7 @@
           hx-get="/jarrones/{{ jar_id }}/simular" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
       <div class="field-row">
         <div class="field"><label for="g-goal">Meta en pesos</label><input id="g-goal" name="goal" required inputmode="numeric" value="{{ goal_input }}"></div>
-        <div class="field"><label for="g-date">Fecha</label><input id="g-date" type="date" name="target_date" value="{{ date_input }}"></div>
+        <div class="field"><label for="g-date">Fecha</label><input id="g-date" type="date" name="target_date" value="{{ date_input }}" max="{{ max_date }}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label for="g-freq">Cada cuánto</label>
