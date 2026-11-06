@@ -19,7 +19,9 @@ use crate::db;
 use crate::error::{AppResult, bad};
 
 const SESSION: &str = "finansy_sesion";
-const PKCE: &str = "finansy_pkce";
+/// Cookie de cada inicio de sesión en curso. El nombre lleva el `state`, así varios inicios en
+/// paralelo (dos pestañas, doble clic, vistas de varios dispositivos) no se pisan entre sí.
+const PKCE_PREFIX: &str = "finansy_pkce_";
 const SESSION_DAYS: i64 = 30;
 const MSG_FALLO: &str = "No se pudo iniciar sesión con Nextcloud. Vuelve a intentarlo.";
 /// Espacio de nombres fijo: el mismo `sub` de Nextcloud siempre da el mismo UUID de perfil.
@@ -94,6 +96,19 @@ where
 }
 
 /// Solo rutas internas: evita redirigir a otro sitio después del login.
+fn pkce_cookie_name(state: &str) -> String {
+    format!("{PKCE_PREFIX}{state}")
+}
+
+/// El `state` vuelve en la URL: solo se acepta el formato que genera `entrar` (16 bytes en base64 URL).
+fn valid_state(s: &str) -> bool {
+    s.len() == 22 && s.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+}
+
+fn has_session(jar: &PrivateCookieJar) -> bool {
+    jar.get(SESSION).and_then(|c| parse_session(c.value())).is_some()
+}
+
 fn safe_next(next: Option<&str>) -> String {
     match next {
         Some(n)
@@ -128,10 +143,14 @@ async fn discovery(st: &AppState) -> AppResult<Discovery> {
 }
 
 pub async fn entrar(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<NextQuery>) -> AppResult<Response> {
+    let next = safe_next(q.next.as_deref());
+    // Con sesión abierta no hace falta pasar por Nextcloud.
+    if has_session(&jar) {
+        return Ok(Redirect::to(&next).into_response());
+    }
     let verifier = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 32]>());
     let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
     let state_token = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 16]>());
-    let next = safe_next(q.next.as_deref());
     let disc = discovery(&st).await?;
 
     let mut url = Url::parse(&disc.authorization_endpoint)?;
@@ -144,7 +163,7 @@ pub async fn entrar(State(st): State<AppState>, jar: PrivateCookieJar, Query(q):
         .append_pair("code_challenge", &challenge)
         .append_pair("code_challenge_method", "S256");
 
-    let cookie = Cookie::build((PKCE, format!("{verifier}|{state_token}|{next}")))
+    let cookie = Cookie::build((pkce_cookie_name(&state_token), format!("{verifier}|{next}")))
         .path("/auth")
         .http_only(true)
         .secure(st.config.base_url.starts_with("https://"))
@@ -176,20 +195,25 @@ struct UserInfo {
 }
 
 pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<CallbackQuery>) -> AppResult<Response> {
+    // Si otro inicio en paralelo de este mismo navegador ya abrió la sesión, se entra igual.
+    let logged_in = has_session(&jar);
     let Some(code) = q.code else {
         tracing::warn!(error = ?q.error, description = ?q.error_description, "login rechazado por Nextcloud");
+        return if logged_in { Ok(Redirect::to("/jarrones").into_response()) } else { Err(bad(MSG_FALLO)) };
+    };
+    let Some(state) = q.state.filter(|s| valid_state(s)) else {
+        tracing::warn!("callback de OIDC sin state válido");
         return Err(bad(MSG_FALLO));
     };
-    let Some((verifier, state_esperado, next)) = jar.get(PKCE).and_then(|c| {
-        let mut partes = c.value().splitn(3, '|');
-        Some((partes.next()?.to_string(), partes.next()?.to_string(), partes.next()?.to_string()))
-    }) else {
+    // Solo este navegador tiene la cookie cifrada de ese state: es la protección CSRF del flujo.
+    let cookie_name = pkce_cookie_name(&state);
+    let Some((verifier, next)) = jar.get(&cookie_name).and_then(|c| c.value().split_once('|').map(|(v, n)| (v.to_string(), n.to_string()))) else {
+        if logged_in {
+            return Ok(Redirect::to("/jarrones").into_response());
+        }
+        tracing::warn!("callback de OIDC sin cookie para su state (venció o ya se usó)");
         return Err(bad("El inicio de sesión expiró. Vuelve a intentarlo."));
     };
-    if q.state.as_deref() != Some(state_esperado.as_str()) {
-        tracing::warn!("state de OIDC no coincide");
-        return Err(bad(MSG_FALLO));
-    }
 
     let disc = discovery(&st).await?;
     let body = url::form_urlencoded::Serializer::new(String::new())
@@ -239,7 +263,7 @@ pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q
     let id = perfil_id(&info.sub);
     db::upsert_profile(&st.pool, id, &name, None).await?;
     let jar = jar
-        .remove(Cookie::build(PKCE).path("/auth"))
+        .remove(Cookie::build(cookie_name).path("/auth"))
         .add(session_cookie(id, &name, st.config.base_url.starts_with("https://")));
     Ok((jar, Redirect::to(&safe_next(Some(&next)))).into_response())
 }
@@ -271,6 +295,16 @@ mod tests {
         assert!(parse_session(&format!("{id}|{now}|Ana|Pérez")).is_some_and(|u| u.name == "Ana|Pérez"));
         assert!(parse_session(&format!("{id}|{}|Ana", now - 31 * 86_400)).is_none());
         assert!(parse_session("no-es-uuid|1|Ana").is_none());
+    }
+
+    #[test]
+    fn state_solo_acepta_el_formato_propio() {
+        let s = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 16]>());
+        assert!(valid_state(&s));
+        assert!(!valid_state(""));
+        assert!(!valid_state("corto"));
+        assert!(!valid_state("aaaaaaaaaaaaaaaaaaaa;b"));
+        assert!(!valid_state(&"a".repeat(23)));
     }
 
     #[test]
