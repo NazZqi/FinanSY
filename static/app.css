@@ -413,7 +413,30 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .hero { padding: 16px 0; max-width: 720px; display: flex; flex-direction: column; gap: 14px; }
 .hero h1 { font-size: 48px; letter-spacing: -2px; }
-.hero-art { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: var(--r-lg); overflow: hidden; }
+
+/* Portada: fondo animado (ASCII Magic «mountain-sunrise») a todo el ancho, contenido encima. */
+.sec-home main { max-width: none; padding: 0; gap: 0; }
+.home { position: relative; isolation: isolate; overflow: hidden; min-height: calc(100vh - 88px); display: flex;
+  /* Mientras carga la pieza (o si no carga), el mismo cielo en degradado. */
+  background: linear-gradient(180deg, #1b1f4d 0%, #3f3a7a 30%, #8a4f86 55%, #d9637a 70%, #272452 85%, #0d0f26 100%); }
+.home-bg { position: absolute; inset: 0; z-index: -2; }
+.home-bg ascii-art { position: absolute; left: 50%; top: 50%; max-width: none; transform: translate(-50%, -50%); transform-origin: center; }
+.home::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(13, 15, 38, 0.86) 0%, rgba(13, 15, 38, 0.66) 45%, rgba(13, 15, 38, 0.18) 75%, rgba(13, 15, 38, 0) 100%),
+    linear-gradient(0deg, rgba(13, 15, 38, 0.7) 0%, rgba(13, 15, 38, 0) 42%); }
+.home-inner { width: 100%; max-width: 1440px; margin: 0 auto; padding: 88px var(--gutter) 56px; display: flex; flex-direction: column; justify-content: space-between; gap: 56px; }
+.home .hero { max-width: 640px; padding: 0; gap: 18px; }
+.home .eyebrow { color: var(--lime); }
+.home h1 { color: #fff; font-size: 64px; letter-spacing: -2.5px; }
+.home .lead { color: #ece7f2; font-size: 18px; }
+.home h1, .home .lead, .home .eyebrow { text-shadow: 0 1px 14px rgba(13, 15, 38, 0.6); }
+.home .actions { margin-top: 6px; }
+.home .btn-primary { background: var(--lime); border-color: var(--lime); color: var(--deep); }
+.home .btn-primary:hover { background: #cfe57f; border-color: #cfe57f; }
+.home .btn-secondary { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.5); color: #fff; backdrop-filter: blur(6px); }
+.home .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); border-color: #fff; }
+.home .card { background: rgba(255, 255, 255, 0.88); border-color: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); }
 .prose { line-height: 1.6; }
 .prose h2 { margin-top: 20px; }
 .prose p, .prose li { font-size: 15px; }
@@ -460,4 +483,9 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
   .confirm { flex-wrap: wrap; }
   .foot { flex-direction: column; align-items: flex-start; }
   .hero h1 { font-size: 36px; }
+  .home { min-height: 0; }
+  .home-inner { padding: 48px var(--gutter) 32px; gap: 36px; }
+  .home h1 { font-size: 40px; letter-spacing: -1.5px; }
+  .home .lead { font-size: 16px; }
+  .home::before { background: linear-gradient(0deg, rgba(13, 15, 38, 0.75) 0%, rgba(13, 15, 38, 0.45) 100%); }
 }

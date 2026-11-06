@@ -1,19 +1,27 @@
 {% extends "base.html" %}
+{% block section %}sec-home{% endblock %}
 {% block content %}
 <script type="module" src="https://www.ascii-magic.com/ascii/ascii.js"></script>
-<section class="hero">
-  <ascii-art piece="lagoon-overwater-huts" look="blocks" class="hero-art" aria-hidden="true"></ascii-art>
-  <p class="eyebrow">Ahorro con amigos</p>
-  <h1>Ahorremos juntos</h1>
-  <p class="lead">Jarrones de ahorro para metas propias y compartidas. Todos ven el avance, hay rachas y retos, y un simulador te dice cuánto aportar.</p>
-  <p class="actions">
-    <a class="btn" href="/entrar" hx-boost="false">Entrar con Nextcloud</a>
-    <a class="btn ghost" href="/simular">Probar el simulador</a>
-  </p>
-</section>
-<section class="grid three">
-  <div class="card"><h2>Jarrón individual</h2><p>Tu propia meta: el celular, el auto o el arriendo.</p></div>
-  <div class="card"><h2>Jarrón grupal</h2><p>Una meta común, como el viaje. Todos aportan y todos ven cuánto falta.</p></div>
-  <div class="card"><h2>Simulador</h2><p>Cuánto aportar al mes, cuándo llegas y si conviene ahorrar o pagar en cuotas.</p></div>
+<section class="home" data-cover-box>
+  {# Fondo animado: pieza «mountain-sunrise» de ASCII Magic (96 × 36 caracteres), escalada por app.js para cubrir todo. Es decoración. #}
+  <div class="home-bg" aria-hidden="true">
+    <ascii-art piece="mountain-sunrise" data-cover data-cols="96" data-rows="36"></ascii-art>
+  </div>
+  <div class="home-inner">
+    <div class="hero">
+      <p class="eyebrow">Ahorro con amigos</p>
+      <h1>Ahorremos juntos</h1>
+      <p class="lead">Jarrones de ahorro para metas propias y compartidas. Todos ven el avance, hay rachas y retos, y un simulador te dice cuánto aportar.</p>
+      <p class="actions">
+        <a class="btn-primary" href="/entrar" hx-boost="false">Entrar con Nextcloud</a>
+        <a class="btn-secondary" href="/simular">Probar el simulador</a>
+      </p>
+    </div>
+    <div class="grid three">
+      <div class="card"><h2>Jarrón individual</h2><p>Tu propia meta: el celular, el auto o el arriendo.</p></div>
+      <div class="card"><h2>Jarrón grupal</h2><p>Una meta común, como el viaje. Todos aportan y todos ven cuánto falta.</p></div>
+      <div class="card"><h2>Simulador</h2><p>Cuánto aportar al mes, cuándo llegas y si conviene ahorrar o pagar en cuotas.</p></div>
+    </div>
+  </div>
 </section>
 {% endblock %}

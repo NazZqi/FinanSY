@@ -89,7 +89,33 @@
     input.focus();
   });
 
+  // Fondo animado de la portada: la pieza ASCII tiene columnas y filas fijas y se dibuja a 12 px;
+  // se escala con transform para cubrir todo el contenedor (como background-size: cover),
+  // sin reiniciar la animación al cambiar el tamaño de la ventana.
+  let charRatio = 0;
+  function coverArt(box) {
+    const art = box.querySelector("[data-cover]");
+    if (!art) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches && !art.hasAttribute("still")) art.setAttribute("still", "");
+    const fit = () => {
+      if (!charRatio) {
+        const ctx = document.createElement("canvas").getContext("2d");
+        ctx.font = '100px Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace';
+        charRatio = ctx.measureText("M").width / 100 || 0.6;
+      }
+      const base = 12, cols = Number(art.dataset.cols), rows = Number(art.dataset.rows);
+      const k = Math.max(box.clientWidth / (cols * charRatio * base), box.clientHeight / (rows * base)) * 1.02;
+      art.style.transform = `translate(-50%, -50%) scale(${k.toFixed(3)})`;
+    };
+    fit();
+    if (!box.coverObserver) {
+      box.coverObserver = new ResizeObserver(fit);
+      box.coverObserver.observe(box);
+    }
+  }
+
   function init() {
+    document.querySelectorAll("[data-cover-box]").forEach(coverArt);
     document.querySelectorAll("[data-new-jar]").forEach(updateNewJar);
     document.querySelectorAll("[data-contribute]").forEach(updateContribute);
     document.querySelectorAll("[data-count]").forEach(updateCounter);
