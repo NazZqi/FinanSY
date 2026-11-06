@@ -105,10 +105,18 @@ pub struct NextQuery {
     next: Option<String>,
 }
 
+fn has_session(jar: &PrivateCookieJar) -> bool {
+    jar.get(SESSION).and_then(|c| parse_session(c.value())).is_some()
+}
+
 pub async fn entrar(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<NextQuery>) -> AppResult<Response> {
+    let next = safe_next(q.next.as_deref());
+    // Con sesión abierta no hace falta pasar por Google.
+    if has_session(&jar) {
+        return Ok(Redirect::to(&next).into_response());
+    }
     let verifier = URL_SAFE_NO_PAD.encode(rand::random::<[u8; 32]>());
     let challenge = URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes()));
-    let next = safe_next(q.next.as_deref());
 
     let mut url = Url::parse(&format!("{}/auth/v1/authorize", st.config.supabase_url))?;
     url.query_pairs_mut()
@@ -155,11 +163,16 @@ struct UserMetadata {
 }
 
 pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q): Query<CallbackQuery>) -> AppResult<Response> {
+    // Si otro inicio en paralelo (otra pestaña, doble clic) ya abrió la sesión, se entra igual.
+    let logged_in = has_session(&jar);
     let Some(code) = q.code else {
         tracing::warn!(error = ?q.error_description, "login rechazado por Supabase");
-        return Err(bad("No se pudo iniciar sesión con Google. Vuelve a intentarlo."));
+        return if logged_in { Ok(Redirect::to("/jarrones").into_response()) } else { Err(bad("No se pudo iniciar sesión con Google. Vuelve a intentarlo.")) };
     };
     let Some((verifier, next)) = jar.get(PKCE).and_then(|c| c.value().split_once('|').map(|(v, n)| (v.to_string(), n.to_string()))) else {
+        if logged_in {
+            return Ok(Redirect::to("/jarrones").into_response());
+        }
         return Err(bad("El inicio de sesión expiró. Vuelve a intentarlo."));
     };
 
@@ -172,6 +185,10 @@ pub async fn callback(State(st): State<AppState>, jar: PrivateCookieJar, Query(q
         .await?;
     if !response.status().is_success() {
         tracing::warn!(status = %response.status(), "Supabase rechazó el intercambio PKCE");
+        // Otra pestaña pisó la cookie PKCE y ya entró: esta llegó tarde, pero hay sesión.
+        if logged_in {
+            return Ok(Redirect::to("/jarrones").into_response());
+        }
         return Err(bad("No se pudo iniciar sesión con Google. Vuelve a intentarlo."));
     }
     let token: TokenResponse = response.json().await?;

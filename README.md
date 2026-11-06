@@ -69,7 +69,7 @@ Los proyectos gratis se pausan tras 7 días sin actividad. El timer `finansy-pin
 
 | Entorno | URL | Puerto local | Acceso |
 |---|---|---|---|
-| QA | `qa-finansy.cinderlink.cl` | 3103 | Detrás de Authelia |
+| QA | `qa-finansy.cinderlink.cl` | 3103 | Privado: solo LAN o Tailscale (desde internet da 404) |
 | Prod | `finansy.cinderlink.cl` | 3104 | Público, con el login propio de la app |
 
 Una sola vez:

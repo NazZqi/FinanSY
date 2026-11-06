@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block section %}sec-on-jarrones{% endblock %}
+{% block content %}
+{% call m::etapas(2) %}{% endcall %}
+
+<div class="page-head">
+  <p class="crumbs"><a href="/jarrones">Mis jarrones</a><span aria-hidden="true">/</span><a href="/jarrones/{{ jar.id }}">{{ jar.name }}</a><span aria-hidden="true">/</span>Registrar ahorro</p>
+  <div class="page-title">
+    <h1>Un paso más hacia la meta.</h1>
+    <p class="page-date">{{ today_long }}</p>
+  </div>
+  <p class="page-lead">Registra lo que ya ahorraste. Cada pequeño avance cuenta{% if jar.group %} para el grupo{% endif %}.</p>
+</div>
+
+<div class="split" data-contribute data-goal="{{ goal_raw }}" data-total="{{ total_raw }}" data-mine="{{ my_total_raw }}"{% if jar.group %} data-group{% endif %}>
+  <form method="post" action="/jarrones/{{ jar.id }}/aportes" class="panel form-panel">
+    <div class="form-head">
+      <div>
+        <h2 class="form-title">Registrar ahorro</h2>
+        <p class="muted">Solo registra dinero que ya hayas separado.</p>
+      </div>
+      <span class="avatar avatar-lg tone-0" aria-hidden="true">{{ initials }}</span>
+    </div>
+
+    <div class="field field-amount">
+      <label for="f-amount" class="label-plain">¿Cuánto ahorraste esta vez?</label>
+      <div class="amount-box">
+        <span class="amount-prefix" aria-hidden="true">$</span>
+        <input id="f-amount" name="amount" required inputmode="numeric" placeholder="0" autocomplete="off" data-money data-amount>
+        <span class="currency">CLP</span>
+      </div>
+      <div class="suggested" aria-label="Montos sugeridos">
+        <button type="button" class="suggest" data-set-amount="20000">$20.000</button>
+        <button type="button" class="suggest" data-set-amount="50000">$50.000</button>
+        <button type="button" class="suggest" data-set-amount="80000">$80.000</button>
+        <button type="button" class="suggest" data-set-amount="100000">$100.000</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="f-date">Fecha del ahorro</label>
+      <input id="f-date" type="date" name="date" required value="{{ today }}" max="{{ today }}" min="{{ min_date }}">
+    </div>
+
+    <div class="field">
+      <label for="f-note">Una nota{% if jar.group %} para el grupo{% endif %} <span class="optional">(opcional)</span></label>
+      <div class="note-box">
+        <textarea id="f-note" name="note" maxlength="140" rows="2" placeholder="Menos delivery, más aventuras" data-count></textarea>
+        <span class="counter" data-counter aria-hidden="true">0 / 140</span>
+      </div>
+    </div>
+
+    <p class="visibility"><img src="/static/img/users-visibilidad.svg" width="18" height="18" alt="">{% if jar.group %}El grupo verá tu nombre, el monto y esta nota.{% else %}Solo tú ves este registro.{% endif %}</p>
+
+    {% call m::aviso_dinero() %}{% endcall %}
+
+    <div class="form-actions">
+      <a class="quiet" href="/jarrones/{{ jar.id }}">Volver al jarrón</a>
+      <button class="btn-primary"><span data-submit-label>Registrar ahorro</span><img src="/static/img/check-boton.svg" width="20" height="20" alt=""></button>
+    </div>
+  </form>
+
+  <aside class="side">
+    <section class="panel context-card">
+      <div class="label-row"><span class="kicker">ESTÁS AHORRANDO PARA</span><img src="/static/img/amphora-contexto.svg" width="20" height="20" alt=""></div>
+      {% call m::portada(jar.cover, 155) %}{% endcall %}
+      <div class="context-info">
+        <p class="context-name">{{ jar.name }}</p>
+        <p class="muted small-text">{% if jar.group %}Grupal · {{ jar.people }} persona{% if jar.people != 1 %}s{% endif %}{% else %}Individual{% endif %} · Meta {{ jar.goal }}</p>
+      </div>
+      <div class="context-progress">
+        <div class="row-baseline"><span class="context-total">{{ jar.total }}</span><span class="context-pct">{{ jar.pct }}%</span></div>
+        <div class="bar" role="progressbar" aria-label="Avance del jarrón" aria-valuenow="{{ jar.pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ jar.pct }}%"></span></div>
+        <p class="muted xs-text">{% if jar.target_short.is_empty() %}Sin fecha de meta{% else %}Hasta el {{ jar.target_short }}{% endif %}</p>
+      </div>
+    </section>
+
+    <section class="panel deep impact" aria-live="polite">
+      <p class="impact-title"><img src="/static/img/sparkles-oscuro.svg" width="20" height="20" alt="">Así quedará el jarrón</p>
+      <div class="row-baseline"><span class="impact-total" data-proj-total>{{ jar.total }}</span><span class="impact-pct" data-proj-pct>{{ jar.pct }}%</span></div>
+      <div class="row-between deep-divider"><span class="deep-muted small-text">Tu ahorro acumulado</span><span class="impact-mine" data-proj-mine>{{ my_total }}</span></div>
+      <p class="deep-muted small-text" data-proj-text>Escribe un monto para ver cuánto avanza{% if jar.group %} el jarrón{% else %} tu meta{% endif %}.</p>
+    </section>
+
+    <section class="panel sand streak-card">
+      <img src="/static/img/flame-racha.svg" width="26" height="26" alt="">
+      <div>
+        <p class="streak-title">{% if streak == 0 %}Empieza tu racha {{ this_period }}{% else %}Racha de {{ streak_label }} con aportes{% endif %}</p>
+        <p class="muted xs-text">Un hábito pequeño, una gran diferencia.</p>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

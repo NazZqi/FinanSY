@@ -91,6 +91,7 @@ async fn quien_no_es_miembro_recibe_404(pool: PgPool) {
     assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}")).await, StatusCode::NOT_FOUND);
     assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}/simular?goal=1000&target_date=2999-01-01")).await, StatusCode::NOT_FOUND);
     assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}/imagen")).await, StatusCode::NOT_FOUND);
+    assert_eq!(get_as(&st, &beto_cookie, &format!("/jarrones/{jar}/aportar")).await, StatusCode::NOT_FOUND);
     let today = finansy::today();
     let status = post_as(&st, &beto_cookie, &format!("/jarrones/{jar}/aportes"), &format!("amount=1000&date={today}"), BASE).await;
     assert_eq!(status, StatusCode::NOT_FOUND);

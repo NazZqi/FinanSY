@@ -1,63 +1,162 @@
 {% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block section %}sec-on-jarrones{% endblock %}
 {% block content %}
-<section class="card narrow">
-  <h1>Nuevo jarrón</h1>
-  <form method="post" action="/jarrones" class="form"
-        hx-get="/simular/plan" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
-    <fieldset class="choices">
-      <legend>Tipo</legend>
-      <label><input type="radio" name="kind" value="grupal" checked> Grupal: una meta con amigos</label>
-      <label><input type="radio" name="kind" value="individual"> Individual: solo para ti</label>
+{% call m::etapas(1) %}{% endcall %}
+
+<div class="page-head">
+  <p class="crumbs"><a href="/jarrones">Mis jarrones</a><span aria-hidden="true">/</span>Nuevo jarrón</p>
+  <div class="page-title">
+    <h1>Lo que sueñan empieza aquí.</h1>
+    <p class="page-date">{{ today_long }}</p>
+  </div>
+  <p class="page-lead">Dale un nombre a esa meta y elijan cómo llegar. Lo demás, paso a paso.</p>
+</div>
+
+<form method="post" action="/jarrones" class="split new-jar" data-new-jar
+      hx-get="/simular/plan" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
+  <section class="panel form-panel">
+    <fieldset class="field-group">
+      <legend class="group-head"><span class="group-title">¿Cómo quieres ahorrar?</span><span class="hint">Todos los campos son obligatorios</span></legend>
+      <div class="kind-options">
+        <label class="kind-card">
+          <input type="radio" name="kind" value="individual">
+          <span class="kind-top"><img src="/static/img/user-round.svg" width="24" height="24" alt=""><span class="radio" aria-hidden="true"><img src="/static/img/check-confirmado.svg" width="16" height="16" alt=""></span></span>
+          <span class="kind-name">Individual</span>
+          <span class="kind-desc">Tu meta, a tu propio ritmo.</span>
+        </label>
+        <label class="kind-card">
+          <input type="radio" name="kind" value="grupal" checked>
+          <span class="kind-top"><img src="/static/img/users-tipo.svg" width="24" height="24" alt=""><span class="radio" aria-hidden="true"><img src="/static/img/check-confirmado.svg" width="16" height="16" alt=""></span></span>
+          <span class="kind-name">Grupal</span>
+          <span class="kind-desc">Una meta común, muchas ganas.</span>
+        </label>
+      </div>
     </fieldset>
-    <label>Nombre
-      <input name="name" required maxlength="60" placeholder="Viaje al sur">
-    </label>
-    <label>Categoría
-      <select name="category">
-        <option value="viaje">Viaje</option>
+
+    <div class="field">
+      <label for="f-name">Nombre del jarrón</label>
+      <input id="f-name" name="name" required maxlength="60" placeholder="Escapada al sur" autocomplete="off">
+      <p class="help"><span class="only-group">Un nombre que les recuerde por qué están ahorrando.</span><span class="only-solo">Un nombre que te recuerde por qué estás ahorrando.</span></p>
+    </div>
+
+    <div class="field">
+      <label for="f-category">¿Para qué es?</label>
+      <select id="f-category" name="category">
+        <option value="viaje">Un viaje</option>
         <option value="arriendo">Arriendo</option>
         <option value="celular">Celular</option>
         <option value="auto">Auto</option>
-        <option value="otro">Otro</option>
+        <option value="otro">Otra cosa</option>
       </select>
-    </label>
-    <label>Meta en pesos
-      <input name="goal" required inputmode="numeric" placeholder="1.500.000">
-    </label>
-    <label>Fecha de la meta <span class="muted">(opcional, pero necesaria para calcular la cuota)</span>
-      <input type="date" name="target_date">
-    </label>
-    <label>Interés anual de tu cuenta de ahorro <span class="muted">(opcional, %)</span>
-      <input name="rate" inputmode="decimal" placeholder="0">
-    </label>
+    </div>
 
-    <fieldset class="choices stack">
-      <legend>Cómo vas a ahorrar</legend>
-      <label>Cada cuánto
-        <select name="frequency">
-          <option value="mensual" selected>Cada mes (a principio de mes)</option>
-          <option value="semanal">Cada semana</option>
-          <option value="diario">Todos los días</option>
-        </select>
-      </label>
-      <label>Tipo de plan
-        <select name="plan_kind">
-          <option value="constante" selected>Cuotas iguales</option>
-          <option value="decreciente">Parto con más y voy bajando</option>
-          <option value="creciente">Parto con menos y voy subiendo</option>
-          <option value="libre">Libre: más un período y menos otro</option>
-        </select>
-      </label>
-      <label>Cambio por período <span class="muted">(%, solo si baja o sube)</span>
-        <input name="step" inputmode="decimal" value="10">
-      </label>
-      <label>Primer aporte <span class="muted">(opcional: se anota hoy y ajusta lo que falta)</span>
-        <input name="first" inputmode="numeric" placeholder="100.000">
-      </label>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-goal">Meta total · pesos chilenos</label>
+        <div class="input-money"><span aria-hidden="true">$</span><input id="f-goal" name="goal" required inputmode="numeric" placeholder="1.200.000" autocomplete="off" data-money></div>
+        <p class="help">CLP · <span class="only-group">Entre todas las personas del jarrón</span><span class="only-solo">Lo que quieres juntar</span></p>
+      </div>
+      <div class="field">
+        <label for="f-date">¿Para cuándo?</label>
+        <input id="f-date" type="date" name="target_date" required min="{{ tomorrow }}">
+        <p class="help"><span class="only-group">Pueden</span><span class="only-solo">Puedes</span> ajustar la fecha más adelante.</p>
+      </div>
+    </div>
+
+    <fieldset class="field-group">
+      <legend class="group-head"><span class="group-title">¿Cómo <span class="only-group">van</span><span class="only-solo">vas</span> a ahorrar?</span><span class="hint">Lo más común: a principio de mes</span></legend>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-frequency">Cada cuánto</label>
+          <select id="f-frequency" name="frequency">
+            <option value="mensual" selected>Cada mes</option>
+            <option value="semanal">Cada semana</option>
+            <option value="diario">Todos los días</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-plan">Tipo de plan</label>
+          <select id="f-plan" name="plan_kind">
+            <option value="constante" selected>Cuotas iguales</option>
+            <option value="decreciente">Parto con más y voy bajando</option>
+            <option value="creciente">Parto con menos y voy subiendo</option>
+            <option value="libre">Libre: más un período y menos otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-step">Cambio por período <span class="optional">(%)</span></label>
+          <input id="f-step" name="step" inputmode="decimal" value="10">
+          <p class="help">Solo si las cuotas bajan o suben.</p>
+        </div>
+        <div class="field">
+          <label for="f-first">Primer aporte <span class="optional">(opcional)</span></label>
+          <div class="input-money"><span aria-hidden="true">$</span><input id="f-first" name="first" inputmode="numeric" placeholder="100.000" autocomplete="off" data-money></div>
+          <p class="help">Se anota hoy y baja lo que falta.</p>
+        </div>
+      </div>
     </fieldset>
 
-    <div id="preview" class="preview" aria-live="polite"><p class="muted">Escribe la meta y la fecha para ver cuánto aportar.</p></div>
-    <button class="btn">Crear jarrón</button>
-  </form>
-</section>
+    <section class="field-group only-group" aria-labelledby="t-invitar">
+      <div class="group-head"><h2 class="group-title" id="t-invitar">Mejor en buena compañía</h2><span class="hint">Tú + quienes invites</span></div>
+      <div class="invite-box"><img src="/static/img/mail.svg" width="18" height="18" alt=""><span>Al crear el jarrón tendrás un enlace para invitar al grupo.</span></div>
+      <div class="people">
+        <span class="person-chip"><span class="avatar avatar-xs tone-0">{{ me_initials }}</span>{{ me_name }} · tú</span>
+      </div>
+      <p class="help">Compártelo por WhatsApp o donde se junten. Quien entre con el enlace se suma al jarrón.</p>
+    </section>
+
+    <details class="more-options">
+      <summary>Opciones</summary>
+      <div class="field">
+        <label for="f-rate">Interés anual de tu cuenta de ahorro <span class="optional">(opcional, %)</span></label>
+        <input id="f-rate" name="rate" inputmode="decimal" placeholder="0">
+        <p class="help">Si la plata gana intereses, la cuota mensual lo toma en cuenta.</p>
+      </div>
+    </details>
+
+    {% call m::aviso_dinero() %}{% endcall %}
+
+    <div class="form-actions">
+      <a class="quiet" href="/jarrones">Cancelar</a>
+      <button class="btn-primary"><span class="only-group">Crear jarrón grupal</span><span class="only-solo">Crear jarrón individual</span><img src="/static/img/arrow-right.svg" width="20" height="20" alt=""></button>
+    </div>
+  </section>
+
+  <aside class="side">
+    <section class="panel deep preview-card" aria-label="Vista previa del jarrón">
+      <div class="label-row"><span class="kicker kicker-lime">TU PRÓXIMO JARRÓN</span><img src="/static/img/amphora-oscuro.svg" width="22" height="22" alt=""></div>
+      <div class="preview-cover">
+        <img class="cover cover-photo" src="/static/img/portada-sur.jpg" alt="" style="height: 190px">
+        <div class="cover cover-plain" style="height: 190px" aria-hidden="true"><img src="/static/img/amphora-oscuro.svg" width="22" height="22" alt=""></div>
+      </div>
+      <div class="preview-identity">
+        <p class="lime xs-text"><span class="only-group">Jarrón grupal</span><span class="only-solo">Jarrón individual</span></p>
+        <p class="preview-name" data-show="name">Tu nuevo jarrón</p>
+      </div>
+      <div class="preview-goal">
+        <p class="preview-amount" data-show="goal">$0</p>
+        <div class="bar bar-deep"><span style="width: 0%"></span></div>
+        <div class="row-between xs-text"><span class="deep-muted">$0 ahorrados</span><span class="lime">0% de la meta</span></div>
+      </div>
+      <p class="deep-foot"><img src="/static/img/calendar-oscuro.svg" width="18" height="18" alt=""><span data-show="date">Elige una fecha para la meta</span></p>
+    </section>
+
+    <section class="panel plan-preview" aria-labelledby="t-cuota">
+      <h2 class="card-title" id="t-cuota">Cuánto aportar</h2>
+      <div id="preview" class="preview" aria-live="polite"><p class="muted small-text">Escribe la meta y la fecha para ver cuánto aportar.</p></div>
+    </section>
+
+    <section class="panel sand tip">
+      <img src="/static/img/sparkles-consejo.svg" width="22" height="22" alt="">
+      <div>
+        <p class="tip-title"><span class="only-group">Una meta común, a su manera.</span><span class="only-solo">Tu meta, a tu ritmo.</span></p>
+        <p class="only-group">No todos tienen que ahorrar lo mismo. Cada registro suma al avance del grupo.</p>
+        <p class="only-solo">Registra cada vez que separes plata y verás cuánto te falta y a qué ritmo vas.</p>
+      </div>
+    </section>
+  </aside>
+</form>
 {% endblock %}

@@ -478,6 +478,16 @@ pub async fn challenges(pool: &PgPool, jar_id: Uuid) -> AppResult<Vec<Challenge>
     .await?)
 }
 
+/// Días con aportes de una persona en cualquier jarrón (último año y algo): para la racha del encabezado.
+pub async fn my_contribution_dates(pool: &PgPool, user: Uuid) -> AppResult<Vec<NaiveDate>> {
+    let rows: Vec<(NaiveDate,)> =
+        sqlx::query_as("select distinct contributed_on from finansy.contributions where user_id = $1 and contributed_on > current_date - 400")
+            .bind(user)
+            .fetch_all(pool)
+            .await?;
+    Ok(rows.into_iter().map(|(d,)| d).collect())
+}
+
 pub async fn unread_count(pool: &PgPool, user: Uuid) -> AppResult<i64> {
     let (n,): (i64,) = sqlx::query_as("select count(*) from finansy.notifications where user_id = $1 and read_at is null")
         .bind(user)

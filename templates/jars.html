@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block section %}sec-on-jarrones{% endblock %}
 {% block content %}
 <div class="row-between">
   <h1>Mis jarrones</h1>
@@ -11,14 +12,14 @@
 {% else %}
 <div class="grid">
   {% for j in jars %}
-  <article class="card jar-card">
-    <div class="jar-top">
+  <article class="panel jar-card">
+    <div class="jc-top">
       {% if !j.image.is_empty() %}
-      <img class="jar-thumb" src="{{ j.image }}" alt="" width="56" height="56" loading="lazy">
+      <img class="jc-thumb" src="{{ j.image }}" alt="" width="56" height="56" loading="lazy">
       {% else %}
-      <span class="jar-emoji small" aria-hidden="true">{{ j.emoji }}</span>
+      <span class="jc-emoji" aria-hidden="true">{{ j.emoji }}</span>
       {% endif %}
-      <div class="jar-title">
+      <div class="jc-title">
         <p class="eyebrow">{{ j.kind }} · {{ j.category }}{% if j.members > 1 %} · {{ j.members }} personas{% endif %}</p>
         <h2><a class="stretched" href="/jarrones/{{ j.id }}">{{ j.name }}</a></h2>
       </div>
@@ -47,15 +48,15 @@
       <h3>¿Borrar «{{ j.name }}»?</h3>
       <p>Se borran el jarrón, sus aportes, retos y avisos.{% if j.members > 1 %} Las demás personas reciben un aviso.{% endif %} No se puede deshacer.</p>
       <div class="actions">
-        <form method="post" action="/jarrones/{{ j.id }}/borrar"><button class="btn danger">Sí, borrar</button></form>
-        <button type="button" class="btn ghost" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
+        <form method="post" action="/jarrones/{{ j.id }}/borrar"><button class="btn-danger">Sí, borrar</button></form>
+        <button type="button" class="btn-secondary" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
       </div>
       {% else %}
       <h3>¿Salir de «{{ j.name }}»?</h3>
       <p>Tus aportes quedan en el historial del grupo y ya no podrás ver el jarrón, salvo que te inviten de nuevo.</p>
       <div class="actions">
-        <form method="post" action="/jarrones/{{ j.id }}/salir"><button class="btn danger">Sí, salir</button></form>
-        <button type="button" class="btn ghost" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
+        <form method="post" action="/jarrones/{{ j.id }}/salir"><button class="btn-danger">Sí, salir</button></form>
+        <button type="button" class="btn-secondary" popovertarget="del-{{ j.id }}" popovertargetaction="hide">Cancelar</button>
       </div>
       {% endif %}
     </div>
