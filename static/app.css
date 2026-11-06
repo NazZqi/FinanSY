@@ -415,8 +415,9 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .hero h1 { font-size: 48px; letter-spacing: -2px; }
 
 /* Portada: fondo animado (ASCII Magic «mountain-sunrise») a todo el ancho, contenido encima. */
+.sec-home { position: relative; min-height: 100svh; background: #0d0f26; }
 .sec-home main { max-width: none; padding: 0; gap: 0; }
-.home { position: relative; isolation: isolate; overflow: hidden; min-height: calc(100vh - 88px); display: flex;
+.home { flex: 1; position: relative; isolation: isolate; overflow: hidden; display: flex;
   /* Mientras carga la pieza (o si no carga), el mismo cielo en degradado. */
   background: linear-gradient(180deg, #1b1f4d 0%, #3f3a7a 30%, #8a4f86 55%, #d9637a 70%, #272452 85%, #0d0f26 100%); }
 .home-bg { position: absolute; inset: 0; z-index: -2; }
@@ -437,6 +438,12 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .home .btn-secondary { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.5); color: #fff; backdrop-filter: blur(6px); }
 .home .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); border-color: #fff; }
 .home .card { background: rgba(255, 255, 255, 0.88); border-color: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); }
+/* Pie sobre el fondo animado: deja espacio abajo y usa colores claros. */
+.sec-home .home-inner { padding-bottom: 104px; }
+.sec-home .foot { position: absolute; left: 0; right: 0; bottom: 0; }
+.sec-home .foot-note { color: var(--deep-muted); }
+.sec-home .foot-note img { filter: brightness(2.2); }
+.sec-home .foot-link { color: var(--lime); }
 .prose { line-height: 1.6; }
 .prose h2 { margin-top: 20px; }
 .prose p, .prose li { font-size: 15px; }
@@ -450,9 +457,13 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 @media (max-width: 760px) {
   :root { --gutter: 16px; }
   main { padding-top: 20px; gap: 20px; }
-  .nav { height: auto; min-height: 64px; flex-wrap: wrap; row-gap: 0; padding-top: 10px; }
+  .nav { height: 64px; gap: 12px; }
   .brand-tagline { display: none; }
-  .sections { order: 3; width: 100%; height: 44px; gap: 24px; overflow-x: auto; }
+  .brand-emblem { width: 36px; height: 40px; border-radius: 12px; }
+  .brand-name { font-size: 23px; }
+  .sections { margin-left: auto; gap: 20px; }
+  .nav:has(.account-menu) { height: auto; min-height: 64px; flex-wrap: wrap; row-gap: 0; padding-top: 10px; }
+  .nav:has(.account-menu) .sections { order: 3; width: 100%; height: 44px; margin-left: 0; gap: 24px; overflow-x: auto; }
   .account { gap: 14px; }
   .streak { font-size: 12px; }
   .steps { padding: 0 14px; gap: 10px; }
@@ -483,9 +494,15 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
   .confirm { flex-wrap: wrap; }
   .foot { flex-direction: column; align-items: flex-start; }
   .hero h1 { font-size: 36px; }
-  .home { min-height: 0; }
-  .home-inner { padding: 48px var(--gutter) 32px; gap: 36px; }
+  .home-inner { padding: 40px var(--gutter) 32px; gap: 32px; }
+  .sec-home .home-inner { padding-bottom: 112px; }
   .home h1 { font-size: 40px; letter-spacing: -1.5px; }
   .home .lead { font-size: 16px; }
   .home::before { background: linear-gradient(0deg, rgba(13, 15, 38, 0.75) 0%, rgba(13, 15, 38, 0.45) 100%); }
+}
+@media (max-width: 360px) {
+  .brand-name { font-size: 20px; }
+  .nav { gap: 8px; }
+  .sections { gap: 12px; }
+  .btn-small, .btn.small { padding: 0 12px; }
 }
