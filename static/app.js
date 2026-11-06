@@ -78,7 +78,11 @@
     if (t.matches("[data-count]")) updateCounter(t);
     refresh(t);
   });
-  document.addEventListener("change", (e) => refresh(e.target));
+  document.addEventListener("change", (e) => {
+    // Selectores que guardan solos al elegir (prioridad en «Mis jarrones»).
+    if (e.target.matches("[data-autosubmit]")) e.target.form.requestSubmit();
+    refresh(e.target);
+  });
 
   document.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-set-amount]");

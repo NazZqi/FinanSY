@@ -30,17 +30,17 @@
     <p><strong>{{ j.total }}</strong> de {{ j.goal }} · {{ j.pct }}%</p>
     {% if j.reminder %}<p class="tag">Te toca aportar {{ j.reminder_period }}</p>{% endif %}
     <form method="post" action="/jarrones/{{ j.id }}/prioridad" class="prio">
-      <label>Prioridad
-        <select name="priority">
+      <label title="1 es la más importante">Prioridad
+        <select name="priority" data-autosubmit title="1 es la más importante">
           <option value="">–</option>
-          <option value="1"{% if j.priority == 1 %} selected{% endif %}>1 (la más importante)</option>
+          <option value="1"{% if j.priority == 1 %} selected{% endif %}>1</option>
           <option value="2"{% if j.priority == 2 %} selected{% endif %}>2</option>
           <option value="3"{% if j.priority == 3 %} selected{% endif %}>3</option>
           <option value="4"{% if j.priority == 4 %} selected{% endif %}>4</option>
           <option value="5"{% if j.priority == 5 %} selected{% endif %}>5</option>
         </select>
       </label>
-      <button class="link small">Guardar</button>
+      <noscript><button class="link small">Guardar</button></noscript>
     </form>
 
     <div id="del-{{ j.id }}" popover class="modal">
