@@ -267,15 +267,11 @@ async fn la_prioridad_es_personal(pool: PgPool) {
 
 async fn upload_as(st: &AppState, cookie: &str, jar: Uuid, file: &[u8]) -> StatusCode {
     let boundary = "FINANSYBOUNDARY";
-    let mut body = format!("--{boundary}
-Content-Disposition: form-data; name=\"photo\"; filename=\"f.png\"
-Content-Type: image/png
-
-").into_bytes();
+    // Multipart exige CRLF: se escribe con escapes para que no dependa de los finales de línea del archivo.
+    let head = format!("--{boundary}\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"f.png\"\r\nContent-Type: image/png\r\n\r\n");
+    let mut body = head.into_bytes();
     body.extend_from_slice(file);
-    body.extend_from_slice(format!("
---{boundary}--
-").as_bytes());
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
     let req = Request::post(format!("/jarrones/{jar}/imagen/subir"))
         .header(header::COOKIE, cookie)
         .header(header::ORIGIN, BASE)
