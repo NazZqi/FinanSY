@@ -392,7 +392,16 @@ h3 { font-size: 16px; font-weight: 600; }
 .card > * + * { margin-top: 12px; }
 .card.narrow { width: 100%; max-width: 640px; margin: 0 auto; }
 .grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-.grid.three { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* 1 columna en móvil, 2 en tablet (la tercera ocupa todo el ancho, sin quedar huérfana), 3 en escritorio. */
+.grid.three { grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 720px) {
+  .grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid.three > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+@media (min-width: 1100px) {
+  .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid.three > :last-child:nth-child(odd) { grid-column: auto; }
+}
 .jar-card { display: block; text-decoration: none; color: inherit; }
 .jar-card:hover { border-color: var(--primary); }
 .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--primary-ink); }
@@ -421,7 +430,7 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .hero { padding: 16px 0; max-width: 720px; display: flex; flex-direction: column; gap: 14px; }
 .hero h1 { font-size: 48px; letter-spacing: -2px; }
 
-/* Portada: fondo animado (ASCII Magic «mountain-sunrise») a todo el ancho, contenido encima. */
+/* Portada: fondo animado (static/bg.js) a todo el ancho, contenido encima. */
 .sec-home { position: relative; min-height: 100svh; }
 .sec-home main { max-width: none; padding: 0; gap: 0; }
 .home { flex: 1; position: relative; isolation: isolate; overflow: hidden; display: flex; }
@@ -453,7 +462,7 @@ th { font-size: 12px; font-weight: 600; color: var(--muted); }
 .site-bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; pointer-events: none;
   /* Mientras carga la pieza (o si no carga), el mismo cielo en degradado. */
   background: linear-gradient(180deg, #1b1f4d 0%, #3f3a7a 30%, #8a4f86 55%, #d9637a 70%, #272452 85%, #0d0f26 100%); }
-.site-bg ascii-art { position: absolute; left: 50%; top: 50%; max-width: none; transform: translate(-50%, -50%); transform-origin: center; }
+.site-bg canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 /* Fuera de la portada se oscurece un poco para que el contenido se lea encima. */
 .site-bg::after { content: ""; position: absolute; inset: 0; background: rgba(13, 15, 38, 0.5); }
 .sec-home .site-bg::after { display: none; }
@@ -579,4 +588,132 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
      Los de las tarjetas verdes y la portada ya son claros. */
   img[src$=".svg"] { filter: brightness(1.8); }
   .deep img[src$=".svg"], .home img[src$=".svg"], .brand-emblem img, .confirm-icon img, .radio img { filter: none; }
+}
+
+/* ── Tema techno: la paleta del amanecer del fondo (violeta, rosa, naranja), paneles de
+      esquinas cortadas y tipografía mono en títulos y etiquetas. Claro u oscuro según el sistema.
+      Va al final para mandar sobre el tema verde anterior. ───────────────────── */
+:root {
+  --mono: ui-monospace, Consolas, Menlo, monospace;
+  --bg: #f6dcd6;
+  --surface: #fffaf7;
+  --line: #c9a3bd;
+  --primary: #b8456a;
+  --primary-2: #8a4f86;
+  --on-primary: #ffffff;
+  --theme-primary-ink: #8a4f86;
+  --theme-ink: #1b1f4d;
+  --theme-muted: #5b4d85;
+  --soft: #f3e4ea;
+  --soft-line: #e0c3d2;
+  --step-line: #c9a3bd;
+  --row: #fbf3f1;
+  --sand: #ffe9d6;
+  --deep: #3f3a7a;
+  --deep-muted: #d6d2e8;
+  --deep-chip: #4a3c78;
+  --deep-line: #7a5f99;
+  --lime: #ffd27f;
+  --tone-0: #ffe0cc;
+  --tone-1: #e9dff2;
+  --tone-2: #f6dcd6;
+  --tone-3: #f3e4ea;
+  --nav-bg: rgba(255, 250, 247, 0.8);
+  --veil: rgba(246, 220, 214, 0.55);
+  --over-ink: #1b1f4d;
+  --over-muted: #4a3c78;
+  --over-accent: #8a4f86;
+  --over-shadow: 0 1px 14px rgba(255, 250, 247, 0.8);
+  --glow: rgba(184, 69, 106, 0.35);
+  background: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0f26;
+    --surface: #14163a;
+    --line: #a8687a;
+    --primary: #f59a5f;
+    --primary-2: #d9637a;
+    --on-primary: #0d0f26;
+    --theme-primary-ink: #ffd27f;
+    --theme-ink: #f4f0ff;
+    --theme-muted: #b9b3d6;
+    --soft: #23204a;
+    --soft-line: #3f3a7a;
+    --step-line: #4a3c78;
+    --row: #0f1130;
+    --sand: #3a2a45;
+    --deep: #272452;
+    --tone-0: #473e70;
+    --tone-1: #3f3a7a;
+    --tone-2: #6e4660;
+    --tone-3: #272452;
+    --nav-bg: rgba(13, 15, 38, 0.8);
+    --veil: rgba(13, 15, 38, 0.5);
+    --over-ink: #ffffff;
+    --over-muted: #d6d2e8;
+    --over-accent: #ffd27f;
+    --over-shadow: 0 1px 14px rgba(13, 15, 38, 0.6);
+    --glow: rgba(245, 154, 95, 0.45);
+  }
+}
+
+/* Fondo: degradado de reserva y velo por modo. Lo que va directo sobre el fondo usa --over-*. */
+.site-bg { background: var(--bg); }
+.site-bg::after { background: var(--veil); }
+main, .foot { --ink: var(--over-ink); --muted: var(--over-muted); --primary-ink: var(--over-accent); }
+main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-shadow: var(--over-shadow); }
+:focus-visible { outline-color: var(--primary); box-shadow: none; }
+
+/* Barra */
+.nav { background: var(--nav-bg); backdrop-filter: blur(10px); border-bottom-color: var(--primary); box-shadow: 0 1px 12px var(--glow); }
+.brand-emblem { border-radius: 0; background: linear-gradient(135deg, var(--primary), var(--primary-2)); clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px)); }
+.brand-name { font-family: var(--mono); letter-spacing: -0.5px; }
+.brand-tagline { font-family: var(--mono); letter-spacing: 1.6px; }
+.section-link { font-family: var(--mono); font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; }
+.sec-on-jarrones .sec-jarrones, .sec-on-simular .sec-simular { box-shadow: 0 10px 12px -10px var(--primary); }
+.badge, .step.done .step-dot, .step.current .step-dot { color: var(--on-primary); }
+
+/* Tarjetas y paneles: el fondo del elemento hace de borde y ::before pinta el interior,
+   los dos con la misma esquina cortada (clip-path recortaría un border normal). */
+.card, .panel { --cut: 16px; --card-bg: var(--surface); position: relative; isolation: isolate; border: 0; border-radius: 0; background: var(--line);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut))); }
+.card::before, .panel::before { content: ""; position: absolute; inset: 1px; z-index: -1; background: var(--card-bg);
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut))); }
+.card:hover, .panel:hover, .card:focus-within, .panel:focus-within { background: var(--primary); }
+.panel.deep { --card-bg: var(--deep); background: var(--deep-line); }
+.panel.sand { --card-bg: var(--sand); }
+.panel.soft { --card-bg: var(--soft); }
+.home .card { background: var(--line); backdrop-filter: none; }
+.card h2, .card-title, .form-title, .group-title { font-family: var(--mono); font-size: 18px; color: var(--primary-ink); }
+.panel.deep .card-title { color: var(--lime); }
+.stretched::after { border-radius: 0; }
+
+/* Botones */
+.btn-primary, .btn-secondary, .btn-danger, .btn { border: 0; border-radius: 0; background: linear-gradient(90deg, var(--primary), var(--primary-2)); color: var(--on-primary);
+  font-family: var(--mono); font-size: 13px; letter-spacing: 1.6px; text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)); }
+.btn-primary:hover, .btn:hover, .home .btn-primary:hover { background: linear-gradient(90deg, var(--primary), var(--primary-2)); filter: brightness(1.12) saturate(1.15); }
+.btn-secondary, .btn.ghost, .home .btn-secondary { background: var(--surface); color: var(--theme-primary-ink); box-shadow: inset 0 0 0 1px var(--primary); backdrop-filter: none; }
+.btn-secondary:hover, .btn.ghost:hover, .home .btn-secondary:hover { background: var(--soft); filter: none; }
+.btn-danger, .btn.danger { background: var(--danger); color: #fff; }
+.home .btn-primary { background: linear-gradient(90deg, var(--primary), var(--primary-2)); color: var(--on-primary); }
+.btn-small, .btn.small { font-size: 12px; }
+
+/* Campos */
+.form label, .field > label { font-family: var(--mono); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.field input, .field select, .field textarea, .form input, .form select { border-radius: 4px; background-color: var(--row); }
+.form input:focus, .form select:focus, .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--glow); }
+.form input::placeholder { color: var(--muted); opacity: 0.7; }
+
+/* Portada: el texto va sobre el fondo, con velo y colores del modo. */
+.home::before { background: linear-gradient(90deg, var(--veil) 0%, var(--veil) 45%, transparent 100%); }
+.home h1 { color: var(--over-ink); }
+.home .lead { color: var(--over-muted); }
+.home .eyebrow { color: var(--over-accent); }
+.home h1, .home .lead, .home .eyebrow { text-shadow: var(--over-shadow); }
+.foot-note img { filter: none; }
+@media (prefers-color-scheme: dark) {
+  .foot-note img { filter: brightness(2.2); }
+  .home .card { background: var(--line); border: 0; }
 }

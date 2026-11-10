@@ -10,13 +10,13 @@
 <link rel="stylesheet" href="/static/app.css">
 <script src="/static/htmx.min.js" defer></script>
 <script src="/static/app.js" defer></script>
-<script type="module" src="/static/vendor/ascii/ascii.js"></script>
+<script src="/static/bg.js" defer></script>
 </head>
 <body hx-boost="true">
 {# hx-boost cambia solo el contenido del body: la sección activa va en este contenedor. #}
 <div class="page {% block section %}{% endblock %}">
-{# Fondo de todas las pantallas: la pieza «mountain-sunrise» de ASCII Magic (96 × 36 caracteres), escalada por app.js para cubrir todo. Es decoración. #}
-<div class="site-bg" data-cover-box aria-hidden="true"><ascii-art piece="mountain-sunrise" data-cover data-cols="96" data-rows="36"></ascii-art></div>
+{# Fondo de todas las pantallas: un amanecer en la cordillera que bg.js dibuja con caracteres. Es decoración. #}
+<div class="site-bg" aria-hidden="true"><canvas id="site-bg"></canvas></div>
 <header class="nav">
   <a class="brand" href="/">
     <span class="brand-emblem"><img src="/static/img/amphora-marca.svg" width="25" height="25" alt=""></span>
