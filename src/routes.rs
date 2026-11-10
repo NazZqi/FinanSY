@@ -55,12 +55,24 @@ pub fn router(state: AppState) -> Router {
         .route("/privacidad", get(privacy))
         .route("/salud", get(health))
         .nest_service("/static", ServeDir::new(&state.config.static_dir))
+        .layer(middleware::from_fn(revalidate_static))
         .layer(middleware::from_fn_with_state(state.clone(), same_origin))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
 
 /// CSRF: SameSite=Lax no basta porque todos los *.cinderlink.cl cuentan como el mismo sitio.
+/// Los archivos de /static no llevan versión en la URL: sin esto el navegador reutiliza un
+/// app.css viejo tras cada despliegue. `no-cache` lo obliga a preguntar (responde 304 si no cambió).
+async fn revalidate_static(req: Request, next: Next) -> Response {
+    let is_static = req.uri().path().starts_with("/static/");
+    let mut res = next.run(req).await;
+    if is_static {
+        res.headers_mut().insert(header::CACHE_CONTROL, header::HeaderValue::from_static("no-cache"));
+    }
+    res
+}
+
 async fn same_origin(State(st): State<AppState>, req: Request, next: Next) -> Response {
     if req.method() == Method::POST {
         let origin = req.headers().get(header::ORIGIN).and_then(|v| v.to_str().ok());
