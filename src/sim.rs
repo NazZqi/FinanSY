@@ -292,6 +292,13 @@ pub fn parse_clp(input: &str) -> Option<i64> {
     (1..=10_000_000_000).contains(&value).then_some(value)
 }
 
+/// Como `parse_clp`, pero para campos que pueden quedar en cero ("ya ahorrado", "costos fijos"):
+/// vacío o cero (`"0"`, `"$0"`) dan 0.
+pub fn parse_clp_or_zero(input: &str) -> Option<i64> {
+    let zero = input.chars().all(|c| matches!(c, '0' | '$' | '.' | ' ' | '\u{a0}'));
+    if zero { Some(0) } else { parse_clp(input) }
+}
+
 /// Lee un porcentaje con coma o punto decimal ("1,5" o "1.5") y lo valida entre 0 y 100.
 pub fn parse_pct(input: &str) -> Option<f64> {
     let cleaned = input.trim().trim_end_matches('%').trim().replace(',', ".");
@@ -441,6 +448,11 @@ mod tests {
         assert_eq!(parse_clp("$1.500.000"), Some(1_500_000));
         assert_eq!(parse_clp(" 20 000 "), Some(20_000));
         assert_eq!(parse_clp(""), None);
+        assert_eq!(parse_clp_or_zero(""), Some(0));
+        assert_eq!(parse_clp_or_zero("0"), Some(0));
+        assert_eq!(parse_clp_or_zero("$0"), Some(0));
+        assert_eq!(parse_clp_or_zero("100.000"), Some(100_000));
+        assert_eq!(parse_clp_or_zero("-5"), None);
         assert_eq!(parse_clp("0"), None);
         assert_eq!(parse_clp("abc"), None);
         assert_eq!(parse_clp("99999999999999999999"), None);

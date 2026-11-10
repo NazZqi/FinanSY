@@ -45,8 +45,8 @@
     <div class="ring" role="img" aria-label="{{ pct }}% de la meta">
       {# Mismo anillo del diseño (radio 128, trazo 11,52), dibujado según el avance real. #}
       <svg width="256" height="256" viewBox="0 0 256 256" aria-hidden="true">
-        <circle cx="128" cy="128" r="122.24" fill="none" stroke="#34614F" stroke-width="11.52"/>
-        {% if pct > 0 %}<circle cx="128" cy="128" r="122.24" fill="none" stroke="#DDF29A" stroke-width="11.52" pathLength="100" stroke-dasharray="{{ pct }} 100" transform="rotate(-90 128 128)"/>{% endif %}
+        <circle cx="128" cy="128" r="122.24" fill="none" style="stroke: var(--deep-line)" stroke-width="11.52"/>
+        {% if pct > 0 %}<circle cx="128" cy="128" r="122.24" fill="none" style="stroke: var(--lime)" stroke-width="11.52" pathLength="100" stroke-dasharray="{{ pct }} 100" transform="rotate(-90 128 128)"/>{% endif %}
       </svg>
       <div class="ring-reading">
         <img src="/static/img/amphora-anillo.svg" width="30" height="30" alt="">

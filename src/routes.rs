@@ -448,9 +448,11 @@ async fn create_jar(State(st): State<AppState>, user: CurrentUser, Form(f): Form
     let target_date = parse_optional_future_date(&f.target_date)?;
     let rate = parse_pct(&f.rate).ok_or_else(|| bad("La tasa de ahorro debe estar entre 0 y 100 %."))?;
     let (freq, plan, step_bp) = parse_plan_fields(&f.frequency, &f.plan_kind, &f.step).map_err(bad)?;
-    let first_amount = match f.first.trim() {
-        "" => None,
-        first => Some(parse_clp(first).ok_or_else(|| bad("El primer aporte debe ser un monto mayor que cero."))?),
+    // Opcional: vacío o 0 es "sin primer aporte".
+    let first_amount = match sim::parse_clp_or_zero(&f.first) {
+        Some(0) => None,
+        Some(amount) => Some(amount),
+        None => return Err(bad("Revisa el primer aporte: escribe un monto en pesos o déjalo vacío.")),
     };
     let new = db::NewJar {
         kind,
@@ -1061,7 +1063,7 @@ struct SimQuery {
 }
 
 fn optional_clp(input: &str) -> Result<i64, &'static str> {
-    if input.trim().is_empty() { Ok(0) } else { parse_clp(input).ok_or("Revisa el monto ya ahorrado.") }
+    sim::parse_clp_or_zero(input).ok_or("Revisa el monto ya ahorrado.")
 }
 
 fn simulate_cuota(q: &SimQuery, today: NaiveDate) -> Result<CuotaResult, &'static str> {
@@ -1094,7 +1096,7 @@ fn simulate_cuotas(q: &SimQuery) -> Result<CuotasResult, &'static str> {
     let price = parse_clp(&q.precio).ok_or("Escribe el precio de la compra.")?;
     let n: u32 = q.n.trim().parse().ok().filter(|n| (1..=120).contains(n)).ok_or("Las cuotas deben ser entre 1 y 120.")?;
     let monthly_pct = parse_pct(&q.tasa_cuota).ok_or("La tasa mensual debe estar entre 0 y 100 %.")?;
-    let costs = if q.costos.trim().is_empty() { 0 } else { parse_clp(&q.costos).ok_or("Revisa los costos fijos.")? };
+    let costs = sim::parse_clp_or_zero(&q.costos).ok_or("Revisa los costos fijos.")?;
     let rate = parse_pct(&q.tasa).ok_or("La tasa de ahorro debe estar entre 0 y 100 %.")?;
     let cmp = sim::save_vs_installments(price, n, monthly_pct, costs, rate_bp(rate));
     Ok(CuotasResult {
