@@ -1,0 +1,18 @@
+<div id="preview" class="preview" aria-live="polite">
+{% if ok %}
+  {% if free %}
+  <p>Plan libre: para llegar a tiempo necesitas en promedio <strong>{{ now }}</strong> por {{ unit_one }}, durante {{ periods }} {{ unit }}{% if !per_member.is_empty() %} · tu parte: <strong>{{ per_member }}</strong>{% endif %}.</p>
+  {% else %}
+  <p>{% if per_member.is_empty() %}Aporte{% else %}El jarrón necesita{% endif %} {{ this_period }}: <strong>{{ now }}</strong> · quedan {{ periods }} {{ unit }}{% if !per_member.is_empty() %} · tu parte: <strong>{{ per_member }}</strong>{% endif %}.</p>
+  {% endif %}
+  {% if !upcoming.is_empty() %}
+  <ul class="plain small">
+    {% for u in upcoming %}
+    <li>{{ u.label }}{% if !u.amount.is_empty() %}: <strong>{{ u.amount }}</strong>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+{% else %}
+  <p class="muted">{{ message }}</p>
+{% endif %}
+</div>

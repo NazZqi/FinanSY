@@ -1,0 +1,25 @@
+<section class="panel ranking" id="panel"{% if panel.group %} hx-get="/jarrones/{{ panel.jar_id }}" hx-select="#panel" hx-select-oob="#progress,#chart,#history,#plan,#pace,#achievement" hx-trigger="every 20s" hx-swap="outerHTML"{% endif %}>
+  <div class="ranking-head">
+    <h2 class="card-title">Cada persona suma</h2>
+    <span class="ranking-tag"><img src="/static/img/trophy.svg" width="16" height="16" alt="">Ranking de ahorro</span>
+  </div>
+  <p class="muted small-text">Distintos ritmos. La misma meta compartida.</p>
+  <ol class="ranking-list">
+    {% for mm in panel.members %}
+    <li class="member{% if mm.mine %} is-me{% endif %}{% if !mm.active %} is-gone{% endif %}">
+      <span class="member-pos">{% if mm.active %}{{ mm.position }}{% else %}–{% endif %}</span>
+      <span class="avatar tone-{{ mm.tone }}" aria-hidden="true">{{ mm.initials }}</span>
+      <span class="member-who">
+        <span class="member-name">{{ mm.name }}{% if mm.mine %} · tú{% endif %}{% if !mm.active %} (salió){% endif %}</span>
+        <span class="member-last{% if mm.last_today %} is-today{% endif %}">{{ mm.last }}</span>
+      </span>
+      <span class="member-part" title="Parte del total juntado">
+        <span class="part-bar" aria-hidden="true"><span style="width: {{ mm.part_width }}%"></span></span>
+        <span class="part-label">{{ mm.part_label }}</span>
+      </span>
+      <span class="member-total">{{ mm.total }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  <p class="muted xxs-text">Cuota pareja: {{ panel.share }} por persona. El porcentaje es la parte de cada uno en lo juntado. Se actualiza solo cada 20 segundos.</p>
+</section>

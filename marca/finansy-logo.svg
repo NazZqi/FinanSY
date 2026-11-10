@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>FinanSY</title>
+  <defs>
+    <clipPath id="jar">
+      <path d="M204 176 H308 V200 Q384 226 384 306 V364 Q384 424 324 424 H188 Q128 424 128 364 V306 Q128 226 204 200 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#14302a"/>
+  <!-- Jarrón crema con el ahorro en ámbar -->
+  <path d="M204 176 H308 V200 Q384 226 384 306 V364 Q384 424 324 424 H188 Q128 424 128 364 V306 Q128 226 204 200 Z" fill="#f7f4ec"/>
+  <path clip-path="url(#jar)" d="M100 316 Q142 296 184 316 T268 316 T352 316 T436 316 V440 H100 Z" fill="#e8a33d"/>
+  <rect x="186" y="128" width="140" height="44" rx="16" fill="#e8a33d"/>
+  <!-- Flecha de avance -->
+  <path d="M172 388 L224 348 L262 368 L330 296" fill="none" stroke="#14302a" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M286 292 H336 V342" fill="none" stroke="#14302a" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

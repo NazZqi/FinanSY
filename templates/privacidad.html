@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card narrow prose">
+  <h1>Política de privacidad</h1>
+  <p class="muted small">Última actualización: 4 de noviembre de 2026.</p>
+  <p>FinanSY (finansy.cinderlink.cl) es una app hecha entre amigos para registrar lo que ahorran, solos o en grupo. No mueve dinero, no pide datos bancarios y no vende ni comparte datos con terceros.</p>
+
+  <h2>Datos de tu cuenta de Google</h2>
+  <p>Para entrar usas tu cuenta de Google. FinanSY solo pide los permisos básicos <code>openid</code>, <code>email</code> y <code>profile</code>, y con ellos recibe:</p>
+  <ul>
+    <li>Tu nombre y tu foto de perfil.</li>
+    <li>Tu correo electrónico.</li>
+    <li>Un identificador de cuenta.</li>
+  </ul>
+  <p>No pide acceso a Gmail, Drive, Contactos, Calendario ni a ningún otro dato de Google.</p>
+
+  <h2>Para qué los usamos</h2>
+  <ul>
+    <li>El nombre y la foto se muestran a los miembros de los jarrones donde participas. Si tu cuenta no tiene nombre, usamos la parte de tu correo antes de la @.</li>
+    <li>El identificador sirve para saber qué jarrones y aportes son tuyos.</li>
+    <li>El correo solo lo usa Supabase Auth para identificar tu cuenta. La app no lo guarda en sus tablas ni lo muestra a nadie.</li>
+  </ul>
+  <p>Los datos de Google no se usan para publicidad, no se venden y no se usan para entrenar modelos de inteligencia artificial.</p>
+
+  <h2>Lo que tú registras</h2>
+  <p>Los jarrones que creas o a los que te unes, sus metas y fechas, tus aportes (monto, fecha y nota), los retos y los avisos de cada jarrón. Son registros manuales: FinanSY no se conecta a ningún banco.</p>
+
+  <h2>Quién lo ve</h2>
+  <p>Solo los miembros de cada jarrón ven su meta, sus aportes y los nombres y fotos de quienes participan. Un jarrón individual solo lo ves tú.</p>
+
+  <h2>Dónde se guarda y quién lo procesa</h2>
+  <ul>
+    <li>Supabase: base de datos e inicio de sesión, en São Paulo, Brasil.</li>
+    <li>Un servidor propio en Chile, que ejecuta la app.</li>
+    <li>Cloudflare: transporta el tráfico cifrado (HTTPS) hasta el servidor.</li>
+  </ul>
+  <p>No se comparten datos con nadie más.</p>
+
+  <h2>Cookies</h2>
+  <p>Usamos una cookie cifrada para mantener tu sesión (dura 30 días) y otra temporal de 10 minutos durante el inicio de sesión. No hay cookies de terceros, publicidad ni analítica.</p>
+
+  <h2>Cuánto tiempo se guarda y cómo borrarlo</h2>
+  <p>Los datos se guardan mientras uses FinanSY. Puedes borrar tus aportes y los jarrones que creaste desde la app, y se borran de inmediato. Para borrar tu cuenta completa (perfil, aportes y membresías), pídeselo a quien administra FinanSY: se borra en un plazo de 30 días.</p>
+
+  <h2>Cambios</h2>
+  <p>Si esta política cambia, se actualiza la fecha de arriba.</p>
+</section>
+{% endblock %}
