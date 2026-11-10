@@ -1,6 +1,9 @@
 [Unit]
 Description=FinanSY (prod)
 RequiresMountsFor=/mnt/datos
+# Sin límite de reintentos: al reiniciar el servidor, el pooler de Supabase puede fallar
+# unos segundos y systemd no debe rendirse (pasó el 2026-11-10).
+StartLimitIntervalSec=0
 
 [Container]
 ContainerName=finansy-prod
@@ -13,6 +16,7 @@ AddHost=nube.cinderlink.cl:host-gateway
 
 [Service]
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=default.target
