@@ -2,13 +2,14 @@
 {% block content %}
 <section class="card narrow prose">
   <h1>Política de privacidad</h1>
-  <p class="muted small">Última actualización: 4 de noviembre de 2026.</p>
+  <p class="muted small">Última actualización: 10 de noviembre de 2026.</p>
   <p>FinanSY (finansy.cinderlink.cl) es una app hecha entre amigos para registrar lo que ahorran, solos o en grupo. No mueve dinero, no pide datos bancarios y no vende ni comparte datos con terceros.</p>
 
   <h2>Datos de tu cuenta de Google</h2>
   <p>Para entrar usas tu cuenta de Google. FinanSY solo pide los permisos básicos <code>openid</code>, <code>email</code> y <code>profile</code>, y con ellos recibe:</p>
   <ul>
-    <li>Tu nombre y tu foto de perfil.</li>
+    <li>Tu nombre.</li>
+    <li>La dirección de tu foto de perfil.</li>
     <li>Tu correo electrónico.</li>
     <li>Un identificador de cuenta.</li>
   </ul>
@@ -16,31 +17,56 @@
 
   <h2>Para qué los usamos</h2>
   <ul>
-    <li>El nombre y la foto se muestran a los miembros de los jarrones donde participas. Si tu cuenta no tiene nombre, usamos la parte de tu correo antes de la @.</li>
+    <li>Tu nombre y tus iniciales se muestran a los miembros de los jarrones donde participas. Si tu cuenta no tiene nombre, usamos la parte de tu correo antes de la @.</li>
+    <li>La dirección de tu foto de perfil se guarda, pero hoy la app no la muestra: en su lugar usa tus iniciales.</li>
     <li>El identificador sirve para saber qué jarrones y aportes son tuyos.</li>
     <li>El correo solo lo usa Supabase Auth para identificar tu cuenta. La app no lo guarda en sus tablas ni lo muestra a nadie.</li>
   </ul>
   <p>Los datos de Google no se usan para publicidad, no se venden y no se usan para entrenar modelos de inteligencia artificial.</p>
 
   <h2>Lo que tú registras</h2>
-  <p>Los jarrones que creas o a los que te unes, sus metas y fechas, tus aportes (monto, fecha y nota), los retos y los avisos de cada jarrón. Son registros manuales: FinanSY no se conecta a ningún banco.</p>
+  <ul>
+    <li><strong>Jarrones:</strong> nombre, categoría, meta, fecha, cada cuánto se ahorra y el tipo de plan.</li>
+    <li><strong>Aportes:</strong> monto, fecha y una nota opcional.</li>
+    <li><strong>Foto del jarrón:</strong> si quien creó el jarrón sube una. Al subirla se reduce a 640 px y se vuelve a guardar como JPEG, lo que elimina sus metadatos (por ejemplo, la ubicación donde se tomó).</li>
+    <li><strong>Interés de tu cuenta de ahorro:</strong> el porcentaje anual que anotes, para calcular tu cuota.</li>
+    <li><strong>Prioridad:</strong> el orden en que pones tus jarrones en tu lista.</li>
+    <li><strong>Retos y avisos</strong> de cada jarrón.</li>
+  </ul>
+  <p>Son registros manuales: FinanSY no se conecta a ningún banco.</p>
 
   <h2>Quién lo ve</h2>
-  <p>Solo los miembros de cada jarrón ven su meta, sus aportes y los nombres y fotos de quienes participan. Un jarrón individual solo lo ves tú.</p>
+  <ul>
+    <li>Solo los miembros de un jarrón ven su meta, su foto, sus aportes, sus retos y los nombres de quienes participan.</li>
+    <li>Un jarrón individual solo lo ves tú.</li>
+    <li>Tu prioridad y el interés de tu cuenta solo los ves tú.</li>
+    <li>Los avisos de un jarrón (alguien aportó, se unió, cambió la meta o creó un reto) llegan a sus demás miembros, solo dentro de la app. No enviamos correos ni notificaciones.</li>
+  </ul>
+  <p>El enlace de invitación de un jarrón grupal permite unirse a cualquiera que lo tenga. Compártelo solo con quienes quieras sumar; quien creó el jarrón puede generar uno nuevo para que el anterior deje de servir.</p>
+
+  <h2>Si sales de un jarrón grupal</h2>
+  <p>Tus aportes siguen en el historial del jarrón y siguen sumando a su total, con tu nombre, para que el avance del grupo no cambie. Dejas de ver el jarrón y de contar para la parte de cada uno y para el ranking. Lo mismo pasa si quien creó el jarrón te saca.</p>
 
   <h2>Dónde se guarda y quién lo procesa</h2>
   <ul>
-    <li>Supabase: base de datos e inicio de sesión, en São Paulo, Brasil.</li>
+    <li>Supabase: base de datos e inicio de sesión, en São Paulo, Brasil. Ahí se guardan también las fotos de los jarrones.</li>
     <li>Un servidor propio en Chile, que ejecuta la app.</li>
-    <li>Cloudflare: transporta el tráfico cifrado (HTTPS) hasta el servidor.</li>
+    <li>Cloudflare: transporta el tráfico cifrado (HTTPS) hasta el servidor. Como todo intermediario de red, ve tu dirección IP.</li>
   </ul>
-  <p>No se comparten datos con nadie más.</p>
+  <p>La app no carga fuentes, scripts ni imágenes de otros sitios: todo se sirve desde el propio servidor. No se comparten datos con nadie más.</p>
 
   <h2>Cookies</h2>
   <p>Usamos una cookie cifrada para mantener tu sesión (dura 30 días) y otra temporal de 10 minutos durante el inicio de sesión. No hay cookies de terceros, publicidad ni analítica.</p>
 
   <h2>Cuánto tiempo se guarda y cómo borrarlo</h2>
-  <p>Los datos se guardan mientras uses FinanSY. Puedes borrar tus aportes y los jarrones que creaste desde la app, y se borran de inmediato. Para borrar tu cuenta completa (perfil, aportes y membresías), pídeselo a quien administra FinanSY: se borra en un plazo de 30 días.</p>
+  <p>Los datos se guardan mientras uses FinanSY. Desde la app puedes:</p>
+  <ul>
+    <li>Borrar tus aportes.</li>
+    <li>Quitar la foto de un jarrón que creaste.</li>
+    <li>Borrar un jarrón que creaste, con sus aportes, retos, avisos y foto.</li>
+    <li>Salir de un jarrón grupal (tus aportes quedan en su historial, como se explica arriba).</li>
+  </ul>
+  <p>Todo eso se borra de inmediato. Para borrar tu cuenta completa (perfil, aportes y membresías), pídeselo a quien administra FinanSY: se borra en un plazo de 30 días.</p>
 
   <h2>Cambios</h2>
   <p>Si esta política cambia, se actualiza la fecha de arriba.</p>
