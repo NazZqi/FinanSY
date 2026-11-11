@@ -51,7 +51,7 @@ pub fn router(state: AppState) -> Router {
         .route("/unirse/{code}", get(join))
         .route("/simular", get(simulator))
         .route("/simular/plan", get(plan_preview))
-        .route("/avisos", get(notifications))
+        .route("/avisos/lista", get(notifications))
         .route("/privacidad", get(privacy))
         .route("/terminos", get(terms))
         .route("/salud", get(health))
@@ -1159,7 +1159,7 @@ async fn notifications(State(st): State<AppState>, user: CurrentUser) -> Page {
         })
         .collect();
     db::mark_read(&st.pool, user.id).await?;
-    render(AvisosPage { title: "Avisos".into(), header: header(&st, &user).await?, avisos })
+    render(AvisosLista { avisos })
 }
 
 #[cfg(test)]

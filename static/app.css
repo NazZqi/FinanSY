@@ -720,3 +720,13 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
   .foot-note img { filter: brightness(2.2); }
   .home .card { background: var(--line); border: 0; }
 }
+
+/* Avisos: desplegable de la campana, como el menú de la cuenta. */
+.bell-menu { position: relative; }
+.bell-menu summary { list-style: none; cursor: pointer; }
+.bell-menu summary::-webkit-details-marker { display: none; }
+.bell-panel { position: absolute; right: 0; top: 40px; z-index: 10; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--primary); border-radius: var(--r-sm); padding: 14px 16px; box-shadow: 0 12px 32px var(--glow); display: grid; gap: 8px; }
+.bell-title { font-family: var(--mono); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--primary-ink); }
+.bell-panel .history li { align-items: flex-start; }
+.bell-panel .history a { white-space: nowrap; }
+@media (max-width: 760px) { .bell-panel { right: -60px; } }

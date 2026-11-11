@@ -341,9 +341,7 @@ pub struct AvisoRow {
 }
 
 #[derive(Template)]
-#[template(path = "avisos.html")]
-pub struct AvisosPage {
-    pub title: String,
-    pub header: Option<Header>,
+#[template(path = "avisos_lista.html")]
+pub struct AvisosLista {
     pub avisos: Vec<AvisoRow>,
 }
