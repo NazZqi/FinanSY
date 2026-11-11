@@ -519,6 +519,8 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
   .steps { padding: 0 14px; gap: 10px; }
   .step { gap: 8px; }
   .step:not(.current) .step-name { display: none; }
+  /* La etapa actual muestra su nombre: parte del ancho de su contenido para no tapar la siguiente. */
+  .step.current { flex: 1 0 auto; }
   .page-title { flex-direction: column; align-items: flex-start; gap: 6px; }
   .page-title h1, .jar-title h1, main > h1, h1 { font-size: 28px; letter-spacing: -0.8px; }
   .jar-head { flex-direction: column; align-items: stretch; gap: 16px; }
