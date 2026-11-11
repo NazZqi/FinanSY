@@ -722,6 +722,9 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
 }
 
 /* Avisos: desplegable de la campana, como el menú de la cuenta. */
+/* La barra va sobre el contenido: sin esto sus desplegables quedan debajo de los botones de la página. */
+.nav { position: relative; z-index: 20; }
+.badge[hidden] { display: none; }
 .bell-menu { position: relative; }
 .bell-menu summary { list-style: none; cursor: pointer; }
 .bell-menu summary::-webkit-details-marker { display: none; }

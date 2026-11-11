@@ -11,5 +11,5 @@
   {% endfor %}
 </ul>
 {% endif %}
-{# Ya están leídos: quita la insignia de la campana sin recargar. #}
-<span id="bell-badge" hx-swap-oob="delete"></span>
+{# Ya están leídos: oculta la insignia de la campana sin recargar. #}
+<span class="badge" id="bell-badge" hx-swap-oob="true" hidden>0</span>

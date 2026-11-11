@@ -33,7 +33,7 @@
     {% endif %}
     {# Avisos: el panel pide la lista al abrirse (y ahí se marcan como leídos). Sin hx-target, para que los enlaces de dentro no hereden nada. #}
     <details class="bell-menu">
-      <summary class="bell" aria-label="Avisos{% if h.unread > 0 %}: {{ h.unread }} sin leer{% endif %}"><img src="/static/img/bell.svg" width="20" height="20" alt="">{% if h.unread > 0 %}<span class="badge" id="bell-badge">{{ h.unread }}</span>{% endif %}</summary>
+      <summary class="bell" aria-label="Avisos{% if h.unread > 0 %}: {{ h.unread }} sin leer{% endif %}"><img src="/static/img/bell.svg" width="20" height="20" alt=""><span class="badge" id="bell-badge"{% if h.unread == 0 %} hidden{% endif %}>{{ h.unread }}</span></summary>
       <div class="bell-panel" hx-get="/avisos/lista" hx-trigger="toggle[newState=='open'] from:closest details"><p class="muted small-text">Cargando…</p></div>
     </details>
     <details class="account-menu">
