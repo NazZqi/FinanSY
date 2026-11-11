@@ -93,6 +93,11 @@
     input.focus();
   });
 
+  // Menús del encabezado (avisos y cuenta): se cierran con clic fuera o Escape.
+  const closeMenus = (except) => document.querySelectorAll(".nav details[open]").forEach((d) => { if (d !== except) d.open = false; });
+  document.addEventListener("click", (e) => closeMenus(e.target.closest(".nav details")));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenus(); });
+
   function init() {
     document.querySelectorAll("[data-new-jar]").forEach(updateNewJar);
     document.querySelectorAll("[data-contribute]").forEach(updateContribute);

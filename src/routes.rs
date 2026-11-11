@@ -51,16 +51,29 @@ pub fn router(state: AppState) -> Router {
         .route("/unirse/{code}", get(join))
         .route("/simular", get(simulator))
         .route("/simular/plan", get(plan_preview))
-        .route("/avisos", get(notifications))
+        .route("/avisos/lista", get(notifications))
         .route("/privacidad", get(privacy))
+        .route("/terminos", get(terms))
         .route("/salud", get(health))
         .nest_service("/static", ServeDir::new(&state.config.static_dir))
+        .layer(middleware::from_fn(revalidate_static))
         .layer(middleware::from_fn_with_state(state.clone(), same_origin))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
 
 /// CSRF: SameSite=Lax no basta porque todos los *.cinderlink.cl cuentan como el mismo sitio.
+/// Los archivos de /static no llevan versión en la URL: sin esto el navegador reutiliza un
+/// app.css viejo tras cada despliegue. `no-cache` lo obliga a preguntar (responde 304 si no cambió).
+async fn revalidate_static(req: Request, next: Next) -> Response {
+    let is_static = req.uri().path().starts_with("/static/");
+    let mut res = next.run(req).await;
+    if is_static {
+        res.headers_mut().insert(header::CACHE_CONTROL, header::HeaderValue::from_static("no-cache"));
+    }
+    res
+}
+
 async fn same_origin(State(st): State<AppState>, req: Request, next: Next) -> Response {
     if req.method() == Method::POST {
         let origin = req.headers().get(header::ORIGIN).and_then(|v| v.to_str().ok());
@@ -356,6 +369,14 @@ async fn privacy(State(st): State<AppState>, MaybeUser(user): MaybeUser) -> Page
     render(PrivacyPage { title: "Privacidad".into(), header })
 }
 
+async fn terms(State(st): State<AppState>, MaybeUser(user): MaybeUser) -> Page {
+    let header = match &user {
+        Some(u) => header(&st, u).await?,
+        None => None,
+    };
+    render(TermsPage { title: "Términos y condiciones".into(), header })
+}
+
 async fn health(State(st): State<AppState>) -> AppResult<&'static str> {
     sqlx::query("select 1").execute(&st.pool).await?;
     Ok("ok")
@@ -436,9 +457,11 @@ async fn create_jar(State(st): State<AppState>, user: CurrentUser, Form(f): Form
     let target_date = parse_optional_future_date(&f.target_date)?;
     let rate = parse_pct(&f.rate).ok_or_else(|| bad("La tasa de ahorro debe estar entre 0 y 100 %."))?;
     let (freq, plan, step_bp) = parse_plan_fields(&f.frequency, &f.plan_kind, &f.step).map_err(bad)?;
-    let first_amount = match f.first.trim() {
-        "" => None,
-        first => Some(parse_clp(first).ok_or_else(|| bad("El primer aporte debe ser un monto mayor que cero."))?),
+    // Opcional: vacío o 0 es "sin primer aporte".
+    let first_amount = match sim::parse_clp_or_zero(&f.first) {
+        Some(0) => None,
+        Some(amount) => Some(amount),
+        None => return Err(bad("Revisa el primer aporte: escribe un monto en pesos o déjalo vacío.")),
     };
     let new = db::NewJar {
         kind,
@@ -1049,7 +1072,7 @@ struct SimQuery {
 }
 
 fn optional_clp(input: &str) -> Result<i64, &'static str> {
-    if input.trim().is_empty() { Ok(0) } else { parse_clp(input).ok_or("Revisa el monto ya ahorrado.") }
+    sim::parse_clp_or_zero(input).ok_or("Revisa el monto ya ahorrado.")
 }
 
 fn simulate_cuota(q: &SimQuery, today: NaiveDate) -> Result<CuotaResult, &'static str> {
@@ -1082,7 +1105,7 @@ fn simulate_cuotas(q: &SimQuery) -> Result<CuotasResult, &'static str> {
     let price = parse_clp(&q.precio).ok_or("Escribe el precio de la compra.")?;
     let n: u32 = q.n.trim().parse().ok().filter(|n| (1..=120).contains(n)).ok_or("Las cuotas deben ser entre 1 y 120.")?;
     let monthly_pct = parse_pct(&q.tasa_cuota).ok_or("La tasa mensual debe estar entre 0 y 100 %.")?;
-    let costs = if q.costos.trim().is_empty() { 0 } else { parse_clp(&q.costos).ok_or("Revisa los costos fijos.")? };
+    let costs = sim::parse_clp_or_zero(&q.costos).ok_or("Revisa los costos fijos.")?;
     let rate = parse_pct(&q.tasa).ok_or("La tasa de ahorro debe estar entre 0 y 100 %.")?;
     let cmp = sim::save_vs_installments(price, n, monthly_pct, costs, rate_bp(rate));
     Ok(CuotasResult {
@@ -1136,7 +1159,7 @@ async fn notifications(State(st): State<AppState>, user: CurrentUser) -> Page {
         })
         .collect();
     db::mark_read(&st.pool, user.id).await?;
-    render(AvisosPage { title: "Avisos".into(), header: header(&st, &user).await?, avisos })
+    render(AvisosLista { avisos })
 }
 
 #[cfg(test)]

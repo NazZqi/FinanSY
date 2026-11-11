@@ -1,0 +1,15 @@
+<p class="bell-title">Avisos</p>
+{% if avisos.is_empty() %}
+<p class="muted small-text">No hay avisos todavía. Aquí verás cuando alguien aporte, se una o cambie una meta.</p>
+{% else %}
+<ul class="history">
+  {% for a in avisos %}
+  <li{% if a.unread %} class="unread"{% endif %}>
+    <span>{% if a.unread %}<strong>Nuevo</strong> · {% endif %}{{ a.body }} <span class="muted small">{{ a.when }}</span></span>
+    {% if let Some(id) = a.jar_id %}<a href="/jarrones/{{ id }}">Ver jarrón</a>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{# Ya están leídos: oculta la insignia de la campana sin recargar. #}
+<span class="badge" id="bell-badge" hx-swap-oob="true" hidden>0</span>

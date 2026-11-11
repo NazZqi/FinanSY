@@ -6,11 +6,42 @@ App web para ahorrar con amigos. Cada meta es un **jarrón**: individual (solo t
 
 La versión anterior (simulador de compras en cuotas en React) quedó en el tag `v2-cuotas`.
 
-## Stack
+## Cómo funciona
 
-- **Rust**: Axum genera las páginas en el servidor (plantillas Askama) y HTMX las actualiza sin recargar.
-- **Supabase**: Postgres en el schema `finansy`, que no está expuesto en la Data API, y login con Google (Supabase Auth, flujo PKCE hecho en el servidor).
-- **Cinderlink**: contenedor Podman detrás de Caddy y del túnel de Cloudflare.
+1. **Entras con Google.** No hay contraseñas propias de la app.
+2. **Creas un jarrón** con una meta en pesos y, si quieres, una fecha. Puede ser individual o grupal. Al grupal se entra con un enlace de invitación (`/unirse/<código>`).
+3. **Eliges cómo ahorrar.** Frecuencia diaria, semanal o mensual, y un plan: cuota constante, decreciente, creciente o libre. La app calcula cuánto toca en cada período.
+4. **Registras cada aporte.** Es solo un registro: monto, fecha y una nota opcional.
+5. **Ves el avance.** Barra y anillo de progreso, gráfico de ahorro acumulado, historial y la cuota que falta, recalculada con lo que ya ahorraste y los períodos que quedan.
+
+En un jarrón grupal además hay:
+
+- **Parte de cada uno:** la meta se divide en partes iguales entre los miembros activos.
+- **Ranking:** ordena por porcentaje de la parte cumplida.
+- **Rachas:** períodos seguidos con al menos un aporte, en la frecuencia del jarrón.
+- **Retos:** "cada uno aporta $X entre dos fechas", con el avance de cada miembro.
+- **Avisos dentro de la app:** alguien aportó, se unió, cambió la meta o creó un reto. No hay correos ni notificaciones push.
+- **Simular juntos:** cualquiera prueba otra meta o fecha y ve la cuota resultante sin guardar; solo el creador guarda el cambio.
+
+La tarjeta **Ritmo** compara tu promedio real con el plan y estima en qué fecha llegas si sigues igual.
+
+El **simulador** (`/simular`) es público y no necesita cuenta. Responde tres preguntas: cuánto aportar al mes, cuándo llegas a la meta y cuánto pagas de más si compras en cuotas en vez de ahorrar.
+
+## En qué está implementado
+
+| Pieza | Tecnología |
+|---|---|
+| Servidor | Rust con [Axum](https://github.com/tokio-rs/axum) sobre Tokio |
+| Páginas | HTML generado en el servidor con plantillas [Askama](https://github.com/askama-rs/askama) |
+| Interacción | [HTMX](https://htmx.org): actualiza partes de la página sin recargar. Muy poco JavaScript propio |
+| Base de datos | Postgres en Supabase, con `sqlx` y migraciones que corren al arrancar |
+| Login | Google mediante Supabase Auth, con el flujo PKCE hecho en el servidor |
+| Estilos | Un solo `app.css`, sin framework. Tema claro u oscuro según el sistema |
+| Fondo | `bg.js` dibuja un amanecer con caracteres en un `<canvas>` |
+| Gráficos | SVG generado en el servidor, sin librería de gráficos |
+| Contenedor | Imagen construida con el `Containerfile` |
+
+El navegador solo recibe HTML. No hay API JSON ni app de una sola página: cada acción es un formulario o una petición de HTMX que devuelve un fragmento de HTML.
 
 ```
 src/
@@ -20,13 +51,29 @@ src/
   db.rs       consultas (toda consulta de un jarrón exige ser miembro activo)
   routes.rs   rutas y validación de formularios
   views.rs    datos que ven las plantillas
-  sim.rs      simulador (funciones puras)
+  sim.rs      simulador y planes de ahorro (funciones puras)
   game.rs     rachas, ranking, retos y gráfico (funciones puras)
 templates/    HTML con Askama
-static/       app.css y htmx.min.js
+static/       app.css, app.js, bg.js, htmx.min.js, fuentes e íconos
 migrations/   SQL que corre al arrancar
-deploy/       Quadlets, timer y script de despliegue
+tests/        tests de integración contra Postgres
 ```
+
+### Decisiones de diseño
+
+- **Dinero en enteros.** Los montos se guardan en pesos chilenos como `bigint`, nunca como decimales de coma flotante.
+- **Fechas en hora de Chile.** Semanas, meses y rachas se calculan en `America/Santiago`.
+- **La lógica de negocio es pura.** `sim.rs` y `game.rs` no tocan la base de datos, así que se prueban con tests unitarios simples.
+- **El plan se recalcula siempre.** La cuota del período sale de lo ya ahorrado y los períodos que faltan; si un mes aportas de más o de menos, el resto se ajusta solo.
+- **Avance en vivo por sondeo.** En un jarrón grupal la página vuelve a pedir el panel cada 20 segundos. No hay WebSockets.
+
+### Seguridad
+
+- **Autorización en el servidor.** Toda ruta de un jarrón comprueba que seas miembro activo; si no, responde 404. Cada uno agrega y borra solo sus aportes, y solo el creador cambia la meta o borra el jarrón.
+- **Base no expuesta.** Las tablas viven en un schema que la Data API de Supabase no publica, con RLS activado. Solo el servidor habla con la base.
+- **Sesión propia.** Tras el login la app guarda una cookie cifrada (`HttpOnly`, `Secure`, `SameSite=Lax`) y no conserva los tokens de Supabase.
+- **CSRF.** Todo `POST` cuyo encabezado `Origin` no sea el de la app se rechaza.
+- **Fotos.** La foto de un jarrón se decodifica con límites, se reduce y se recodifica a JPEG, lo que elimina metadatos como la ubicación.
 
 ## Desarrollo local
 
@@ -54,42 +101,6 @@ cargo test -- --include-ignored     # + tests de autorización: necesitan DATABA
 ```
 
 El CI de GitHub corre todo contra `postgres:17`.
-
-## Supabase
-
-Dos proyectos: `finansy-prod` y `finansy-qa` (región `sa-east-1`). En cada uno:
-
-1. El rol `finansy_app` es dueño del schema `finansy` y tiene `search_path = finansy`. La app se conecta con ese rol, no con `postgres`.
-2. Auth → Providers → Google activado con el cliente OAuth de Google Cloud.
-3. Auth → URL Configuration: agregar `<BASE_URL>/auth/callback` a las Redirect URLs.
-
-Los proyectos gratis se pausan tras 7 días sin actividad. El timer `finansy-ping` llama a `/salud` una vez al día para evitarlo.
-
-## Despliegue en Cinderlink
-
-| Entorno | URL | Puerto local | Acceso |
-|---|---|---|---|
-| QA | `qa-finansy.cinderlink.cl` | 3103 | Privado: solo LAN o Tailscale (desde internet da 404) |
-| Prod | `finansy.cinderlink.cl` | 3104 | Público, con el login propio de la app |
-
-Una sola vez:
-
-```
-cp deploy/finansy-qa.container deploy/finansy-prod.container ~/.config/containers/systemd/
-cp deploy/finansy-ping.service deploy/finansy-ping.timer ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now finansy-ping.timer
-```
-
-Las variables van en `/mnt/datos/finansy/secrets/{qa,prod}.env` (permisos 600). Nunca en el repo.
-
-Cada versión:
-
-```
-cd /mnt/datos/finansy/src && git pull
-deploy/desplegar.sh qa      # compila y publica en QA
-deploy/desplegar.sh prod    # publica en prod la misma imagen probada en QA
-```
 
 ## Licencia
 

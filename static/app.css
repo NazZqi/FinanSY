@@ -382,6 +382,7 @@ details[open] > summary { margin-bottom: 12px; }
 .foot-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
 .foot-link { font-size: 12px; color: var(--primary-ink); text-decoration: none; }
 .foot-link:hover { text-decoration: underline; }
+.foot-links { display: flex; gap: 16px; }
 
 /* ── Páginas sin diseño nuevo (inicio, lista, simulador, avisos, privacidad, error):
       heredan los mismos tokens. ───────────────────── */
@@ -490,7 +491,7 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
 .prio select { width: auto; font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); }
 .modal { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 24px; max-width: 420px; background: var(--surface); color: var(--ink); margin: auto; }
 .modal > * + * { margin-top: 12px; }
-.modal::backdrop { background: rgba(16, 62, 49, 0.55); }
+.modal::backdrop { background: rgba(13, 15, 38, 0.6); }
 .modal .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .modal .actions form { margin: 0; }
 .goal-photo { width: 100%; height: 150px; object-fit: cover; border-radius: var(--r-md); }
@@ -519,6 +520,8 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
   .steps { padding: 0 14px; gap: 10px; }
   .step { gap: 8px; }
   .step:not(.current) .step-name { display: none; }
+  /* La etapa actual muestra su nombre: parte del ancho de su contenido para no tapar la siguiente. */
+  .step.current { flex: 1 0 auto; }
   .page-title { flex-direction: column; align-items: flex-start; gap: 6px; }
   .page-title h1, .jar-title h1, main > h1, h1 { font-size: 28px; letter-spacing: -0.8px; }
   .jar-head { flex-direction: column; align-items: stretch; gap: 16px; }
@@ -717,3 +720,16 @@ main > h1, .page-head, .jar-head-text, .section-title, .row-between > h1 { text-
   .foot-note img { filter: brightness(2.2); }
   .home .card { background: var(--line); border: 0; }
 }
+
+/* Avisos: desplegable de la campana, como el menú de la cuenta. */
+/* La barra va sobre el contenido: sin esto sus desplegables quedan debajo de los botones de la página. */
+.nav { position: relative; z-index: 20; }
+.badge[hidden] { display: none; }
+.bell-menu { position: relative; }
+.bell-menu summary { list-style: none; cursor: pointer; }
+.bell-menu summary::-webkit-details-marker { display: none; }
+.bell-panel { position: absolute; right: 0; top: 40px; z-index: 10; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--primary); border-radius: var(--r-sm); padding: 14px 16px; box-shadow: 0 12px 32px var(--glow); display: grid; gap: 8px; }
+.bell-title { font-family: var(--mono); font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--primary-ink); }
+.bell-panel .history li { align-items: flex-start; }
+.bell-panel .history a { white-space: nowrap; }
+@media (max-width: 760px) { .bell-panel { right: -60px; } }

@@ -33,6 +33,13 @@ pub struct PrivacyPage {
     pub header: Option<Header>,
 }
 
+#[derive(Template)]
+#[template(path = "terminos.html")]
+pub struct TermsPage {
+    pub title: String,
+    pub header: Option<Header>,
+}
+
 pub struct JarCard {
     pub id: Uuid,
     pub name: String,
@@ -334,9 +341,7 @@ pub struct AvisoRow {
 }
 
 #[derive(Template)]
-#[template(path = "avisos.html")]
-pub struct AvisosPage {
-    pub title: String,
-    pub header: Option<Header>,
+#[template(path = "avisos_lista.html")]
+pub struct AvisosLista {
     pub avisos: Vec<AvisoRow>,
 }

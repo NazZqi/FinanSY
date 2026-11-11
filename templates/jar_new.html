@@ -14,7 +14,7 @@
 </div>
 
 <form method="post" action="/jarrones" class="split new-jar" data-new-jar
-      hx-get="/simular/plan" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML">
+      hx-get="/simular/plan" hx-trigger="input changed delay:300ms" hx-target="#preview" hx-swap="outerHTML" hx-disinherit="hx-target hx-swap">
   <section class="panel form-panel">
     <fieldset class="field-group">
       <legend class="group-head"><span class="group-title">¿Cómo quieres ahorrar?</span><span class="hint">Todos los campos son obligatorios</span></legend>
