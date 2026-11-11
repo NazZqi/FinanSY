@@ -33,6 +33,13 @@ pub struct PrivacyPage {
     pub header: Option<Header>,
 }
 
+#[derive(Template)]
+#[template(path = "terminos.html")]
+pub struct TermsPage {
+    pub title: String,
+    pub header: Option<Header>,
+}
+
 pub struct JarCard {
     pub id: Uuid,
     pub name: String,

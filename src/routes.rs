@@ -53,6 +53,7 @@ pub fn router(state: AppState) -> Router {
         .route("/simular/plan", get(plan_preview))
         .route("/avisos", get(notifications))
         .route("/privacidad", get(privacy))
+        .route("/terminos", get(terms))
         .route("/salud", get(health))
         .nest_service("/static", ServeDir::new(&state.config.static_dir))
         .layer(middleware::from_fn(revalidate_static))
@@ -366,6 +367,14 @@ async fn privacy(State(st): State<AppState>, MaybeUser(user): MaybeUser) -> Page
         None => None,
     };
     render(PrivacyPage { title: "Privacidad".into(), header })
+}
+
+async fn terms(State(st): State<AppState>, MaybeUser(user): MaybeUser) -> Page {
+    let header = match &user {
+        Some(u) => header(&st, u).await?,
+        None => None,
+    };
+    render(TermsPage { title: "Términos y condiciones".into(), header })
 }
 
 async fn health(State(st): State<AppState>) -> AppResult<&'static str> {
